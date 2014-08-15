@@ -1,0 +1,1 @@
+Pcov = inv(I - P1 * W) * P0 * inv(I - P1 * W)
