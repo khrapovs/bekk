@@ -47,20 +47,27 @@ def convert_param(theta):
 def likelihood(theta, u):
     T, n = u.shape
     A, B, C = convert_param(theta)
-    f = 0
     H = np.empty((T, n, n))
     H0 = np.eye(2)
+    
     for i in range(1, 100):
         H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
-    print(H0)
     H[0] = H0[:]
+
+    f = -.5 * np.log(np.linalg.det(H[0])) \
+        - .5 * u[0].dot(np.linalg.inv(H[0])).dot(u[0, np.newaxis].T)
     for t in range(1, T):
         H[t] = C.dot(C.T) + A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T) \
             + B.dot(H[t-1]).dot(B.T)
         f += -.5 * np.log(np.linalg.det(H[t])) \
             - .5 * u[t].dot(np.linalg.inv(H[t])).dot(u[t, np.newaxis].T)
+
     return float(f)
 
+def optimize_like(u):
+    #res = 
+    pass
+    
 if __name__ == '__main__':
 
     # A, B, C - n x n matrices
@@ -72,3 +79,6 @@ if __name__ == '__main__':
     theta = np.concatenate([A.flatten(), B.flatten(), C.flatten()])
     
     print(likelihood(theta, u))
+    
+    #result = optimize_like(u)
+    #print(result.theta)
