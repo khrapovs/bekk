@@ -14,7 +14,7 @@ import numba as nb
 def simulate_BEKK(theta):
     A, B, C = convert_theta_to_abc(theta)
     
-    n, T = 2, 1000
+    n, T = A.shape[0], 500
     mean, cov = np.zeros(n), np.eye(n)
     
     constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
@@ -22,13 +22,18 @@ def simulate_BEKK(theta):
     
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
-    H[0] = np.eye(2)
     u = np.zeros((T, n))
-
+    
+    H0 = np.eye(n)
+    for i in range(1, 100):
+        H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
+    H[0] = H0[:]
+    
     for t in range(1, T):
         H[t] = C.dot(C.T) + A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T) \
             + B.dot(H[t-1]).dot(B.T)
-        u[t] = np.sum(e[t] * sp.linalg.sqrtm(H[t]), 1)
+        #u[t] = np.sum(e[t] * sp.linalg.sqrtm(H[t]), 1)
+        u[t] = sp.linalg.cholesky(H[t], 1).dot(e[t, np.newaxis].T).flatten()
     
     return u, H
     
@@ -48,6 +53,9 @@ def convert_theta_to_abc(theta):
     A = theta[:4].reshape([2,2])
     B = theta[4:8].reshape([2,2])
     C = np.array([[theta[8], 0], [theta[9], theta[10]]])
+#    A = theta[0].reshape([1,1])
+#    B = theta[1].reshape([1,1])
+#    C = np.array([[theta[2]]])
     return A, B, C
 
 def convert_abc_to_theta(A, B, C):
@@ -58,9 +66,9 @@ def likelihood(theta, u):
     T, n = u.shape
     A, B, C = convert_theta_to_abc(theta)
     H = np.empty((T, n, n))
-    H0 = np.eye(2)
     
-    for i in range(1, 100):
+    H0 = np.eye(2)
+    for i in range(1, 1000):
         H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
     H[0] = H0[:]
 
@@ -86,16 +94,24 @@ if __name__ == '__main__':
     np.set_printoptions(precision = 3, suppress = True)
     
     # A, B, C - n x n matrices
-    A = np.array([[.15, 0], [0, .15]])
-    B = np.array([[.8, 0], [0, .8]])
+    A = np.array([[.25, 0], [0, .25]])
+    B = np.array([[.95, 0], [0, .95]])
     C = np.array([1, .5, 1])
+#    A = np.array([[.2]])
+#    B = np.array([[.95]])
+#    C = np.array([1])
     theta = convert_abc_to_theta(A, B, C)
     
     u, H = simulate_BEKK(theta)
+    #plt.plot(H.flatten())
+
+    #plot_data(u, H)
     
     print('Likelihood for true theta = %.2f' % likelihood(theta, u))
+    theta0 = theta - .1
+    print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
     
-    result = optimize_like(u, theta*1.1)
+    result = optimize_like(u, theta0)
     print(result)
     A, B, C = convert_theta_to_abc(result.x)
     print(A, 2*'\n', B, 2*'\n', C)
