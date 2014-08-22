@@ -11,7 +11,7 @@ import numba as nb
 # One lag, no asymmetries
 # H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
 
-@nb.autojit
+#@nb.autojit
 def simulate_BEKK(theta, n):
     A, B, C = convert_theta_to_abc(theta, n)
     
@@ -36,10 +36,14 @@ def simulate_BEKK(theta, n):
     return u, H
 
 def stationary_H(A, B, C):
-    H = np.eye(A.shape[0])
-    for i in range(1, 1000):
-        H = C.dot(C.T) + A.dot(H).dot(A.T) + B.dot(H).dot(B.T)
-    return H
+    i, norm = 0, 1e3
+    Hold = np.eye(A.shape[0])
+    while (norm > 1e-3) or (i < 1000):
+        Hnew = C.dot(C.T) + A.dot(Hold).dot(A.T) + B.dot(Hold).dot(B.T)
+        norm = np.linalg.norm(Hnew - Hold)
+        Hold = Hnew[:]
+        i += 1
+    return Hnew
     
 def plot_data(u, H):
     T, n = u.shape
@@ -65,15 +69,15 @@ def convert_abc_to_theta(A, B, C):
     return np.concatenate(theta)
 
 def contribution(u, H):
-    # To be absolutely correct, it must be multiplied by .5
-    f = np.log(np.linalg.det(H))
-    try:
+    if np.isclose(np.linalg.det(H), 0):
+        return np.inf
+    else:
+        # To be absolutely correct, it must be multiplied by .5
+        f = np.log(np.linalg.det(H))
         f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
-    except:
-        f += 1e10
-    return float(f)
+        return float(f)
 
-@nb.autojit
+#@nb.autojit
 def likelihood(theta, u):
     T, n = u.shape
     A, B, C = convert_theta_to_abc(theta, n)
@@ -98,13 +102,12 @@ def callback(xk):
     print(xk)
 
 def optimize_like(u, theta0, nit):
-    ones = np.ones(len(theta0))
-    bounds = list(zip(-5*ones, 5*ones))
+#    ones = np.ones(len(theta0))
+#    bounds = list(zip(-5*ones, 5*ones))
     res = minimize(likelihood, theta0, args = (u,),
                    method = 'L-BFGS-B',
                    callback = callback,
-                   bounds = bounds,
-                   options = {'disp': True, 'maxiter' : nit})
+                   options = {'disp': True, 'maxiter' : int(nit)})
     return res
 
 def test(n):
