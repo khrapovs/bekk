@@ -11,6 +11,7 @@ import numba as nb
 # One lag, no asymmetries
 # H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
 
+@nb.autojit
 def simulate_BEKK(theta, n):
     A, B, C = convert_theta_to_abc(theta, n)
     
@@ -24,10 +25,7 @@ def simulate_BEKK(theta, n):
     H = np.empty((T, n, n))
     u = np.zeros((T, n))
     
-    H0 = np.eye(n)
-    for i in range(1, 1000):
-        H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
-    H[0] = H0[:]
+    H[0] = stationary_H(A, B, C)
     
     for t in range(1, T):
         H[t] = C.dot(C.T)
@@ -36,6 +34,12 @@ def simulate_BEKK(theta, n):
         u[t] = sp.linalg.cholesky(H[t], 1).dot(np.atleast_2d(e[t]).T).flatten()
     
     return u, H
+
+def stationary_H(A, B, C):
+    H = np.eye(A.shape[0])
+    for i in range(1, 1000):
+        H = C.dot(C.T) + A.dot(H).dot(A.T) + B.dot(H).dot(B.T)
+    return H
     
 def plot_data(u, H):
     T, n = u.shape
@@ -63,7 +67,10 @@ def convert_abc_to_theta(A, B, C):
 def contribution(u, H):
     # To be absolutely correct, it must be multiplied by .5
     f = np.log(np.linalg.det(H))
-    f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+    try:
+        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+    except:
+        f += np.inf
     return float(f)
 
 @nb.autojit
@@ -72,10 +79,7 @@ def likelihood(theta, u):
     A, B, C = convert_theta_to_abc(theta, n)
     H = np.empty((T, n, n))
     
-    H0 = np.eye(n)
-    for i in range(1, 1000):
-        H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
-    H[0] = H0[:]
+    H[0] = stationary_H(A, B, C)
     
     f = contribution(u[0], H[0])
     
@@ -87,30 +91,27 @@ def likelihood(theta, u):
 
     return f
 
+def callback(xk):
+    print(xk)
+
 def optimize_like(u, theta0, nit):
     
     res = minimize(likelihood, theta0, args = (u,),
                    method = 'Nelder-Mead',
+                   callback = callback,
                    options = {'disp': True, 'maxiter' : nit})
     return res
-    
-if __name__ == '__main__':
-    np.set_printoptions(precision = 2, suppress = True)
-    n = 2
-    # ---------------------------------------------------------------------
-    # many returns
+
+def test(n):
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
     C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
     
-#    A = np.array([[.2]])
-#    B = np.array([[.95]])
-#    C = np.array([1])
     theta = convert_abc_to_theta(A, B, C)
     
     u, H = simulate_BEKK(theta, n)
-    plt.plot(H.flatten())
+#    plt.plot(H.flatten())
 
     #plot_data(u, H)
     
@@ -118,14 +119,14 @@ if __name__ == '__main__':
     theta0 = theta - .1
     print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
 #    iterations = [1e3, 1e4, 1e5, 1e6]
-    iterations = [1e3]
+    iterations = [1e2]
     for nit in iterations:
-        try:
-            print('Max number of iterations is: ', nit)
-            result = optimize_like(u, theta0, nit)
-            print(result)
-            A, B, C = convert_theta_to_abc(result.x, n)
-            print(A, 2*'\n', B, 2*'\n', C)
-        except:
-            print('Matrix was probablty singular')
-        
+        print('Max number of iterations is: ', nit)
+        result = optimize_like(u, theta0, nit)
+        print(result)
+        A, B, C = convert_theta_to_abc(result.x, n)
+        print(A, 2*'\n', B, 2*'\n', C)
+    
+if __name__ == '__main__':
+    np.set_printoptions(precision = 2, suppress = True)
+    test(2)
