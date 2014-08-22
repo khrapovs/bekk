@@ -15,11 +15,11 @@ import numba as nb
 def simulate_BEKK(theta, n):
     A, B, C = convert_theta_to_abc(theta, n)
     
-    T = 100
+    T = 500
     mean, cov = np.zeros(n), np.eye(n)
     
     constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-    print(constr)
+    print('Max eigenvalue = ', constr)
     
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
@@ -70,7 +70,7 @@ def contribution(u, H):
     try:
         f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
     except:
-        f += np.inf
+        f += 1e10
     return float(f)
 
 @nb.autojit
@@ -80,7 +80,7 @@ def likelihood(theta, u):
     H = np.empty((T, n, n))
     
     H[0] = stationary_H(A, B, C)
-    
+        
     f = contribution(u[0], H[0])
     
     for t in range(1, T):
@@ -89,16 +89,21 @@ def likelihood(theta, u):
         H[t] += B.dot(H[t-1]).dot(B.T)
         f += contribution(u[t], H[t])
 
-    return f
+    if np.isinf(f):
+        return 1e7
+    else:
+        return f
 
 def callback(xk):
     print(xk)
 
 def optimize_like(u, theta0, nit):
-    
+    ones = np.ones(len(theta0))
+    bounds = list(zip(-5*ones, 5*ones))
     res = minimize(likelihood, theta0, args = (u,),
-                   method = 'Nelder-Mead',
+                   method = 'L-BFGS-B',
                    callback = callback,
+                   bounds = bounds,
                    options = {'disp': True, 'maxiter' : nit})
     return res
 
@@ -119,7 +124,7 @@ def test(n):
     theta0 = theta - .1
     print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
 #    iterations = [1e3, 1e4, 1e5, 1e6]
-    iterations = [1e2]
+    iterations = [1e1]
     for nit in iterations:
         print('Max number of iterations is: ', nit)
         result = optimize_like(u, theta0, nit)
