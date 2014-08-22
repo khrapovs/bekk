@@ -14,7 +14,7 @@ import numba as nb
 def simulate_BEKK(theta, n):
     A, B, C = convert_theta_to_abc(theta, n)
     
-    T = 500
+    T = 100
     mean, cov = np.zeros(n), np.eye(n)
     
     constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
@@ -30,10 +30,10 @@ def simulate_BEKK(theta, n):
     H[0] = H0[:]
     
     for t in range(1, T):
-        H[t] = C.dot(C.T) + A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T) \
-            + B.dot(H[t-1]).dot(B.T)
-        #u[t] = np.sum(e[t] * sp.linalg.sqrtm(H[t]), 1)
-        u[t] = sp.linalg.cholesky(H[t], 1).dot(e[t, np.newaxis].T).flatten()
+        H[t] = C.dot(C.T)
+        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
+        H[t] += B.dot(H[t-1]).dot(B.T)
+        u[t] = sp.linalg.cholesky(H[t], 1).dot(np.atleast_2d(e[t]).T).flatten()
     
     return u, H
     
