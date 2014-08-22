@@ -52,18 +52,19 @@ def plot_data(u, H):
 def convert_theta_to_abc(theta, n):
     A = theta[:n**2].reshape([n, n])
     B = theta[n**2:2*n**2].reshape([n, n])
-    N = 2*n**2
     C = np.zeros((n, n))
-    k = 0
-    for i in range(n):
-        for j in range(i+1):
-            C[i, j] = theta[N + k]
-            k += 1
+    C[np.tril_indices(n)] = theta[2*n**2:]
     return A, B, C
 
 def convert_abc_to_theta(A, B, C):
-    # C should be converted correctly. C[C > 0] is incorrect
-    return np.concatenate([A.flatten(), B.flatten(), C[C > 0]])
+    theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
+    return np.concatenate(theta)
+
+def contribution(u, H):
+    # To be absolutely correct, it must be multiplied by .5
+    f = np.log(np.linalg.det(H))
+    f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+    return float(f)
 
 @nb.autojit
 def likelihood(theta, u):
@@ -76,76 +77,55 @@ def likelihood(theta, u):
         H0 = C.dot(C.T) + A.dot(H0).dot(A.T) + B.dot(H0).dot(B.T)
     H[0] = H0[:]
     
-    f = .5 * np.log(np.linalg.det(H[0])) \
-        + .5 * u[0].dot(np.linalg.inv(H[0])).dot(u[0, np.newaxis].T)
+    f = contribution(u[0], H[0])
     
     for t in range(1, T):
-        H[t] = C.dot(C.T) + A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T) \
-            + B.dot(H[t-1]).dot(B.T)
-        f += .5 * np.log(np.linalg.det(H[t])) \
-            + .5 * u[t].dot(np.linalg.inv(H[t])).dot(u[t, np.newaxis].T)
+        H[t] = C.dot(C.T)
+        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
+        H[t] += B.dot(H[t-1]).dot(B.T)
+        f += contribution(u[t], H[t])
 
-    return float(f)
+    return f
 
-def optimize_like(u, theta0):
+def optimize_like(u, theta0, nit):
     
     res = minimize(likelihood, theta0, args = (u,),
                    method = 'Nelder-Mead',
-                   options = {'disp': True, 'maxiter' : 500})
+                   options = {'disp': True, 'maxiter' : nit})
     return res
     
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    n = 9
-    if n == 2:
-        # ---------------------------------------------------------------------
-        # Two returns
-        # A, B, C - n x n matrices
-        A = np.array([[.25, 0], [0, .25]])
-        B = np.array([[.95, 0], [0, .95]])
-        C = np.array([1, .5, 1])
-    #    A = np.array([[.2]])
-    #    B = np.array([[.95]])
-    #    C = np.array([1])
-        theta = convert_abc_to_theta(A, B, C)
-        
-        u, H = simulate_BEKK(theta)
-        #plt.plot(H.flatten())
+    n = 2
+    # ---------------------------------------------------------------------
+    # many returns
+    # A, B, C - n x n matrices
+    A = np.eye(n) * .25
+    B = np.eye(n) * .95
+    C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
     
-        #plot_data(u, H)
-        
-        print('Likelihood for true theta = %.2f' % likelihood(theta, u))
-        theta0 = theta - .1
-        print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
-        
-        result = optimize_like(u, theta0)
-        print(result)
-        A, B, C = convert_theta_to_abc(result.x)
-        print(A, 2*'\n', B, 2*'\n', C)
+#    A = np.array([[.2]])
+#    B = np.array([[.95]])
+#    C = np.array([1])
+    theta = convert_abc_to_theta(A, B, C)
     
-    else:
-        # ---------------------------------------------------------------------
-        # many returns
-        # A, B, C - n x n matrices
-        A = np.eye(n) * .25
-        B = np.eye(n) * .95
-        C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
-        
-    #    A = np.array([[.2]])
-    #    B = np.array([[.95]])
-    #    C = np.array([1])
-        theta = convert_abc_to_theta(A, B, C)
-        
-        u, H = simulate_BEKK(theta, n)
-        #plt.plot(H.flatten())
+    u, H = simulate_BEKK(theta, n)
+    plt.plot(H.flatten())
+
+    #plot_data(u, H)
     
-        #plot_data(u, H)
+    print('Likelihood for true theta = %.2f' % likelihood(theta, u))
+    theta0 = theta - .1
+    print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
+#    iterations = [1e3, 1e4, 1e5, 1e6]
+    iterations = [1e3]
+    for nit in iterations:
+        try:
+            print('Max number of iterations is: ', nit)
+            result = optimize_like(u, theta0, nit)
+            print(result)
+            A, B, C = convert_theta_to_abc(result.x, n)
+            print(A, 2*'\n', B, 2*'\n', C)
+        except:
+            print('Matrix was probablty singular')
         
-        print('Likelihood for true theta = %.2f' % likelihood(theta, u))
-        theta0 = theta - .1
-        print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
-        
-        result = optimize_like(u, theta0)
-        print(result)
-        A, B, C = convert_theta_to_abc(result.x, n)
-        print(A, 2*'\n', B, 2*'\n', C)
