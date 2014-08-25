@@ -26,7 +26,6 @@ def simulate_BEKK(theta, n):
     u = np.zeros((T, n))
     
     H[0] = stationary_H(A, B, C)
-    print(H[0])
     
     for t in range(1, T):
         H[t] = C.dot(C.T)
@@ -69,6 +68,11 @@ def convert_theta_to_abc(theta, n):
     C[np.tril_indices(n)] = theta[2*n**2:]
     return A, B, C
 
+def convert_theta_to_ab(theta, n):
+    A = theta[:n**2].reshape([n, n])
+    B = theta[n**2:2*n**2].reshape([n, n])
+    return A, B
+
 def convert_abc_to_theta(A, B, C):
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
@@ -85,7 +89,7 @@ def contribution(u, H):
 #@nb.autojit
 def likelihood(theta, u):
     T, n = u.shape
-    A, B, C = convert_theta_to_abc(theta, n)
+    A, B = convert_theta_to_ab(theta, n)
     H = np.empty((T, n, n))
     
     #H[0] = stationary_H(A, B, C)
@@ -94,9 +98,9 @@ def likelihood(theta, u):
     f = contribution(u[0], H[0])
     
     for t in range(1, T):
-        H[t] = C.dot(C.T)
-        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
-        H[t] += B.dot(H[t-1]).dot(B.T)
+        H[t] = H[0]
+        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1] - H[0]).dot(A.T)
+        H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
         f += contribution(u[t], H[t])
 
     if np.isinf(f):
@@ -111,7 +115,7 @@ def optimize_like(u, theta0, nit):
 #    ones = np.ones(len(theta0))
 #    bounds = list(zip(-5*ones, 5*ones))
     res = minimize(likelihood, theta0, args = (u,),
-                   method = 'L-BFGS-B',
+                   method = 'Nelder-Mead',
                    callback = callback,
                    options = {'disp': True, 'maxiter' : int(nit)})
     return res
@@ -123,23 +127,24 @@ def test(n):
     C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
     
     theta = convert_abc_to_theta(A, B, C)
+    theta_AB = theta[:2*n**2]
     
     u, H = simulate_BEKK(theta, n)
 #    plt.plot(H.flatten())
 
     #plot_data(u, H)
     
-    print('Likelihood for true theta = %.2f' % likelihood(theta, u))
-    theta0 = theta - .1
-    print('Likelihood for initial theta = %.2f' % likelihood(theta0, u))
+    print('Likelihood for true theta = %.2f' % likelihood(theta_AB, u))
+    theta0_AB = theta_AB - .1
+    print('Likelihood for initial theta = %.2f' % likelihood(theta0_AB, u))
 #    iterations = [1e3, 1e4, 1e5, 1e6]
-    iterations = [1e1]
+    iterations = [1e2]
     for nit in iterations:
         print('Max number of iterations is: ', nit)
-        result = optimize_like(u, theta0, nit)
+        result = optimize_like(u, theta0_AB, nit)
         print(result)
-        A, B, C = convert_theta_to_abc(result.x, n)
-        print(A, 2*'\n', B, 2*'\n', C)
+        A, B = convert_theta_to_ab(result.x, n)
+        print(A, 2*'\n', B)
 
 
 if __name__ == '__main__':
