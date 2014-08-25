@@ -77,10 +77,26 @@ def convert_abc_to_theta(A, B, C):
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
 
+#def contribution(u, H):
+#    if np.isclose(np.linalg.det(H), 0):
+#        return np.inf
+#    else:
+#        # To be absolutely correct, it must be multiplied by .5
+#        f = np.log(np.linalg.det(H))
+#        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+#        return float(f)
+
 def contribution(u, H):
-    if np.isclose(np.linalg.det(H), 0):
-        return np.inf
+    """Contribution to the log-likelihood function for each observation."""
+    bad = np.any(np.isinf(H)) \
+        or np.isclose(np.linalg.det(H), 0) \
+        or np.isinf(np.linalg.det(H)) \
+        or np.linalg.det(H) > 1e5 \
+        or np.linalg.det(H) < 0
+    if bad:
+        return 1e7
     else:
+        #print(np.linalg.det(H))
         # To be absolutely correct, it must be multiplied by .5
         f = np.log(np.linalg.det(H))
         f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
@@ -94,17 +110,18 @@ def likelihood(theta, u):
     
     #H[0] = stationary_H(A, B, C)
     H[0] = estimate_H0(u)
-        
+    
     f = contribution(u[0], H[0])
     
     for t in range(1, T):
         H[t] = H[0]
         H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1] - H[0]).dot(A.T)
         H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
+        
         f += contribution(u[t], H[t])
-
+    
     if np.isinf(f):
-        return 1e7
+        return 1e10
     else:
         return f
 
@@ -115,7 +132,7 @@ def optimize_like(u, theta0, nit):
 #    ones = np.ones(len(theta0))
 #    bounds = list(zip(-5*ones, 5*ones))
     res = minimize(likelihood, theta0, args = (u,),
-                   method = 'Nelder-Mead',
+                   method = 'BFGS',
                    callback = callback,
                    options = {'disp': True, 'maxiter' : int(nit)})
     return res
