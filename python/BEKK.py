@@ -60,7 +60,7 @@ class BEKK(object):
             H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
         
         f = 0
-        for t in range(0, self.T):
+        for t in range(self.T):
             f += contribution(self.u[t], H[t])
         
         if np.isinf(f):
@@ -73,8 +73,11 @@ class BEKK(object):
         A, B = convert_theta_to_ab(xk, n)
         print('A = \n', A, '\nB = \n', B, '\n')
         delta = self.likelihood(xk) - self.likelihood(self.theta0)
+        step = self.likelihood(xk) - self.likelihood(self.xk_old)
+        self.xk_old = xk
         print('Current likelihood = %.2f' % self.likelihood(xk))
         print('Current delta = %.2f' % delta)
+        print('Current step = %.2f' % step)
     
     def optimize_like(self, theta0, nit):
     #    ones = np.ones(len(theta0))
@@ -84,6 +87,7 @@ class BEKK(object):
         # Works, but not so good:
         # CG
         self.theta_start = theta0
+        self.xk_old = theta0
         res = minimize(self.likelihood, theta0,
                        method = 'Powell',
                        callback = self.callback,
@@ -98,8 +102,7 @@ def contribution(u, H):
         return 1e10
     else:
         # To be absolutely correct, it must be multiplied by .5
-        f = np.log(np.linalg.det(H))
-        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+        f = np.log(Hdet) + u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
         return float(f)
     
 def estimate_H0(u):
@@ -168,5 +171,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 6, T = 2000)
+    test(n = 2, T = 100)
 #    cProfile.run('test(2)')
