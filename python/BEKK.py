@@ -53,14 +53,14 @@ class BEKK(object):
         #H[0] = stationary_H(A, B, C)
         H[0] = self.H0
         
-        f = contribution(self.u[0], H[0])
-        
         for t in range(1, self.T):
             H[t] = H[0]
             uu = self.u[t-1, np.newaxis].T * self.u[t-1]
             H[t] += A.dot(uu - H[0]).dot(A.T)
             H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
-            
+        
+        f = 0
+        for t in range(0, self.T):
             f += contribution(self.u[t], H[t])
         
         if np.isinf(f):
@@ -89,6 +89,18 @@ class BEKK(object):
                        callback = self.callback,
                        options = {'disp': True, 'maxiter' : int(nit)})
         return res
+
+def contribution(u, H):
+    """Contribution to the log-likelihood function for each observation."""
+    Hdet = np.linalg.det(H)
+    bad = np.any(np.isinf(H)) or Hdet > 1e20 or Hdet < 1e-5
+    if bad:
+        return 1e10
+    else:
+        # To be absolutely correct, it must be multiplied by .5
+        f = np.log(np.linalg.det(H))
+        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
+        return float(f)
     
 def estimate_H0(u):
     T = u.shape[0]
@@ -131,19 +143,6 @@ def plot_data(u, H):
     for ax, i in zip(axes , range(n)):
         ax.plot(range(T), u[:, i])
     plt.plot()
-
-def contribution(u, H):
-    """Contribution to the log-likelihood function for each observation."""
-    bad = np.any(np.isinf(H)) \
-        or np.linalg.det(H) > 1e20 \
-        or np.linalg.det(H) < 1e-5
-    if bad:
-        return 1e10
-    else:
-        # To be absolutely correct, it must be multiplied by .5
-        f = np.log(np.linalg.det(H))
-        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
-        return float(f)
 
 def test(n = 2, T = 100):
     # A, B, C - n x n matrices
