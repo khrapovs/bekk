@@ -50,7 +50,6 @@ class BEKK(object):
         A, B = convert_theta_to_ab(theta, self.n)
         H = np.empty((self.T, self.n, self.n))
         
-        #H[0] = stationary_H(A, B, C)
         H[0] = self.H0
         
         for t in range(1, self.T):
@@ -96,8 +95,10 @@ class BEKK(object):
 
 def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
+#    Heig = np.linalg.eigvals(H)
+#    bad = np.any(np.isinf(H)) or Heig.max() > 1e20 or Heig.min() < 1e-10
     Hdet = np.linalg.det(H)
-    bad = np.any(np.isinf(H)) or Hdet > 1e20 or Hdet < 1e-5
+    bad = np.any(np.isinf(H)) or Hdet > 1e20 or Hdet < 1e-10
     if bad:
         return 1e10
     else:
@@ -171,5 +172,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 2, T = 100)
+    test(n = 6, T = 100)
 #    cProfile.run('test(2)')
