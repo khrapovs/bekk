@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pylab as plt
 from scipy.optimize import minimize
-#import numba as nb
+import numba as nb
 
 # BEKK model
 # u(t)|H(t) ~ N(0,H(t))
@@ -15,7 +15,7 @@ from scipy.optimize import minimize
 def simulate_BEKK(theta, n):
     A, B, C = convert_theta_to_abc(theta, n)
     
-    T = 500
+    T = 1000
     mean, cov = np.zeros(n), np.eye(n)
     
     constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
@@ -77,24 +77,14 @@ def convert_abc_to_theta(A, B, C):
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
 
-#def contribution(u, H):
-#    if np.isclose(np.linalg.det(H), 0):
-#        return np.inf
-#    else:
-#        # To be absolutely correct, it must be multiplied by .5
-#        f = np.log(np.linalg.det(H))
-#        f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
-#        return float(f)
-
 def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
     bad = np.any(np.isinf(H)) \
         or np.isclose(np.linalg.det(H), 0) \
-        or np.isinf(np.linalg.det(H)) \
-        or np.linalg.det(H) > 1e5 \
+        or np.linalg.det(H) > 1e20 \
         or np.linalg.det(H) < 0
     if bad:
-        return 1e7
+        return 1e10
     else:
         #print(np.linalg.det(H))
         # To be absolutely correct, it must be multiplied by .5
@@ -102,7 +92,7 @@ def contribution(u, H):
         f += u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
         return float(f)
 
-#@nb.autojit
+@nb.autojit
 def likelihood(theta, u):
     T, n = u.shape
     A, B = convert_theta_to_ab(theta, n)
@@ -126,13 +116,19 @@ def likelihood(theta, u):
         return f
 
 def callback(xk):
-    print(xk)
+    n = (len(xk) / 2) ** .5
+    A, B = convert_theta_to_ab(xk, n)
+    print('A = \n', A, '\nB = \n', B, '\n')
 
 def optimize_like(u, theta0, nit):
 #    ones = np.ones(len(theta0))
 #    bounds = list(zip(-5*ones, 5*ones))
+    # So far works:
+    # Nelder-Mead, BFGS, L-BFGS-B
+    # Works, but not so good:
+    # CG
     res = minimize(likelihood, theta0, args = (u,),
-                   method = 'BFGS',
+                   method = 'L-BFGS-B',
                    callback = callback,
                    options = {'disp': True, 'maxiter' : int(nit)})
     return res
@@ -166,4 +162,4 @@ def test(n):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(2)
+    test(6)
