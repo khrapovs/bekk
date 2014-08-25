@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pylab as plt
 from scipy.optimize import minimize
-import numba as nb
+#import numba as nb
 
 # BEKK model
 # u(t)|H(t) ~ N(0,H(t))
@@ -26,6 +26,7 @@ def simulate_BEKK(theta, n):
     u = np.zeros((T, n))
     
     H[0] = stationary_H(A, B, C)
+    print(H[0])
     
     for t in range(1, T):
         H[t] = C.dot(C.T)
@@ -35,6 +36,10 @@ def simulate_BEKK(theta, n):
     
     return u, H
 
+def estimate_H0(u):
+    T = u.shape[0]
+    return u.T.dot(u) / T
+    
 def stationary_H(A, B, C):
     i, norm = 0, 1e3
     Hold = np.eye(A.shape[0])
@@ -83,7 +88,8 @@ def likelihood(theta, u):
     A, B, C = convert_theta_to_abc(theta, n)
     H = np.empty((T, n, n))
     
-    H[0] = stationary_H(A, B, C)
+    #H[0] = stationary_H(A, B, C)
+    H[0] = estimate_H0(u)
         
     f = contribution(u[0], H[0])
     
@@ -134,7 +140,8 @@ def test(n):
         print(result)
         A, B, C = convert_theta_to_abc(result.x, n)
         print(A, 2*'\n', B, 2*'\n', C)
-    
+
+
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
     test(2)
