@@ -4,6 +4,7 @@ import matplotlib.pylab as plt
 from scipy.optimize import minimize
 import cProfile
 import numba as nb
+import time
 
 # BEKK model
 # u(t)|H(t) ~ N(0,H(t))
@@ -72,19 +73,26 @@ class BEKK(object):
     
     def callback(self, xk):
         self.it += 1
-        n = (len(xk) / 2) ** .5
-        A, B = convert_theta_to_ab(xk, n)
-        delta = self.likelihood(xk) - self.likelihood(self.theta0)
-        step = self.likelihood(xk) - self.likelihood(self.xk_old)
-        self.xk_old = xk
+        A, B = convert_theta_to_ab(xk, self.n)
+        
+        current_like = self.likelihood(xk)
+        true_like = self.likelihood(self.theta0)
+        old_like = self.likelihood(self.xk_old)
+        
+        time_new = time.time()
+        time_diff = time_new - self.time_old
+
+        self.xk_old = xk.copy()
+        self.time_old = time_new
+        
         string = ['\nIteration = ' + str(self.it)]
-        string.append('Current likelihood = %.2f' % self.likelihood(xk))
-        string.append('Current delta = %.2f' % delta)
-        string.append('Current step = %.2f' % step)
+        string.append('Time spent = %.1f' % time_diff)
+        string.append('Current likelihood = %.2f' % current_like)
+        string.append('Current delta = %.2f' % (current_like - true_like))
+        string.append('Current step = %.2f' % (current_like - old_like))
         string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
         with open(self.log_file, 'a') as texfile:
             for s in string:
-#                print(s, '\n')
                 texfile.write(s + '\n')
     
     def optimize_like(self, theta0, nit):
@@ -94,9 +102,9 @@ class BEKK(object):
         # Nelder-Mead, BFGS, L-BFGS-B
         # Works, but not so good:
         # CG
-        self.theta_start = theta0
         self.xk_old = theta0
         self.it = 0
+        self.time_old = time.time()
         res = minimize(self.likelihood, theta0,
                        method = 'L-BFGS-B',
                        callback = self.callback,
@@ -179,7 +187,7 @@ def test(n = 2, T = 100):
     print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
     print('Likelihood for initial theta = %.2f' % bekk.likelihood(theta0_AB))
 
-    nit = 1e6
+    nit = 1e1
     result = bekk.optimize_like(theta0_AB, nit)
     A, B = convert_theta_to_ab(result.x, n)
     
@@ -190,5 +198,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 6, T = 2000)
+    test(n = 2, T = 200)
 #    cProfile.run('test(n = 2, T = 100)')
