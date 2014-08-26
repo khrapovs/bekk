@@ -84,7 +84,7 @@ class BEKK(object):
         string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
         with open(self.log_file, 'a') as texfile:
             for s in string:
-                print(s, '\n')
+#                print(s, '\n')
                 texfile.write(s + '\n')
     
     def optimize_like(self, theta0, nit):
@@ -100,7 +100,7 @@ class BEKK(object):
         res = minimize(self.likelihood, theta0,
                        method = 'L-BFGS-B',
                        callback = self.callback,
-                       options = {'disp': True, 'maxiter' : int(nit)})
+                       options = {'disp': False, 'maxiter' : int(nit)})
         return res
 
 def contribution(u, H):
@@ -174,17 +174,21 @@ def test(n = 2, T = 100):
     bekk.log_file = log_file
     bekk.simulate_BEKK(theta, n = n, T = T)
     
-    print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
     theta0_AB = theta_AB - .1
+
+    print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
     print('Likelihood for initial theta = %.2f' % bekk.likelihood(theta0_AB))
+
     nit = 1e6
     result = bekk.optimize_like(theta0_AB, nit)
-    print(result)
     A, B = convert_theta_to_ab(result.x, n)
+    
+    print(result)
     print(A, 2*'\n', B)
-
+    with open(log_file, 'a') as texfile:
+        texfile.write('\n' + str(result))
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 2, T = 500)
+    test(n = 6, T = 2000)
 #    cProfile.run('test(n = 2, T = 100)')
