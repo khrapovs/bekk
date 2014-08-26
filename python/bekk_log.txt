@@ -1,0 +1,1608 @@
+Max eigenvalue = 0.96
+Iteration = 1
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.02
+Initial likelihood = 460.16
+Current likelihood = 458.13
+Current - true likelihood = 1.20
+Current - previous likelihood = -2.03
+A = 
+[[ 0.01 -0.1 ]
+ [ 0.04  0.27]]
+B = 
+[[ 0.26  0.21]
+ [ 0.45  0.05]]
+
+Iteration = 2
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.02
+Initial likelihood = 460.16
+Current likelihood = 456.38
+Current - true likelihood = -0.55
+Current - previous likelihood = -1.75
+A = 
+[[ 0.05  0.02]
+ [ 0.01  0.19]]
+B = 
+[[ 0.26  0.21]
+ [ 0.45  0.05]]
+
+Iteration = 3
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.03
+Initial likelihood = 460.16
+Current likelihood = 456.19
+Current - true likelihood = -0.74
+Current - previous likelihood = -0.19
+A = 
+[[ 0.07  0.06]
+ [ 0.01  0.16]]
+B = 
+[[ 0.26  0.21]
+ [ 0.45  0.05]]
+
+Iteration = 4
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.03
+Initial likelihood = 460.16
+Current likelihood = 456.16
+Current - true likelihood = -0.77
+Current - previous likelihood = -0.03
+A = 
+[[ 0.08  0.07]
+ [ 0.01  0.14]]
+B = 
+[[ 0.26  0.22]
+ [ 0.45  0.05]]
+
+Iteration = 5
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.04
+Initial likelihood = 460.16
+Current likelihood = 456.15
+Current - true likelihood = -0.78
+Current - previous likelihood = -0.01
+A = 
+[[ 0.09  0.07]
+ [ 0.02  0.12]]
+B = 
+[[ 0.27  0.22]
+ [ 0.46  0.05]]
+
+Iteration = 6
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.05
+Initial likelihood = 460.16
+Current likelihood = 456.11
+Current - true likelihood = -0.82
+Current - previous likelihood = -0.04
+A = 
+[[ 0.13  0.04]
+ [ 0.04  0.08]]
+B = 
+[[ 0.3   0.25]
+ [ 0.47  0.06]]
+
+Iteration = 7
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.05
+Initial likelihood = 460.16
+Current likelihood = 456.05
+Current - true likelihood = -0.88
+Current - previous likelihood = -0.06
+A = 
+[[ 0.21  0.  ]
+ [ 0.07  0.03]]
+B = 
+[[ 0.37  0.29]
+ [ 0.5   0.08]]
+
+Iteration = 8
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.07
+Initial likelihood = 460.16
+Current likelihood = 456.01
+Current - true likelihood = -0.92
+Current - previous likelihood = -0.03
+A = 
+[[ 0.26 -0.02]
+ [ 0.09  0.02]]
+B = 
+[[ 0.41  0.32]
+ [ 0.51  0.09]]
+
+Iteration = 9
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.08
+Initial likelihood = 460.16
+Current likelihood = 455.97
+Current - true likelihood = -0.96
+Current - previous likelihood = -0.04
+A = 
+[[ 0.33 -0.03]
+ [ 0.13  0.03]]
+B = 
+[[ 0.48  0.36]
+ [ 0.54  0.1 ]]
+
+Iteration = 10
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.08
+Initial likelihood = 460.16
+Current likelihood = 455.86
+Current - true likelihood = -1.07
+Current - previous likelihood = -0.11
+A = 
+[[ 0.3  -0.02]
+ [ 0.11  0.09]]
+B = 
+[[ 0.45  0.33]
+ [ 0.54  0.09]]
+
+Iteration = 11
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.09
+Initial likelihood = 460.16
+Current likelihood = 455.82
+Current - true likelihood = -1.11
+Current - previous likelihood = -0.04
+A = 
+[[ 0.31  0.  ]
+ [ 0.1   0.15]]
+B = 
+[[ 0.46  0.33]
+ [ 0.55  0.08]]
+
+Iteration = 12
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.09
+Initial likelihood = 460.16
+Current likelihood = 455.81
+Current - true likelihood = -1.12
+Current - previous likelihood = -0.01
+A = 
+[[ 0.31  0.01]
+ [ 0.08  0.15]]
+B = 
+[[ 0.45  0.33]
+ [ 0.56  0.08]]
+
+Iteration = 13
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.10
+Initial likelihood = 460.16
+Current likelihood = 455.81
+Current - true likelihood = -1.12
+Current - previous likelihood = -0.00
+A = 
+[[ 0.3   0.01]
+ [ 0.08  0.15]]
+B = 
+[[ 0.45  0.33]
+ [ 0.57  0.07]]
+
+Iteration = 14
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.10
+Initial likelihood = 460.16
+Current likelihood = 455.79
+Current - true likelihood = -1.14
+Current - previous likelihood = -0.02
+A = 
+[[ 0.27  0.03]
+ [ 0.08  0.15]]
+B = 
+[[ 0.47  0.32]
+ [ 0.65  0.03]]
+
+Iteration = 15
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.11
+Initial likelihood = 460.16
+Current likelihood = 455.76
+Current - true likelihood = -1.17
+Current - previous likelihood = -0.02
+A = 
+[[ 0.26  0.04]
+ [ 0.07  0.15]]
+B = 
+[[ 0.48  0.29]
+ [ 0.76 -0.03]]
+
+Iteration = 16
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.11
+Initial likelihood = 460.16
+Current likelihood = 455.70
+Current - true likelihood = -1.23
+Current - previous likelihood = -0.06
+A = 
+[[ 0.23  0.05]
+ [ 0.05  0.16]]
+B = 
+[[ 0.57  0.15]
+ [ 1.26 -0.33]]
+
+Iteration = 17
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.12
+Initial likelihood = 460.16
+Current likelihood = 455.65
+Current - true likelihood = -1.28
+Current - previous likelihood = -0.05
+A = 
+[[ 0.24  0.02]
+ [ 0.06  0.16]]
+B = 
+[[ 0.61  0.13]
+ [ 1.32 -0.37]]
+
+Iteration = 18
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.12
+Initial likelihood = 460.16
+Current likelihood = 455.61
+Current - true likelihood = -1.32
+Current - previous likelihood = -0.04
+A = 
+[[ 0.26  0.  ]
+ [ 0.06  0.19]]
+B = 
+[[ 0.68  0.05]
+ [ 1.51 -0.51]]
+
+Iteration = 19
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.13
+Initial likelihood = 460.16
+Current likelihood = 455.59
+Current - true likelihood = -1.34
+Current - previous likelihood = -0.03
+A = 
+[[ 0.27  0.01]
+ [ 0.06  0.21]]
+B = 
+[[ 0.71  0.  ]
+ [ 1.54 -0.55]]
+
+Iteration = 20
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.13
+Initial likelihood = 460.16
+Current likelihood = 455.55
+Current - true likelihood = -1.38
+Current - previous likelihood = -0.04
+A = 
+[[ 0.29  0.01]
+ [ 0.06  0.22]]
+B = 
+[[ 0.74 -0.05]
+ [ 1.51 -0.57]]
+
+Iteration = 21
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.14
+Initial likelihood = 460.16
+Current likelihood = 455.45
+Current - true likelihood = -1.48
+Current - previous likelihood = -0.10
+A = 
+[[ 0.33  0.02]
+ [ 0.03  0.24]]
+B = 
+[[ 0.93 -0.32]
+ [ 1.6  -0.81]]
+
+Iteration = 22
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.15
+Initial likelihood = 460.16
+Current likelihood = 455.34
+Current - true likelihood = -1.59
+Current - previous likelihood = -0.11
+A = 
+[[ 0.32  0.06]
+ [ 0.    0.2 ]]
+B = 
+[[ 1.01 -0.46]
+ [ 1.38 -0.83]]
+
+Iteration = 23
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.15
+Initial likelihood = 460.16
+Current likelihood = 455.23
+Current - true likelihood = -1.70
+Current - previous likelihood = -0.10
+A = 
+[[ 0.25  0.07]
+ [-0.01  0.17]]
+B = 
+[[ 1.07 -0.54]
+ [ 1.56 -0.96]]
+
+Iteration = 24
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.16
+Initial likelihood = 460.16
+Current likelihood = 455.06
+Current - true likelihood = -1.87
+Current - previous likelihood = -0.17
+A = 
+[[ 0.23  0.06]
+ [-0.05  0.16]]
+B = 
+[[ 1.3  -0.84]
+ [ 1.72 -1.26]]
+
+Iteration = 25
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.17
+Initial likelihood = 460.16
+Current likelihood = 455.03
+Current - true likelihood = -1.90
+Current - previous likelihood = -0.03
+A = 
+[[ 0.21  0.06]
+ [-0.06  0.15]]
+B = 
+[[ 1.42 -1.  ]
+ [ 1.83 -1.41]]
+
+Iteration = 26
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.17
+Initial likelihood = 460.16
+Current likelihood = 454.91
+Current - true likelihood = -2.02
+Current - previous likelihood = -0.12
+A = 
+[[ 0.15  0.04]
+ [-0.08  0.11]]
+B = 
+[[ 1.77 -1.48]
+ [ 2.19 -1.84]]
+
+Iteration = 27
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.18
+Initial likelihood = 460.16
+Current likelihood = 454.88
+Current - true likelihood = -2.05
+Current - previous likelihood = -0.03
+A = 
+[[ 0.12  0.03]
+ [-0.08  0.07]]
+B = 
+[[ 1.91 -1.67]
+ [ 2.27 -1.99]]
+
+Iteration = 28
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.19
+Initial likelihood = 460.16
+Current likelihood = 454.85
+Current - true likelihood = -2.08
+Current - previous likelihood = -0.03
+A = 
+[[ 0.12  0.01]
+ [-0.07  0.04]]
+B = 
+[[ 2.02 -1.81]
+ [ 2.33 -2.09]]
+
+Iteration = 29
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.19
+Initial likelihood = 460.16
+Current likelihood = 454.79
+Current - true likelihood = -2.13
+Current - previous likelihood = -0.05
+A = 
+[[ 0.12 -0.03]
+ [-0.05 -0.01]]
+B = 
+[[ 2.23 -2.08]
+ [ 2.41 -2.25]]
+
+Iteration = 30
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.20
+Initial likelihood = 460.16
+Current likelihood = 454.74
+Current - true likelihood = -2.19
+Current - previous likelihood = -0.05
+A = 
+[[ 0.13 -0.09]
+ [-0.02 -0.08]]
+B = 
+[[ 2.51 -2.43]
+ [ 2.6  -2.5 ]]
+
+Iteration = 31
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.21
+Initial likelihood = 460.16
+Current likelihood = 454.72
+Current - true likelihood = -2.21
+Current - previous likelihood = -0.02
+A = 
+[[ 0.15 -0.13]
+ [-0.   -0.11]]
+B = 
+[[ 2.61 -2.54]
+ [ 2.63 -2.55]]
+
+Iteration = 32
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.22
+Initial likelihood = 460.16
+Current likelihood = 454.71
+Current - true likelihood = -2.22
+Current - previous likelihood = -0.00
+A = 
+[[ 0.16 -0.13]
+ [-0.   -0.11]]
+B = 
+[[ 2.57 -2.49]
+ [ 2.6  -2.51]]
+
+Iteration = 33
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.22
+Initial likelihood = 460.16
+Current likelihood = 454.71
+Current - true likelihood = -2.22
+Current - previous likelihood = -0.01
+A = 
+[[ 0.17 -0.14]
+ [ 0.01 -0.12]]
+B = 
+[[ 2.53 -2.42]
+ [ 2.56 -2.44]]
+
+Iteration = 34
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.23
+Initial likelihood = 460.16
+Current likelihood = 454.69
+Current - true likelihood = -2.24
+Current - previous likelihood = -0.02
+A = 
+[[ 0.22 -0.16]
+ [ 0.04 -0.15]]
+B = 
+[[ 2.3  -2.08]
+ [ 2.4  -2.14]]
+
+Iteration = 35
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.23
+Initial likelihood = 460.16
+Current likelihood = 454.67
+Current - true likelihood = -2.26
+Current - previous likelihood = -0.01
+A = 
+[[ 0.22 -0.17]
+ [ 0.04 -0.16]]
+B = 
+[[ 2.19 -1.93]
+ [ 2.34 -2.03]]
+
+Iteration = 36
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.24
+Initial likelihood = 460.16
+Current likelihood = 454.65
+Current - true likelihood = -2.28
+Current - previous likelihood = -0.02
+A = 
+[[ 0.21 -0.18]
+ [ 0.02 -0.18]]
+B = 
+[[ 2.   -1.67]
+ [ 2.27 -1.87]]
+
+Iteration = 37
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.25
+Initial likelihood = 460.16
+Current likelihood = 454.65
+Current - true likelihood = -2.28
+Current - previous likelihood = -0.00
+A = 
+[[ 0.21 -0.17]
+ [ 0.01 -0.17]]
+B = 
+[[ 1.99 -1.66]
+ [ 2.26 -1.86]]
+
+Iteration = 38
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.25
+Initial likelihood = 460.16
+Current likelihood = 454.65
+Current - true likelihood = -2.28
+Current - previous likelihood = -0.00
+A = 
+[[ 0.22 -0.17]
+ [ 0.01 -0.16]]
+B = 
+[[ 1.85 -1.49]
+ [ 2.17 -1.71]]
+
+Iteration = 39
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.26
+Initial likelihood = 460.16
+Current likelihood = 454.64
+Current - true likelihood = -2.29
+Current - previous likelihood = -0.00
+A = 
+[[ 0.22 -0.17]
+ [ 0.01 -0.16]]
+B = 
+[[ 1.87 -1.53]
+ [ 2.17 -1.73]]
+
+Iteration = 40
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.27
+Initial likelihood = 460.16
+Current likelihood = 454.64
+Current - true likelihood = -2.29
+Current - previous likelihood = -0.00
+A = 
+[[ 0.22 -0.18]
+ [ 0.01 -0.17]]
+B = 
+[[ 1.88 -1.54]
+ [ 2.17 -1.74]]
+
+Iteration = 41
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.27
+Initial likelihood = 460.16
+Current likelihood = 454.64
+Current - true likelihood = -2.29
+Current - previous likelihood = -0.00
+A = 
+[[ 0.22 -0.18]
+ [ 0.   -0.17]]
+B = 
+[[ 1.86 -1.53]
+ [ 2.16 -1.73]]
+
+Iteration = 42
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.28
+Initial likelihood = 460.16
+Current likelihood = 454.63
+Current - true likelihood = -2.30
+Current - previous likelihood = -0.01
+A = 
+[[ 0.22 -0.18]
+ [-0.   -0.17]]
+B = 
+[[ 1.79 -1.48]
+ [ 2.04 -1.63]]
+
+Iteration = 43
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.29
+Initial likelihood = 460.16
+Current likelihood = 454.62
+Current - true likelihood = -2.31
+Current - previous likelihood = -0.01
+A = 
+[[ 0.23 -0.18]
+ [-0.01 -0.18]]
+B = 
+[[ 1.61 -1.34]
+ [ 1.77 -1.4 ]]
+
+Iteration = 44
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.29
+Initial likelihood = 460.16
+Current likelihood = 454.62
+Current - true likelihood = -2.31
+Current - previous likelihood = -0.01
+A = 
+[[ 0.25 -0.19]
+ [ 0.   -0.19]]
+B = 
+[[ 1.55 -1.32]
+ [ 1.61 -1.28]]
+
+Iteration = 45
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.30
+Initial likelihood = 460.16
+Current likelihood = 454.62
+Current - true likelihood = -2.31
+Current - previous likelihood = -0.00
+A = 
+[[ 0.26 -0.19]
+ [ 0.01 -0.2 ]]
+B = 
+[[ 1.51 -1.27]
+ [ 1.57 -1.21]]
+
+Iteration = 46
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.31
+Initial likelihood = 460.16
+Current likelihood = 454.61
+Current - true likelihood = -2.32
+Current - previous likelihood = -0.00
+A = 
+[[ 0.28 -0.2 ]
+ [ 0.04 -0.22]]
+B = 
+[[ 1.57 -1.33]
+ [ 1.61 -1.24]]
+
+Iteration = 47
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.31
+Initial likelihood = 460.16
+Current likelihood = 454.61
+Current - true likelihood = -2.32
+Current - previous likelihood = -0.00
+A = 
+[[ 0.28 -0.2 ]
+ [ 0.03 -0.22]]
+B = 
+[[ 1.52 -1.29]
+ [ 1.55 -1.18]]
+
+Iteration = 48
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.32
+Initial likelihood = 460.16
+Current likelihood = 454.61
+Current - true likelihood = -2.32
+Current - previous likelihood = -0.00
+A = 
+[[ 0.29 -0.2 ]
+ [ 0.03 -0.21]]
+B = 
+[[ 1.5  -1.26]
+ [ 1.54 -1.15]]
+
+Iteration = 49
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.33
+Initial likelihood = 460.16
+Current likelihood = 454.61
+Current - true likelihood = -2.32
+Current - previous likelihood = -0.00
+A = 
+[[ 0.29 -0.2 ]
+ [ 0.03 -0.22]]
+B = 
+[[ 1.49 -1.25]
+ [ 1.54 -1.13]]
+
+Iteration = 50
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.33
+Initial likelihood = 460.16
+Current likelihood = 454.61
+Current - true likelihood = -2.32
+Current - previous likelihood = -0.00
+A = 
+[[ 0.29 -0.2 ]
+ [ 0.04 -0.22]]
+B = 
+[[ 1.49 -1.24]
+ [ 1.54 -1.12]]
+
+Iteration = 51
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.34
+Initial likelihood = 460.16
+Current likelihood = 454.60
+Current - true likelihood = -2.33
+Current - previous likelihood = -0.01
+A = 
+[[ 0.31 -0.2 ]
+ [ 0.05 -0.24]]
+B = 
+[[ 1.49 -1.18]
+ [ 1.52 -1.  ]]
+
+Iteration = 52
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.34
+Initial likelihood = 460.16
+Current likelihood = 454.59
+Current - true likelihood = -2.34
+Current - previous likelihood = -0.01
+A = 
+[[ 0.31 -0.19]
+ [ 0.07 -0.26]]
+B = 
+[[ 1.53 -1.15]
+ [ 1.54 -0.91]]
+
+Iteration = 53
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.35
+Initial likelihood = 460.16
+Current likelihood = 454.56
+Current - true likelihood = -2.37
+Current - previous likelihood = -0.03
+A = 
+[[ 0.27 -0.15]
+ [ 0.06 -0.24]]
+B = 
+[[ 1.63 -1.18]
+ [ 1.68 -0.97]]
+
+Iteration = 54
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.36
+Initial likelihood = 460.16
+Current likelihood = 454.53
+Current - true likelihood = -2.40
+Current - previous likelihood = -0.04
+A = 
+[[ 0.24 -0.12]
+ [ 0.05 -0.24]]
+B = 
+[[ 1.75 -1.21]
+ [ 1.82 -1.01]]
+
+Iteration = 55
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.37
+Initial likelihood = 460.16
+Current likelihood = 454.49
+Current - true likelihood = -2.44
+Current - previous likelihood = -0.04
+A = 
+[[ 0.19 -0.09]
+ [ 0.04 -0.21]]
+B = 
+[[ 1.88 -1.26]
+ [ 2.   -1.12]]
+
+Iteration = 56
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.37
+Initial likelihood = 460.16
+Current likelihood = 454.41
+Current - true likelihood = -2.51
+Current - previous likelihood = -0.07
+A = 
+[[ 0.16 -0.07]
+ [ 0.04 -0.2 ]]
+B = 
+[[ 1.98 -1.26]
+ [ 2.15 -1.11]]
+
+Iteration = 57
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.38
+Initial likelihood = 460.16
+Current likelihood = 454.38
+Current - true likelihood = -2.55
+Current - previous likelihood = -0.04
+A = 
+[[ 0.17 -0.07]
+ [ 0.04 -0.19]]
+B = 
+[[ 1.93 -1.21]
+ [ 2.12 -1.05]]
+
+Iteration = 58
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.39
+Initial likelihood = 460.16
+Current likelihood = 454.37
+Current - true likelihood = -2.56
+Current - previous likelihood = -0.01
+A = 
+[[ 0.16 -0.07]
+ [ 0.04 -0.19]]
+B = 
+[[ 1.93 -1.15]
+ [ 2.16 -0.99]]
+
+Iteration = 59
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.39
+Initial likelihood = 460.16
+Current likelihood = 454.35
+Current - true likelihood = -2.57
+Current - previous likelihood = -0.01
+A = 
+[[ 0.14 -0.04]
+ [ 0.03 -0.17]]
+B = 
+[[ 2.   -1.1 ]
+ [ 2.35 -1.  ]]
+
+Iteration = 60
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.40
+Initial likelihood = 460.16
+Current likelihood = 454.33
+Current - true likelihood = -2.60
+Current - previous likelihood = -0.02
+A = 
+[[ 0.11 -0.02]
+ [ 0.03 -0.15]]
+B = 
+[[ 2.05 -1.05]
+ [ 2.55 -1.01]]
+
+Iteration = 61
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.41
+Initial likelihood = 460.16
+Current likelihood = 454.29
+Current - true likelihood = -2.64
+Current - previous likelihood = -0.05
+A = 
+[[ 0.11 -0.01]
+ [ 0.04 -0.14]]
+B = 
+[[ 2.03 -0.95]
+ [ 2.69 -0.96]]
+
+Iteration = 62
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.42
+Initial likelihood = 460.16
+Current likelihood = 454.24
+Current - true likelihood = -2.69
+Current - previous likelihood = -0.05
+A = 
+[[ 0.12 -0.  ]
+ [ 0.05 -0.13]]
+B = 
+[[ 1.95 -0.84]
+ [ 2.79 -0.89]]
+
+Iteration = 63
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.43
+Initial likelihood = 460.16
+Current likelihood = 454.23
+Current - true likelihood = -2.70
+Current - previous likelihood = -0.01
+A = 
+[[ 0.12  0.  ]
+ [ 0.06 -0.12]]
+B = 
+[[ 1.95 -0.8 ]
+ [ 2.86 -0.86]]
+
+Iteration = 64
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.44
+Initial likelihood = 460.16
+Current likelihood = 454.20
+Current - true likelihood = -2.73
+Current - previous likelihood = -0.03
+A = 
+[[ 0.11  0.02]
+ [ 0.06 -0.1 ]]
+B = 
+[[ 1.94 -0.75]
+ [ 2.99 -0.83]]
+
+Iteration = 65
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.44
+Initial likelihood = 460.16
+Current likelihood = 454.16
+Current - true likelihood = -2.77
+Current - previous likelihood = -0.04
+A = 
+[[ 0.1   0.03]
+ [ 0.06 -0.08]]
+B = 
+[[ 1.93 -0.68]
+ [ 3.11 -0.76]]
+
+Iteration = 66
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.45
+Initial likelihood = 460.16
+Current likelihood = 454.07
+Current - true likelihood = -2.86
+Current - previous likelihood = -0.09
+A = 
+[[ 0.07  0.05]
+ [ 0.07 -0.03]]
+B = 
+[[ 1.83 -0.48]
+ [ 3.3  -0.5 ]]
+
+Iteration = 67
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.46
+Initial likelihood = 460.16
+Current likelihood = 454.02
+Current - true likelihood = -2.91
+Current - previous likelihood = -0.05
+A = 
+[[ 0.06  0.05]
+ [ 0.06 -0.01]]
+B = 
+[[ 1.83 -0.46]
+ [ 3.34 -0.46]]
+
+Iteration = 68
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.47
+Initial likelihood = 460.16
+Current likelihood = 453.98
+Current - true likelihood = -2.95
+Current - previous likelihood = -0.04
+A = 
+[[ 0.05  0.06]
+ [ 0.06  0.01]]
+B = 
+[[ 1.84 -0.45]
+ [ 3.42 -0.43]]
+
+Iteration = 69
+Time spent (minutes) = 0.03
+Since start (minutes) = 0.49
+Initial likelihood = 460.16
+Current likelihood = 453.95
+Current - true likelihood = -2.98
+Current - previous likelihood = -0.03
+A = 
+[[ 0.05  0.06]
+ [ 0.06  0.01]]
+B = 
+[[ 1.84 -0.45]
+ [ 3.43 -0.43]]
+
+Iteration = 70
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.50
+Initial likelihood = 460.16
+Current likelihood = 453.92
+Current - true likelihood = -3.01
+Current - previous likelihood = -0.03
+A = 
+[[ 0.04  0.06]
+ [ 0.06  0.02]]
+B = 
+[[ 1.8  -0.42]
+ [ 3.43 -0.35]]
+
+Iteration = 71
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.51
+Initial likelihood = 460.16
+Current likelihood = 453.91
+Current - true likelihood = -3.02
+Current - previous likelihood = -0.01
+A = 
+[[ 0.05  0.06]
+ [ 0.06  0.02]]
+B = 
+[[ 1.77 -0.4 ]
+ [ 3.4  -0.32]]
+
+Iteration = 72
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.51
+Initial likelihood = 460.16
+Current likelihood = 453.91
+Current - true likelihood = -3.02
+Current - previous likelihood = -0.00
+A = 
+[[ 0.05  0.06]
+ [ 0.06  0.02]]
+B = 
+[[ 1.78 -0.4 ]
+ [ 3.4  -0.32]]
+
+Iteration = 73
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.52
+Initial likelihood = 460.16
+Current likelihood = 453.90
+Current - true likelihood = -3.03
+Current - previous likelihood = -0.01
+A = 
+[[ 0.05  0.06]
+ [ 0.06  0.02]]
+B = 
+[[ 1.77 -0.4 ]
+ [ 3.4  -0.31]]
+
+Iteration = 74
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.52
+Initial likelihood = 460.16
+Current likelihood = 453.87
+Current - true likelihood = -3.06
+Current - previous likelihood = -0.03
+A = 
+[[ 0.05  0.06]
+ [ 0.07  0.  ]]
+B = 
+[[ 1.71 -0.37]
+ [ 3.39 -0.27]]
+
+Iteration = 75
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.53
+Initial likelihood = 460.16
+Current likelihood = 453.84
+Current - true likelihood = -3.09
+Current - previous likelihood = -0.04
+A = 
+[[ 0.05  0.06]
+ [ 0.07 -0.01]]
+B = 
+[[ 1.6  -0.31]
+ [ 3.35 -0.17]]
+
+Iteration = 76
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.54
+Initial likelihood = 460.16
+Current likelihood = 453.82
+Current - true likelihood = -3.11
+Current - previous likelihood = -0.01
+A = 
+[[ 0.05  0.05]
+ [ 0.08 -0.03]]
+B = 
+[[ 1.53 -0.29]
+ [ 3.31 -0.12]]
+
+Iteration = 77
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.55
+Initial likelihood = 460.16
+Current likelihood = 453.81
+Current - true likelihood = -3.12
+Current - previous likelihood = -0.01
+A = 
+[[ 0.05  0.05]
+ [ 0.08 -0.04]]
+B = 
+[[ 1.52 -0.3 ]
+ [ 3.29 -0.13]]
+
+Iteration = 78
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.55
+Initial likelihood = 460.16
+Current likelihood = 453.80
+Current - true likelihood = -3.13
+Current - previous likelihood = -0.02
+A = 
+[[ 0.06  0.05]
+ [ 0.08 -0.05]]
+B = 
+[[ 1.46 -0.27]
+ [ 3.27 -0.06]]
+
+Iteration = 79
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.56
+Initial likelihood = 460.16
+Current likelihood = 453.79
+Current - true likelihood = -3.14
+Current - previous likelihood = -0.01
+A = 
+[[ 0.06  0.04]
+ [ 0.09 -0.06]]
+B = 
+[[ 1.41 -0.26]
+ [ 3.26 -0.02]]
+
+Iteration = 80
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.58
+Initial likelihood = 460.16
+Current likelihood = 453.77
+Current - true likelihood = -3.16
+Current - previous likelihood = -0.02
+A = 
+[[ 0.07  0.04]
+ [ 0.09 -0.08]]
+B = 
+[[ 1.35 -0.24]
+ [ 3.24  0.02]]
+
+Iteration = 81
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.59
+Initial likelihood = 460.16
+Current likelihood = 453.76
+Current - true likelihood = -3.16
+Current - previous likelihood = -0.00
+A = 
+[[ 0.07  0.04]
+ [ 0.1  -0.09]]
+B = 
+[[ 1.33 -0.24]
+ [ 3.24  0.03]]
+
+Iteration = 82
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.60
+Initial likelihood = 460.16
+Current likelihood = 453.75
+Current - true likelihood = -3.18
+Current - previous likelihood = -0.02
+A = 
+[[ 0.08  0.03]
+ [ 0.1  -0.1 ]]
+B = 
+[[ 1.28 -0.23]
+ [ 3.23  0.07]]
+
+Iteration = 83
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.60
+Initial likelihood = 460.16
+Current likelihood = 453.72
+Current - true likelihood = -3.21
+Current - previous likelihood = -0.03
+A = 
+[[ 0.08  0.02]
+ [ 0.11 -0.11]]
+B = 
+[[ 1.22 -0.21]
+ [ 3.25  0.13]]
+
+Iteration = 84
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.61
+Initial likelihood = 460.16
+Current likelihood = 453.68
+Current - true likelihood = -3.25
+Current - previous likelihood = -0.04
+A = 
+[[ 0.09  0.02]
+ [ 0.12 -0.12]]
+B = 
+[[ 1.17 -0.2 ]
+ [ 3.32  0.18]]
+
+Iteration = 85
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.62
+Initial likelihood = 460.16
+Current likelihood = 453.67
+Current - true likelihood = -3.26
+Current - previous likelihood = -0.02
+A = 
+[[ 0.09  0.02]
+ [ 0.12 -0.12]]
+B = 
+[[ 1.16 -0.2 ]
+ [ 3.33  0.2 ]]
+
+Iteration = 86
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.63
+Initial likelihood = 460.16
+Current likelihood = 453.62
+Current - true likelihood = -3.31
+Current - previous likelihood = -0.05
+A = 
+[[ 0.08  0.02]
+ [ 0.12 -0.12]]
+B = 
+[[ 1.15 -0.19]
+ [ 3.37  0.22]]
+
+Iteration = 87
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.63
+Initial likelihood = 460.16
+Current likelihood = 453.60
+Current - true likelihood = -3.33
+Current - previous likelihood = -0.02
+A = 
+[[ 0.08  0.01]
+ [ 0.12 -0.12]]
+B = 
+[[ 1.13 -0.18]
+ [ 3.4   0.25]]
+
+Iteration = 88
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.64
+Initial likelihood = 460.16
+Current likelihood = 453.59
+Current - true likelihood = -3.34
+Current - previous likelihood = -0.01
+A = 
+[[ 0.08  0.02]
+ [ 0.12 -0.12]]
+B = 
+[[ 1.13 -0.19]
+ [ 3.42  0.24]]
+
+Iteration = 89
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.66
+Initial likelihood = 460.16
+Current likelihood = 453.37
+Current - true likelihood = -3.56
+Current - previous likelihood = -0.22
+A = 
+[[ 0.07  0.01]
+ [ 0.14 -0.12]]
+B = 
+[[ 1.06 -0.17]
+ [ 3.61  0.33]]
+
+Iteration = 90
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.67
+Initial likelihood = 460.16
+Current likelihood = 453.36
+Current - true likelihood = -3.57
+Current - previous likelihood = -0.00
+A = 
+[[ 0.07  0.01]
+ [ 0.14 -0.12]]
+B = 
+[[ 1.06 -0.17]
+ [ 3.62  0.34]]
+
+Iteration = 91
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.68
+Initial likelihood = 460.16
+Current likelihood = 453.28
+Current - true likelihood = -3.65
+Current - previous likelihood = -0.08
+A = 
+[[ 0.07  0.01]
+ [ 0.14 -0.12]]
+B = 
+[[ 1.03 -0.16]
+ [ 3.67  0.37]]
+
+Iteration = 92
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.69
+Initial likelihood = 460.16
+Current likelihood = 453.13
+Current - true likelihood = -3.80
+Current - previous likelihood = -0.15
+A = 
+[[ 0.07  0.01]
+ [ 0.15 -0.13]]
+B = 
+[[ 0.98 -0.15]
+ [ 3.76  0.41]]
+
+Iteration = 93
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.70
+Initial likelihood = 460.16
+Current likelihood = 453.06
+Current - true likelihood = -3.87
+Current - previous likelihood = -0.07
+A = 
+[[ 0.07  0.01]
+ [ 0.15 -0.13]]
+B = 
+[[ 0.98 -0.15]
+ [ 3.75  0.41]]
+
+Iteration = 94
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.72
+Initial likelihood = 460.16
+Current likelihood = 453.00
+Current - true likelihood = -3.93
+Current - previous likelihood = -0.06
+A = 
+[[ 0.06  0.01]
+ [ 0.15 -0.13]]
+B = 
+[[ 0.98 -0.15]
+ [ 3.77  0.41]]
+
+Iteration = 95
+Time spent (minutes) = 0.03
+Since start (minutes) = 0.75
+Initial likelihood = 460.16
+Current likelihood = 452.84
+Current - true likelihood = -4.09
+Current - previous likelihood = -0.16
+A = 
+[[ 0.06  0.  ]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.97 -0.15]
+ [ 3.83  0.43]]
+
+Iteration = 96
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.77
+Initial likelihood = 460.16
+Current likelihood = 452.03
+Current - true likelihood = -4.90
+Current - previous likelihood = -0.80
+A = 
+[[ 0.05 -0.  ]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.93 -0.14]
+ [ 3.99  0.48]]
+
+Iteration = 97
+Time spent (minutes) = 0.05
+Since start (minutes) = 0.83
+Initial likelihood = 460.16
+Current likelihood = 452.00
+Current - true likelihood = -4.93
+Current - previous likelihood = -0.03
+A = 
+[[ 0.04 -0.  ]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.92 -0.14]
+ [ 4.01  0.49]]
+
+Iteration = 98
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.83
+Initial likelihood = 460.16
+Current likelihood = 451.69
+Current - true likelihood = -5.24
+Current - previous likelihood = -0.31
+A = 
+[[ 0.04 -0.01]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.93 -0.14]
+ [ 4.03  0.49]]
+
+Iteration = 99
+Time spent (minutes) = 0.05
+Since start (minutes) = 0.88
+Initial likelihood = 460.16
+Current likelihood = 451.56
+Current - true likelihood = -5.37
+Current - previous likelihood = -0.12
+A = 
+[[ 0.04 -0.01]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.93 -0.14]
+ [ 4.04  0.49]]
+
+Iteration = 100
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.89
+Initial likelihood = 460.16
+Current likelihood = 451.47
+Current - true likelihood = -5.46
+Current - previous likelihood = -0.09
+A = 
+[[ 0.04 -0.01]
+ [ 0.17 -0.11]]
+B = 
+[[ 0.94 -0.14]
+ [ 4.04  0.49]]
+
+Iteration = 101
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.90
+Initial likelihood = 460.16
+Current likelihood = 451.39
+Current - true likelihood = -5.54
+Current - previous likelihood = -0.08
+A = 
+[[ 0.04 -0.01]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.94 -0.14]
+ [ 4.01  0.49]]
+
+Iteration = 102
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.92
+Initial likelihood = 460.16
+Current likelihood = 451.28
+Current - true likelihood = -5.65
+Current - previous likelihood = -0.11
+A = 
+[[ 0.04 -0.01]
+ [ 0.17 -0.12]]
+B = 
+[[ 0.94 -0.14]
+ [ 3.98  0.49]]
+
+Iteration = 103
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.93
+Initial likelihood = 460.16
+Current likelihood = 451.15
+Current - true likelihood = -5.78
+Current - previous likelihood = -0.14
+A = 
+[[ 0.06 -0.02]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.94 -0.15]
+ [ 3.86  0.48]]
+
+Iteration = 104
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.94
+Initial likelihood = 460.16
+Current likelihood = 451.12
+Current - true likelihood = -5.81
+Current - previous likelihood = -0.02
+A = 
+[[ 0.06 -0.02]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.94 -0.15]
+ [ 3.84  0.47]]
+
+Iteration = 105
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.95
+Initial likelihood = 460.16
+Current likelihood = 451.08
+Current - true likelihood = -5.85
+Current - previous likelihood = -0.05
+A = 
+[[ 0.06 -0.02]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.94 -0.15]
+ [ 3.82  0.47]]
+
+Iteration = 106
+Time spent (minutes) = 0.02
+Since start (minutes) = 0.97
+Initial likelihood = 460.16
+Current likelihood = 451.00
+Current - true likelihood = -5.93
+Current - previous likelihood = -0.08
+A = 
+[[ 0.06 -0.02]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.77  0.47]]
+
+Iteration = 107
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.98
+Initial likelihood = 460.16
+Current likelihood = 450.98
+Current - true likelihood = -5.95
+Current - previous likelihood = -0.02
+A = 
+[[ 0.06 -0.02]
+ [ 0.16 -0.13]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.76  0.46]]
+
+Iteration = 108
+Time spent (minutes) = 0.01
+Since start (minutes) = 0.99
+Initial likelihood = 460.16
+Current likelihood = 450.87
+Current - true likelihood = -6.06
+Current - previous likelihood = -0.11
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.74  0.46]]
+
+Iteration = 109
+Time spent (minutes) = 0.02
+Since start (minutes) = 1.01
+Initial likelihood = 460.16
+Current likelihood = 450.83
+Current - true likelihood = -6.09
+Current - previous likelihood = -0.04
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.73  0.46]]
+
+Iteration = 110
+Time spent (minutes) = 0.01
+Since start (minutes) = 1.02
+Initial likelihood = 460.16
+Current likelihood = 450.75
+Current - true likelihood = -6.18
+Current - previous likelihood = -0.08
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.72  0.46]]
+
+Iteration = 111
+Time spent (minutes) = 0.02
+Since start (minutes) = 1.04
+Initial likelihood = 460.16
+Current likelihood = 450.65
+Current - true likelihood = -6.28
+Current - previous likelihood = -0.10
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.72  0.46]]
+
+Iteration = 112
+Time spent (minutes) = 0.05
+Since start (minutes) = 1.09
+Initial likelihood = 460.16
+Current likelihood = 450.65
+Current - true likelihood = -6.28
+Current - previous likelihood = -0.00
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.72  0.46]]
+
+Iteration = 113
+Time spent (minutes) = 0.07
+Since start (minutes) = 1.16
+Initial likelihood = 460.16
+Current likelihood = 450.65
+Current - true likelihood = -6.28
+Current - previous likelihood = -0.00
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.72  0.46]]
+
+Iteration = 114
+Time spent (minutes) = 0.14
+Since start (minutes) = 1.30
+Initial likelihood = 460.16
+Current likelihood = 449.12
+Current - true likelihood = -7.81
+Current - previous likelihood = -1.54
+A = 
+[[ 0.07 -0.02]
+ [ 0.16 -0.14]]
+B = 
+[[ 0.95 -0.15]
+ [ 3.72  0.46]]
+
+ success: False
+    nfev: 3210
+ message: b'ABNORMAL_TERMINATION_IN_LNSRCH'
+     jac: array([ -131745.73,  -181664.24,    -6078.19,    27116.59,   119059.17,
+        1227170.06,   -52764.34,   -44318.4 ])
+     nit: 114
+     fun: 10000000402.135893
+  status: 2
+       x: array([ 0.07, -0.02,  0.16, -0.14,  0.95, -0.15,  3.72,  0.46])
+
+Total time (minutes) = 1.35

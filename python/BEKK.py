@@ -193,8 +193,11 @@ def test(n = 2, T = 100):
     bekk.log_file = log_file
     bekk.simulate_BEKK(theta, n = n, T = T)
     
-    theta0_AB = theta_AB - .1
-
+    #theta0_AB = theta_AB - .1
+    # Randomize initial theta
+    theta0_AB = np.random.rand(2*n**2)/10
+    print(bekk.likelihood(theta0_AB))
+    
     nit = 1e6
     time_old = time.time()
     result = bekk.optimize_like(theta0_AB, nit)
@@ -206,5 +209,5 @@ def test(n = 2, T = 100):
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
 if __name__ == '__main__':
-    test(n = 2, T = 100)
+    test(n = 6, T = 2000)
 #    cProfile.run('test(n = 2, T = 100)')
