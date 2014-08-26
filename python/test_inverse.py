@@ -10,6 +10,7 @@ import scipy.linalg as scl
 import scipy.sparse as sp
 import scipy.sparse.linalg as spl
 from IPython import get_ipython
+import numba as nb
 
 np.set_printoptions(precision = 2, suppress = True)
 ipython = get_ipython()
@@ -21,18 +22,21 @@ for n in range(N):
     x = np.random.normal(size = (K, K))
     A.append(x.dot(x.T))
 
+#@nb.autojit
 def loop_invert(A):
     B = []
     for n in range(N):
         B.append(np.linalg.inv(A[n]))
     return
 
+#@nb.autojit
 def loop_invert2(A):
     B = []
     for n in range(N):
         B.append(scl.inv(A[n]))
     return
 
+@nb.autojit
 def sparse_invert(A):
     C = []
     for n in range(N):

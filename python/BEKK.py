@@ -58,9 +58,12 @@ class BEKK(object):
             H[t] += A.dot(uu - H[0]).dot(A.T)
             H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
         
-        f = 0
+        sumf = 0
         for t in range(self.T):
-            f += contribution(self.u[t], H[t])
+            f, bad = contribution(self.u[t], H[t])
+            sumf += f
+            if bad:
+                break
         
         if np.isinf(f):
             return 1e10
@@ -99,10 +102,11 @@ def contribution(u, H):
     Hdet = np.linalg.det(H)
     bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-5 or np.any(Heig<0)
     if bad:
-        return 1e10
+        f = 1e10
     else:
         f = np.log(Hdet) + u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
-        return float(f/2)
+        f = float(f/2)
+    return f, bad
     
 def estimate_H0(u):
     T = u.shape[0]
@@ -170,5 +174,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 6, T = 100)
-#    cProfile.run('test(2)')
+#    test(n = 2, T = 100)
+    cProfile.run('test(n = 6, T = 500)')
