@@ -84,13 +84,15 @@ class BEKK(object):
         old_like = self.likelihood(self.xk_old)
         
         time_new = time.time()
-        time_diff = time_new - self.time_old
+        time_diff = (time_new - self.time_old) / 60
+        since_start = (time_new - self.time_start) / 60
 
         self.xk_old = xk.copy()
         self.time_old = time_new
         
         string = ['\nIteration = ' + str(self.it)]
-        string.append('Time spent (minutes) = %.2f' % (time_diff/60))
+        string.append('Time spent (minutes) = %.2f' % time_diff)
+        string.append('Since start (minutes) = %.2f' % since_start)
         string.append('Initial likelihood = %.2f' % start_like)
         string.append('Current likelihood = %.2f' % current_like)
         string.append('Current - true likelihood = %.2f' \
@@ -106,12 +108,13 @@ class BEKK(object):
         #ones = np.ones(len(theta0))
         #bounds = list(zip(-5*ones, 5*ones))
         # So far works:
-        # Nelder-Mead, BFGS, L-BFGS-B
+        # Nelder-Mead, BFGS, L-BFGS-B, TNC
         # Works, but not so good:
-        # CG
+        # CG, Powell
         self.theta_start = theta0
         self.xk_old = theta0
         self.it = 0
+        self.time_start = time.time()
         self.time_old = time.time()
         res = minimize(self.likelihood, theta0,
                        method = 'L-BFGS-B',
