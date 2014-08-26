@@ -65,21 +65,27 @@ class BEKK(object):
             if bad:
                 break
         
-        if np.isinf(f):
+        if np.isinf(sumf):
             return 1e10
         else:
-            return f
+            return sumf
     
     def callback(self, xk):
+        self.it += 1
         n = (len(xk) / 2) ** .5
         A, B = convert_theta_to_ab(xk, n)
-        print('A = \n', A, '\nB = \n', B, '\n')
         delta = self.likelihood(xk) - self.likelihood(self.theta0)
         step = self.likelihood(xk) - self.likelihood(self.xk_old)
         self.xk_old = xk
-        print('Current likelihood = %.2f' % self.likelihood(xk))
-        print('Current delta = %.2f' % delta)
-        print('Current step = %.2f' % step)
+        string = ['\nIteration = ' + str(self.it)]
+        string.append('Current likelihood = %.2f' % self.likelihood(xk))
+        string.append('Current delta = %.2f' % delta)
+        string.append('Current step = %.2f' % step)
+        string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
+        with open(self.log_file, 'a') as texfile:
+            for s in string:
+                print(s, '\n')
+                texfile.write(s + '\n')
     
     def optimize_like(self, theta0, nit):
         #ones = np.ones(len(theta0))
@@ -90,8 +96,9 @@ class BEKK(object):
         # CG
         self.theta_start = theta0
         self.xk_old = theta0
+        self.it = 0
         res = minimize(self.likelihood, theta0,
-                       method = 'Powell',
+                       method = 'L-BFGS-B',
                        callback = self.callback,
                        options = {'disp': True, 'maxiter' : int(nit)})
         return res
@@ -151,6 +158,10 @@ def plot_data(u, H):
     plt.plot()
 
 def test(n = 2, T = 100):
+    log_file = 'bekk_log.txt'
+    with open(log_file, 'w') as texfile:
+        texfile.write('')
+        
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
@@ -160,6 +171,7 @@ def test(n = 2, T = 100):
     theta_AB = theta[:2*n**2]
     
     bekk = BEKK()
+    bekk.log_file = log_file
     bekk.simulate_BEKK(theta, n = n, T = T)
     
     print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
@@ -174,5 +186,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-#    test(n = 2, T = 100)
-    cProfile.run('test(n = 6, T = 500)')
+    test(n = 2, T = 500)
+#    cProfile.run('test(n = 2, T = 100)')
