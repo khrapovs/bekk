@@ -188,15 +188,18 @@ def test(n = 2, T = 100):
     print('Likelihood for initial theta = %.2f' % bekk.likelihood(theta0_AB))
 
     nit = 1e6
+    time_old = time.time()
     result = bekk.optimize_like(theta0_AB, nit)
+    time_delta = (time.time() - time_old) / 60
     A, B = convert_theta_to_ab(result.x, n)
     
     print(result)
     print(A, 2*'\n', B)
     with open(log_file, 'a') as texfile:
-        texfile.write('\n' + str(result))
+        texfile.write('\n' + str(result) + 2*'\n')
+        texfile.write('Total time (minutes) = %.2f' % time_delta)
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 6, T = 2000)
+    test(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
