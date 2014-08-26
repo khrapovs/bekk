@@ -6,6 +6,8 @@ import cProfile
 import numba as nb
 import time
 
+np.set_printoptions(precision = 2, suppress = True)
+
 # BEKK model
 # u(t)|H(t) ~ N(0,H(t))
 # u(t) = e(t)H(t)^(1/2), e(t) ~ N(0,I)
@@ -29,7 +31,8 @@ class BEKK(object):
         mean, cov = np.zeros(n), np.eye(n)
         
         constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-        print('Max eigenvalue = ', constr)
+        with open(self.log_file, 'a') as texfile:
+            texfile.write('Max eigenvalue = %.2f' % constr)
         
         e = np.random.multivariate_normal(mean, cov, T)
         H = np.empty((T, n, n))
@@ -184,22 +187,16 @@ def test(n = 2, T = 100):
     
     theta0_AB = theta_AB - .1
 
-    print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
-    print('Likelihood for initial theta = %.2f' % bekk.likelihood(theta0_AB))
-
     nit = 1e6
     time_old = time.time()
     result = bekk.optimize_like(theta0_AB, nit)
     time_delta = (time.time() - time_old) / 60
     A, B = convert_theta_to_ab(result.x, n)
     
-    print(result)
-    print(A, 2*'\n', B)
     with open(log_file, 'a') as texfile:
         texfile.write('\n' + str(result) + 2*'\n')
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
 if __name__ == '__main__':
-    np.set_printoptions(precision = 2, suppress = True)
     test(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
