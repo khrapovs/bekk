@@ -86,7 +86,7 @@ class BEKK(object):
         self.time_old = time_new
         
         string = ['\nIteration = ' + str(self.it)]
-        string.append('Time spent = %.1f' % time_diff)
+        string.append('Time spent (minutes) = %.2f' % (time_diff/60))
         string.append('Current likelihood = %.2f' % current_like)
         string.append('Current delta = %.2f' % (current_like - true_like))
         string.append('Current step = %.2f' % (current_like - old_like))
@@ -187,7 +187,7 @@ def test(n = 2, T = 100):
     print('Likelihood for true theta = %.2f' % bekk.likelihood(theta_AB))
     print('Likelihood for initial theta = %.2f' % bekk.likelihood(theta0_AB))
 
-    nit = 1e1
+    nit = 1e6
     result = bekk.optimize_like(theta0_AB, nit)
     A, B = convert_theta_to_ab(result.x, n)
     
@@ -198,5 +198,5 @@ def test(n = 2, T = 100):
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2, suppress = True)
-    test(n = 2, T = 200)
+    test(n = 6, T = 2000)
 #    cProfile.run('test(n = 2, T = 100)')
