@@ -79,8 +79,8 @@ class BEKK(object):
         print('Current step = %.2f' % step)
     
     def optimize_like(self, theta0, nit):
-    #    ones = np.ones(len(theta0))
-    #    bounds = list(zip(-5*ones, 5*ones))
+        #ones = np.ones(len(theta0))
+        #bounds = list(zip(-5*ones, 5*ones))
         # So far works:
         # Nelder-Mead, BFGS, L-BFGS-B
         # Works, but not so good:
@@ -95,16 +95,14 @@ class BEKK(object):
 
 def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
-#    Heig = np.linalg.eigvals(H)
-#    bad = np.any(np.isinf(H)) or Heig.max() > 1e20 or Heig.min() < 1e-10
+    Heig = np.linalg.eigvals(H)
     Hdet = np.linalg.det(H)
-    bad = np.any(np.isinf(H)) or Hdet > 1e20 or Hdet < 1e-10
+    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-5 or np.any(Heig<0)
     if bad:
         return 1e10
     else:
-        # To be absolutely correct, it must be multiplied by .5
         f = np.log(Hdet) + u.dot(np.linalg.inv(H)).dot(np.atleast_2d(u).T)
-        return float(f)
+        return float(f/2)
     
 def estimate_H0(u):
     T = u.shape[0]
