@@ -78,6 +78,7 @@ class BEKK(object):
         self.it += 1
         A, B = convert_theta_to_ab(xk, self.n)
         
+        start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
         true_like = self.likelihood(self.theta0)
         old_like = self.likelihood(self.xk_old)
@@ -90,9 +91,12 @@ class BEKK(object):
         
         string = ['\nIteration = ' + str(self.it)]
         string.append('Time spent (minutes) = %.2f' % (time_diff/60))
+        string.append('Initial likelihood = %.2f' % start_like)
         string.append('Current likelihood = %.2f' % current_like)
-        string.append('Current delta = %.2f' % (current_like - true_like))
-        string.append('Current step = %.2f' % (current_like - old_like))
+        string.append('Current - true likelihood = %.2f' \
+            % (current_like - true_like))
+        string.append('Current - previous likelihood = %.2f' \
+            % (current_like - old_like))
         string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
         with open(self.log_file, 'a') as texfile:
             for s in string:
@@ -105,6 +109,7 @@ class BEKK(object):
         # Nelder-Mead, BFGS, L-BFGS-B
         # Works, but not so good:
         # CG
+        self.theta_start = theta0
         self.xk_old = theta0
         self.it = 0
         self.time_old = time.time()
