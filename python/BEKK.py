@@ -16,40 +16,11 @@ np.set_printoptions(precision = 2, suppress = True)
 # H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
 
 class BEKK(object):
-    def __init__(self):
-        self.H = None
-        self.u = None
-
-    def simulate_BEKK(self, theta0, n = 2, T = 1000):
-        self.n = n
-        self.T = T
-        self.theta0 = theta0
-        
-        A, B, C = convert_theta_to_abc(theta0, n)
-        self.A0, self.B0, self.C0 = A, B, C
-        
-        mean, cov = np.zeros(n), np.eye(n)
-        
-        constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-        with open(self.log_file, 'a') as texfile:
-            texfile.write('Max eigenvalue = %.2f' % constr)
-        
-        e = np.random.multivariate_normal(mean, cov, T)
-        H = np.empty((T, n, n))
-        u = np.zeros((T, n))
-        
-        H[0] = stationary_H(A, B, C)
-        
-        for t in range(1, T):
-            H[t] = C.dot(C.T)
-            H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
-            H[t] += B.dot(H[t-1]).dot(B.T)
-            H12 = sp.linalg.cholesky(H[t], 1)
-            u[t] = H12.dot(np.atleast_2d(e[t]).T).flatten()
-        
+    def __init__(self, u):
         self.u = u
+        self.T, self.n = u.shape
         self.H0 = estimate_H0(u)
-    
+
     def likelihood(self, theta):
         A, B = convert_theta_to_ab(theta, self.n)
         H = np.empty((self.T, self.n, self.n))
@@ -122,6 +93,38 @@ class BEKK(object):
                        options = {'disp': False, 'maxiter' : int(nit)})
         return res
 
+def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
+    """Simulate data.
+    
+    Returns:
+        u: multivariate innovation matrix, T x n
+    """
+#    self.n = n
+#    self.T = T
+#    self.theta0 = theta0
+    
+    A, B, C = convert_theta_to_abc(theta0, n)
+    mean, cov = np.zeros(n), np.eye(n)
+    
+    constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
+    with open(log, 'a') as texfile:
+        texfile.write('Max eigenvalue = %.2f' % constr)
+    
+    e = np.random.multivariate_normal(mean, cov, T)
+    H = np.empty((T, n, n))
+    u = np.zeros((T, n))
+    
+    H[0] = stationary_H(A, B, C)
+    
+    for t in range(1, T):
+        H[t] = C.dot(C.T)
+        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
+        H[t] += B.dot(H[t-1]).dot(B.T)
+        H12 = sp.linalg.cholesky(H[t], 1)
+        u[t] = H12.dot(np.atleast_2d(e[t]).T).flatten()
+    
+    return u
+
 def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
     Heig = np.linalg.eigvals(H)
@@ -176,7 +179,7 @@ def plot_data(u, H):
         ax.plot(range(T), u[:, i])
     plt.plot()
 
-def test(n = 2, T = 100):
+def test_simulate(n = 2, T = 100):
     log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
@@ -185,29 +188,42 @@ def test(n = 2, T = 100):
     A = np.eye(n) * .25
     B = np.eye(n) * .95
     C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
-    
     theta = convert_abc_to_theta(A, B, C)
-    theta_AB = theta[:2*n**2]
     
-    bekk = BEKK()
+    # Simulate data    
+    u = simulate_BEKK(theta, n = n, T = T, log = log_file)
+    
+    # Initialize the object
+    bekk = BEKK(u)
+    bekk.theta0 = theta[:2*n**2]
     bekk.log_file = log_file
-    bekk.simulate_BEKK(theta, n = n, T = T)
     
+    # Shift initial theta    
+    #theta_AB = theta[:2*n**2]
     #theta0_AB = theta_AB - .1
+    
     # Randomize initial theta
     theta0_AB = np.random.rand(2*n**2)/10
     print(bekk.likelihood(theta0_AB))
     
+    # maximum number of iterations
     nit = 1e6
+    # Start timer for the whole optimization
     time_old = time.time()
+    # Estimate parameters
     result = bekk.optimize_like(theta0_AB, nit)
+    # How much time did it take?
     time_delta = (time.time() - time_old) / 60
+    # Convert parameter vector to matrices
     A, B = convert_theta_to_ab(result.x, n)
-    
+    # Print results
     with open(log_file, 'a') as texfile:
         texfile.write('\n' + str(result) + 2*'\n')
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
+def test_real():
+    pass
+    
 if __name__ == '__main__':
-    test(n = 6, T = 2000)
+    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
