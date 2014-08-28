@@ -19,6 +19,7 @@ class BEKK(object):
     def __init__(self, u):
         self.u = u
         self.T, self.n = u.shape
+        self.theta_true = None
         self.H0 = estimate_H0(u)
 
     def likelihood(self, theta):
@@ -51,7 +52,9 @@ class BEKK(object):
         
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
-        true_like = self.likelihood(self.theta0)
+        true_like = 0
+        if self.theta_true is not None:
+            true_like = self.likelihood(self.theta_true)
         old_like = self.likelihood(self.xk_old)
         
         time_new = time.time()
@@ -195,7 +198,7 @@ def test_simulate(n = 2, T = 100):
     
     # Initialize the object
     bekk = BEKK(u)
-    bekk.theta0 = theta[:2*n**2]
+    bekk.theta_true = theta[:2*n**2]
     bekk.log_file = log_file
     
     # Shift initial theta    
@@ -204,7 +207,6 @@ def test_simulate(n = 2, T = 100):
     
     # Randomize initial theta
     theta0_AB = np.random.rand(2*n**2)/10
-    print(bekk.likelihood(theta0_AB))
     
     # maximum number of iterations
     nit = 1e6
