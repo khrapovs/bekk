@@ -78,7 +78,7 @@ class BEKK(object):
             for s in string:
                 texfile.write(s + '\n')
     
-    def optimize_like(self, theta0, nit):
+    def estimate(self, theta0, nit):
         #ones = np.ones(len(theta0))
         #bounds = list(zip(-5*ones, 5*ones))
         # So far works:
@@ -130,7 +130,7 @@ def contribution(u, H):
     Heig = np.linalg.eigvals(H)
     Hdet = np.linalg.det(H)
 #    print(H*1e3, '\n', Hdet, '\n', Heig, 2*'\n')
-    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-5 or np.any(Heig<0)
+    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-10 or np.any(Heig<0)
     if bad:
         f = 1e10
     else:
@@ -215,7 +215,7 @@ def test_simulate(n = 2, T = 100):
     # Start timer for the whole optimization
     time_old = time.time()
     # Estimate parameters
-    result = bekk.optimize_like(theta0_AB, nit)
+    result = bekk.estimate(theta0_AB, nit)
     # How much time did it take?
     time_delta = (time.time() - time_old) / 60
     # Convert parameter vector to matrices
@@ -230,12 +230,16 @@ def regenerate_data(u_file):
     import pandas as pd
     
     token = 'ECK8bso5CLKnNui4kNpk'
-    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL", "GOOG/NASDAQ_GOOG"]
-    tickers2 = ["GOOG/NYSE_XOM", "GOOG/NYSE_CVX", "GOOG/NYSE_OXY"]
+    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL"]
+    tickers2 = ["GOOG/NYSE_XOM", "GOOG/NYSE_OXY"]
+    tickers3 = ["GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
     tickers.extend(tickers2)
+    tickers.extend(tickers3)
     prices = []
     for tic in tickers:
-        df = Quandl.get(tic, authtoken = token)[['Close']]
+        df = Quandl.get(tic, authtoken = token,
+                        trim_start = "2000-01-01",
+                        trim_end = "2007-12-31")[['Close']]
         df.rename(columns = {'Close' : tic}, inplace = True)
         prices.append(df)
     prices = pd.concat(prices, axis = 1)
@@ -246,28 +250,21 @@ def regenerate_data(u_file):
     plt.show()
     
     # Create array of innovations    
-    u = np.array(ret.apply(lambda x: x - x.mean()))[-2000:]
+    u = np.array(ret.apply(lambda x: x - x.mean()))#[-2000:]
     print(u.shape)
     np.save(u_file, u)
 
 def test_real():
     
+    log_file = 'bekk_log.txt'
     u_file = 'innovations.npy'
     # Do we want to download data and overwrite it on the drive?
-    regenerate = True
-    if regenerate:
-        regenerate_data(u_file)
+    regenerate_data(u_file)
     
-    log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
     # Load data from the drive
     u = np.load(u_file)
-    
-    ### The following can be removed:
-    H0 = estimate_H0(u)
-    print(H0)
-    ###
     
     # Initialize the object
     bekk = BEKK(u)
@@ -278,20 +275,28 @@ def test_real():
     #theta0 = np.random.rand(2*n**2)/10
     # Clever initial theta
     # A, B, C - n x n matrices
-    A = np.ones(n) * .1
+    A = np.eye(n) * .15 # + np.ones((n, n)) *.05
     B = np.eye(n) * .95
     theta0 = convert_ab_to_theta(A, B)
-    
+    assert len(theta0) == 2*n**2
+        
     ### The following can be removed:
     print(bekk.likelihood(theta0))
     ###
     
     # maximum number of iterations
-    nit = 1e6
+    nit = 1e20
     # Start timer for the whole optimization
     time_old = time.time()
     # Estimate parameters
-    result = bekk.optimize_like(theta0, nit)
+    theta_new = theta0.copy()
+    for i in range(100):
+        result = bekk.estimate(theta_new, nit)
+        theta_new = result.x
+        print(i, result.success)
+        if result.success:
+            break
+        
     # How much time did it take?
     time_delta = (time.time() - time_old) / 60
     # Convert parameter vector to matrices
@@ -300,7 +305,6 @@ def test_real():
     with open(log_file, 'a') as texfile:
         texfile.write('\n' + str(result) + 2*'\n')
         texfile.write('Total time (minutes) = %.2f' % time_delta)
-    
     
 if __name__ == '__main__':
 #    test_simulate(n = 2, T = 100)
