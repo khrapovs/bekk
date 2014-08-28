@@ -20,4 +20,5 @@
 *.log
 *.png
 *.dat
+*.p
 .ipynb_checkpoints

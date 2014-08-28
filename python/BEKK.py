@@ -224,8 +224,25 @@ def test_simulate(n = 2, T = 100):
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
 def test_real():
-    pass
+    import Quandl
+    import pandas as pd
+
+    token = 'ECK8bso5CLKnNui4kNpk'
+    tickers = ["GOOG/NYSE_IBM", "GOOG/NASDAQ_AAPL"]
+    prices = []
+    for tic in tickers:
+        df = Quandl.get(tic, authtoken = token)[['Close']]
+        df.rename(columns = {'Close' : tic}, inplace = True)
+        prices.append(df)
+    prices = pd.concat(prices, axis = 1)
+    
+    ret = np.log(prices) - np.log(prices.shift(1))
+    ret.dropna(inplace = True)
+    ret.plot()
+    plt.show()
+    
     
 if __name__ == '__main__':
-    test_simulate(n = 2, T = 100)
+#    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
+    test_real()
