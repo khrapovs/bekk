@@ -21,4 +21,5 @@
 *.png
 *.dat
 *.p
+*.npy
 .ipynb_checkpoints

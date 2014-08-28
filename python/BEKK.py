@@ -102,9 +102,6 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     Returns:
         u: multivariate innovation matrix, T x n
     """
-#    self.n = n
-#    self.T = T
-#    self.theta0 = theta0
     
     A, B, C = convert_theta_to_abc(theta0, n)
     mean, cov = np.zeros(n), np.eye(n)
@@ -132,6 +129,7 @@ def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
     Heig = np.linalg.eigvals(H)
     Hdet = np.linalg.det(H)
+#    print(H*1e3, '\n', Hdet, '\n', Heig, 2*'\n')
     bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-5 or np.any(Heig<0)
     if bad:
         f = 1e10
@@ -158,6 +156,10 @@ def convert_theta_to_ab(theta, n):
 
 def convert_abc_to_theta(A, B, C):
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
+    return np.concatenate(theta)
+
+def convert_ab_to_theta(A, B):
+    theta = [A.flatten(), B.flatten()]
     return np.concatenate(theta)
 
 def stationary_H(A, B, C):
@@ -223,12 +225,14 @@ def test_simulate(n = 2, T = 100):
         texfile.write('\n' + str(result) + 2*'\n')
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
-def test_real():
+def regenerate_data(u_file):
     import Quandl
     import pandas as pd
-
+    
     token = 'ECK8bso5CLKnNui4kNpk'
-    tickers = ["GOOG/NYSE_IBM", "GOOG/NASDAQ_AAPL"]
+    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL", "GOOG/NASDAQ_GOOG"]
+    tickers2 = ["GOOG/NYSE_XOM", "GOOG/NYSE_CVX", "GOOG/NYSE_OXY"]
+    tickers.extend(tickers2)
     prices = []
     for tic in tickers:
         df = Quandl.get(tic, authtoken = token)[['Close']]
@@ -236,10 +240,66 @@ def test_real():
         prices.append(df)
     prices = pd.concat(prices, axis = 1)
     
-    ret = np.log(prices) - np.log(prices.shift(1))
+    ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace = True)
     ret.plot()
     plt.show()
+    
+    # Create array of innovations    
+    u = np.array(ret.apply(lambda x: x - x.mean()))[-2000:]
+    print(u.shape)
+    np.save(u_file, u)
+
+def test_real():
+    
+    u_file = 'innovations.npy'
+    # Do we want to download data and overwrite it on the drive?
+    regenerate = True
+    if regenerate:
+        regenerate_data(u_file)
+    
+    log_file = 'bekk_log.txt'
+    with open(log_file, 'w') as texfile:
+        texfile.write('')
+    # Load data from the drive
+    u = np.load(u_file)
+    
+    ### The following can be removed:
+    H0 = estimate_H0(u)
+    print(H0)
+    ###
+    
+    # Initialize the object
+    bekk = BEKK(u)
+    bekk.log_file = log_file
+    n = u.shape[1]
+    
+    # Randomize initial theta
+    #theta0 = np.random.rand(2*n**2)/10
+    # Clever initial theta
+    # A, B, C - n x n matrices
+    A = np.ones(n) * .1
+    B = np.eye(n) * .95
+    theta0 = convert_ab_to_theta(A, B)
+    
+    ### The following can be removed:
+    print(bekk.likelihood(theta0))
+    ###
+    
+    # maximum number of iterations
+    nit = 1e6
+    # Start timer for the whole optimization
+    time_old = time.time()
+    # Estimate parameters
+    result = bekk.optimize_like(theta0, nit)
+    # How much time did it take?
+    time_delta = (time.time() - time_old) / 60
+    # Convert parameter vector to matrices
+    A, B = convert_theta_to_ab(result.x, n)
+    # Print results
+    with open(log_file, 'a') as texfile:
+        texfile.write('\n' + str(result) + 2*'\n')
+        texfile.write('Total time (minutes) = %.2f' % time_delta)
     
     
 if __name__ == '__main__':
