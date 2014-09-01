@@ -21,6 +21,8 @@ class BEKK(object):
         self.T, self.n = u.shape
         self.theta_true = None
         self.H0 = estimate_H0(u)
+        self.method = 'L-BFGS-B'
+        self.use_callback = False
 
     def likelihood(self, theta):
         A, B = convert_theta_to_ab(theta, self.n)
@@ -78,7 +80,7 @@ class BEKK(object):
             for s in string:
                 texfile.write(s + '\n')
     
-    def estimate(self, theta0, nit):
+    def estimate(self, theta0):
         #ones = np.ones(len(theta0))
         #bounds = list(zip(-5*ones, 5*ones))
         # So far works:
@@ -90,12 +92,36 @@ class BEKK(object):
         self.it = 0
         self.time_start = time.time()
         self.time_old = time.time()
-        res = minimize(self.likelihood, theta0,
-                       method = 'L-BFGS-B',
-                       callback = self.callback,
-                       options = {'disp': False, 'maxiter' : int(nit)})
-        return res
-
+        if self.use_callback:
+            callback = self.callback
+        else:
+            callback = None
+        # Start timer for the whole optimization
+        time_start = time.time()
+        options = {'disp': False, 'maxiter' : int(self.maxiter)}
+        self.res = minimize(self.likelihood, self.theta_start,
+                       method = self.method,
+                       callback = callback,
+                       options = options)
+        # How much time did it take?
+        time_delta = (time.time() - time_start) / 60
+        # Convert parameter vector to matrices
+        A, B = convert_theta_to_ab(self.res.x, self.n)
+        like_start = self.likelihood(self.theta_start)
+        like_final = self.likelihood(self.res.x)
+        like_delta = like_start - like_final
+        
+        string = ['\n\nMethod : ' + self.method]
+        string.append('Total time (minutes) = %.2f' % time_delta)
+        string.append('Initial likelihood = %.2f' % like_start)
+        string.append('Final likelihood = %.2f' % like_final)
+        string.append('Likelihood difference = %.2f' % like_delta)
+        string.append(str(self.res))
+        string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
+        with open(self.log_file, 'a') as texfile:
+            for s in string:
+                texfile.write(s + '\n')
+        
 def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     """Simulate data.
     
@@ -129,7 +155,6 @@ def contribution(u, H):
     """Contribution to the log-likelihood function for each observation."""
     Heig = np.linalg.eigvals(H)
     Hdet = np.linalg.det(H)
-#    print(H*1e3, '\n', Hdet, '\n', Heig, 2*'\n')
     bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-10 or np.any(Heig<0)
     if bad:
         f = 1e10
@@ -259,8 +284,9 @@ def test_real():
     log_file = 'bekk_log.txt'
     u_file = 'innovations.npy'
     # Do we want to download data and overwrite it on the drive?
-    regenerate_data(u_file)
+    #regenerate_data(u_file)
     
+    # Clean log file
     with open(log_file, 'w') as texfile:
         texfile.write('')
     # Load data from the drive
@@ -268,43 +294,39 @@ def test_real():
     
     # Initialize the object
     bekk = BEKK(u)
+    # Set log file name
     bekk.log_file = log_file
-    n = u.shape[1]
+    # maximum number of iterations
+    bekk.maxiter = 1
+    # Print results for each iteration?
+    bekk.use_callback = False
     
     # Randomize initial theta
     #theta0 = np.random.rand(2*n**2)/10
     # Clever initial theta
     # A, B, C - n x n matrices
-    A = np.eye(n) * .15 # + np.ones((n, n)) *.05
-    B = np.eye(n) * .95
-    theta0 = convert_ab_to_theta(A, B)
-    assert len(theta0) == 2*n**2
-        
-    ### The following can be removed:
-    print(bekk.likelihood(theta0))
-    ###
+    n = u.shape[1]
+    A = np.eye(n) * .1 # + np.ones((n, n)) *.05
+    B = np.eye(n) * .9
+    theta_start = convert_ab_to_theta(A, B)
+    assert len(theta_start) == 2*n**2
     
-    # maximum number of iterations
-    nit = 1e20
-    # Start timer for the whole optimization
-    time_old = time.time()
+    # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
+    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+               'TNC','COBYLA','SLSQP']
     # Estimate parameters
-    theta_new = theta0.copy()
-    for i in range(100):
-        result = bekk.estimate(theta_new, nit)
-        theta_new = result.x
-        print(i, result.success)
-        if result.success:
-            break
+    # for i in range(100):
+    for m in methods:
+        # Optimization method
+        bekk.method = m
+        # Estimate parameters
+        bekk.estimate(theta_start)
+#        theta_new = result.x
+#        print(i, result.success)
+#        if result.success:
+#            break
+        # Print results
         
-    # How much time did it take?
-    time_delta = (time.time() - time_old) / 60
-    # Convert parameter vector to matrices
-    A, B = convert_theta_to_ab(result.x, n)
-    # Print results
-    with open(log_file, 'a') as texfile:
-        texfile.write('\n' + str(result) + 2*'\n')
-        texfile.write('Total time (minutes) = %.2f' % time_delta)
     
 if __name__ == '__main__':
 #    test_simulate(n = 2, T = 100)
