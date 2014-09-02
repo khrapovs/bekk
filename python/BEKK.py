@@ -2,9 +2,10 @@ import numpy as np
 import scipy as sp
 import matplotlib.pylab as plt
 from scipy.optimize import minimize
-import cProfile
-import numba as nb
+#import cProfile
+#import numba as nb
 import time
+from IPython.parallel import Client
 
 np.set_printoptions(precision = 2, suppress = True)
 
@@ -279,9 +280,9 @@ def regenerate_data(u_file):
     print(u.shape)
     np.save(u_file, u)
 
-def test_real():
-    
-    log_file = 'bekk_log.txt'
+def test_real(m):
+    import numpy as np
+    log_file = 'bekk_log_' + m + '.txt'
     u_file = 'innovations.npy'
     # Do we want to download data and overwrite it on the drive?
     #regenerate_data(u_file)
@@ -312,23 +313,36 @@ def test_real():
     assert len(theta_start) == 2*n**2
     
     # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
-    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
-               'TNC','COBYLA','SLSQP']
+#    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+#               'TNC','COBYLA','SLSQP']
     # Estimate parameters
     # for i in range(100):
-    for m in methods:
-        # Optimization method
-        bekk.method = m
-        # Estimate parameters
-        bekk.estimate(theta_start)
+#    for m in methods:
+#        # Optimization method
+#        bekk.method = m
+#        # Estimate parameters
+#        bekk.estimate(theta_start)
+    # Optimization method
+    bekk.method = m
+    # Estimate parameters
+    bekk.estimate(theta_start)
 #        theta_new = result.x
 #        print(i, result.success)
 #        if result.success:
 #            break
         # Print results
-        
+    
     
 if __name__ == '__main__':
+    print('zzz')
 #    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
-    test_real()
+#    res = test_real()
+    
+    # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
+    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+               'TNC','COBYLA','SLSQP']
+    from multiprocessing import Pool
+    with Pool(processes=8) as pool:
+        pool.map(test_real, methods)
+        pool.close()
