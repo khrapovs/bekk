@@ -26,9 +26,10 @@ class BEKK(object):
         self.H0 = estimate_H0(u)
         self.method = 'L-BFGS-B'
         self.use_callback = False
+        self.restriction = 'scalar'
 
     def likelihood(self, theta):
-        A, B = convert_theta_to_ab(theta, self.n)
+        A, B = convert_theta_to_ab(theta, self.n, self.restriction)
         H = np.empty((self.T, self.n, self.n))
         
         H[0] = self.H0
@@ -52,8 +53,9 @@ class BEKK(object):
             return sumf
     
     def callback(self, xk):
+        """Print stuff for each iteraion."""
         self.it += 1
-        A, B = convert_theta_to_ab(xk, self.n)
+        A, B = convert_theta_to_ab(xk, self.n, self.restriction)
         
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
@@ -84,6 +86,11 @@ class BEKK(object):
                 texfile.write(s + '\n')
     
     def estimate(self, theta0):
+        """Estimate parameters of the BEKK model.
+        
+        Args:
+            theta0: 1-dimensional array, initial guess
+        """
         #ones = np.ones(len(theta0))
         #bounds = list(zip(-5*ones, 5*ones))
         # So far works:
@@ -101,19 +108,22 @@ class BEKK(object):
             callback = None
         # Start timer for the whole optimization
         time_start = time.time()
+        # Optimization options
         options = {'disp': False, 'maxiter' : int(self.maxiter)}
+        # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                        method = self.method,
                        callback = callback,
                        options = options)
+        self.theta_final = self.res.x
         # How much time did it take?
         time_delta = (time.time() - time_start) / 60
         # Convert parameter vector to matrices
-        A, B = convert_theta_to_ab(self.res.x, self.n)
+        A, B = convert_theta_to_ab(self.theta_final, self.n, self.restriction)
         like_start = self.likelihood(self.theta_start)
-        like_final = self.likelihood(self.res.x)
+        like_final = self.likelihood(self.theta_final)
         like_delta = like_start - like_final
-        
+        # Save results to the log file
         string = ['\n\nMethod : ' + self.method]
         string.append('Total time (minutes) = %.2f' % time_delta)
         string.append('Initial likelihood = %.2f' % like_start)
@@ -155,10 +165,19 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     return u
 
 def contribution(u, H):
-    """Contribution to the log-likelihood function for each observation."""
+    """Contribution to the log-likelihood function for each observation.
+    
+    Args:
+        u: (T, n) array, inovations
+        H: (T, n, n) array, variance/covariances
+    
+    Returns:
+        f: float, log-likelihood contribution
+        bad: bool, True if something is wrong
+    """
     Heig = np.linalg.eigvals(H)
     Hdet = np.linalg.det(H)
-    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-10 or np.any(Heig<0)
+    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-20 or np.any(Heig<0)
     if bad:
         f = 1e10
     else:
@@ -197,24 +216,6 @@ def convert_theta_to_abc(theta, n):
     C[np.tril_indices(n)] = theta[2*n**2:]
     return A, B, C
 
-def convert_theta_to_ab(theta, n):
-    """Convert 1-dimensional array of parameters to matrices A, and B.
-    
-    Args:
-        theta: array of parameters
-            Length depends on the model restrictions:
-            'full' - 2*n**2 + (n-1)*n/2
-            'diagonal' - 2*n
-            'scalar' - 2
-        n: number of innovations in the model
-    
-    Returns:
-        A, B: (n, n) arrays, parameter matrices
-    """
-    A = theta[:n**2].reshape([n, n])
-    B = theta[n**2:2*n**2].reshape([n, n])
-    return A, B
-
 def convert_abc_to_theta(A, B, C):
     """Convert parameter matrices A, B, and C to 1-dimensional array.
     
@@ -231,11 +232,41 @@ def convert_abc_to_theta(A, B, C):
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
 
-def convert_ab_to_theta(A, B):
+def convert_theta_to_ab(theta, n, restriction):
+    """Convert 1-dimensional array of parameters to matrices A, and B.
+    
+    Args:
+        theta: array of parameters
+            Length depends on the model restrictions:
+            'full' - 2*n**2 + (n-1)*n/2
+            'diagonal' - 2*n
+            'scalar' - 2
+        n: number of innovations in the model
+        restriction: can be 'full', 'diagonal', 'scalar'
+    
+    Returns:
+        A, B: (n, n) arrays, parameter matrices
+    """
+    if restriction == 'full':
+        A = theta[:n**2].reshape([n, n])
+        B = theta[n**2:].reshape([n, n])
+    elif restriction == 'diagonal':
+        A = np.diag(theta[:n])
+        B = np.diag(theta[n:])
+    elif restriction == 'scalar':
+        A = np.eye(n) * theta[0]
+        B = np.eye(n) * theta[1]
+    else:
+        # !!! Should raise exception "Wrong restriction'
+        pass
+    return A, B
+
+def convert_ab_to_theta(A, B, restriction):
     """Convert parameter matrices A and B to 1-dimensional array.
     
     Args:
         A, B: (n, n) arrays, parameter matrices
+        restriction: can be 'full', 'diagonal', 'scalar'
     
     Returns:
         1-dimensional array of parameters
@@ -244,7 +275,15 @@ def convert_ab_to_theta(A, B):
             'diagonal' - 2*n
             'scalar' - 2
     """
-    theta = [A.flatten(), B.flatten()]
+    if restriction == 'full':
+        theta = [A.flatten(), B.flatten()]
+    elif restriction == 'diagonal':
+        theta = [np.diag(A), np.diag(B)]
+    elif restriction == 'scalar':
+        return np.array([A[0, 0], B[0, 0]])
+    else:
+        # !!! Should raise exception "Wrong restriction'
+        pass
     return np.concatenate(theta)
 
 def stationary_H(A, B, C):
@@ -325,6 +364,11 @@ def test_simulate(n = 2, T = 100):
         texfile.write('Total time (minutes) = %.2f' % time_delta)
 
 def regenerate_data(u_file):
+    """Download and save data to disk.
+    
+    Args:
+        u_file: str, name of the file to save to
+    """
     import Quandl
     import pandas as pd
     
@@ -368,10 +412,12 @@ def test_real(m):
     
     # Initialize the object
     bekk = BEKK(u)
+    # Restriction of the model, 'scalar', 'diag', 'scalar'
+    bekk.restriction = 'diagonal'
     # Set log file name
     bekk.log_file = log_file
     # maximum number of iterations
-    bekk.maxiter = 1
+    bekk.maxiter = 1e6
     # Print results for each iteration?
     bekk.use_callback = False
     
@@ -382,19 +428,7 @@ def test_real(m):
     n = u.shape[1]
     A = np.eye(n) * .1 # + np.ones((n, n)) *.05
     B = np.eye(n) * .9
-    theta_start = convert_ab_to_theta(A, B)
-    # Best point according to SLSQP
-    theta_start = np.array(
-        [ 0.11, -0.03, -0.08,  0.08,  0.07, -0.06,  0.07,  0.06, -0.03,
-        -0.03, -0.01,  0.03,  0.05, -0.01,  0.26, -0.08,  0.01,  0.01,
-        0.02, -0.01,  0.07,  0.12,  0.03, -0.09,  0.06, -0.01,  0.06,
-        -0.12,  0.07, -0.05,  0.02,  0.01,  0.  , -0.03,  0.01,  0.11,
-        1.  , -0.01,  0.05, -0.04, -0.05,  0.02,  0.03,  0.99,  0.  ,
-        0.01, -0.03, -0.01, -0.  , -0.  ,  0.95,  0.02, -0.01,  0.01,
-        0.  , -0.  , -0.01,  0.98, -0.02,  0.03,  0.02, -0.  , -0.01,
-        0.03,  0.96,  0.04,  0.01, -0.  ,  0.  ,  0.  , -0.03,  1.01])
-    assert len(theta_start) == 2*n**2
-    
+    theta_start = convert_ab_to_theta(A, B, bekk.restriction)
     # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
 #    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
 #               'TNC','COBYLA','SLSQP']
@@ -409,23 +443,22 @@ def test_real(m):
     bekk.method = m
     # Estimate parameters
     bekk.estimate(theta_start)
+    bekk.estimate(bekk.theta_final)
 #        theta_new = result.x
 #        print(i, result.success)
 #        if result.success:
 #            break
         # Print results
     
-    
 if __name__ == '__main__':
-    print('zzz')
 #    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
-#    res = test_real()
+    test_real('SLSQP')
     
-    # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
-    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
-               'TNC','COBYLA','SLSQP']
-    from multiprocessing import Pool
-    with Pool(processes=8) as pool:
-        pool.map(test_real, methods)
-        pool.close()
+#    from multiprocessing import Pool
+#    'Newton-CG', 'dogleg', 'trust-ncg' require gradient
+#    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+#               'TNC','COBYLA','SLSQP']
+#    with Pool(processes=8) as pool:
+#        pool.map(test_real, methods)
+#        pool.close()
