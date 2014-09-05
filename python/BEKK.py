@@ -5,7 +5,7 @@ from scipy.optimize import minimize
 #import cProfile
 #import numba as nb
 import time
-from IPython.parallel import Client
+#from IPython.parallel import Client
 
 np.set_printoptions(precision = 2, suppress = True)
 
@@ -18,9 +18,11 @@ np.set_printoptions(precision = 2, suppress = True)
 
 class BEKK(object):
     def __init__(self, u):
+        # Vector of innovations, T x n
         self.u = u
         self.T, self.n = u.shape
         self.theta_true = None
+        # Estimate unconditional realized covariance matrix
         self.H0 = estimate_H0(u)
         self.method = 'L-BFGS-B'
         self.use_callback = False
@@ -127,7 +129,7 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     """Simulate data.
     
     Returns:
-        u: multivariate innovation matrix, T x n
+        u: (T, n) array, multivariate innovation matrix
     """
     
     A, B, C = convert_theta_to_abc(theta0, n)
@@ -165,10 +167,30 @@ def contribution(u, H):
     return f, bad
     
 def estimate_H0(u):
+    """Estimate unconditional realized covariance matrix.
+    
+    Args:
+        u: (T, n) array, inovations
+    Returns:
+        E[u'u], (n, n) array
+    """
     T = u.shape[0]
     return u.T.dot(u) / T
 
 def convert_theta_to_abc(theta, n):
+    """Convert 1-dimensional array of parameters to matrices A, B, and C.
+    
+    Args:
+        theta: array of parameters
+            Length depends on the model restrictions:
+            'full' - 2*n**2 + (n-1)*n/2
+            'diagonal' - 
+            'scalar' - 
+        n: number of innovations in the model
+    
+    Returns:
+        A, B, C: (n, n) array, parameter matrices
+    """
     A = theta[:n**2].reshape([n, n])
     B = theta[n**2:2*n**2].reshape([n, n])
     C = np.zeros((n, n))
@@ -176,19 +198,64 @@ def convert_theta_to_abc(theta, n):
     return A, B, C
 
 def convert_theta_to_ab(theta, n):
+    """Convert 1-dimensional array of parameters to matrices A, and B.
+    
+    Args:
+        theta: array of parameters
+            Length depends on the model restrictions:
+            'full' - 2*n**2 + (n-1)*n/2
+            'diagonal' - 2*n
+            'scalar' - 2
+        n: number of innovations in the model
+    
+    Returns:
+        A, B: (n, n) arrays, parameter matrices
+    """
     A = theta[:n**2].reshape([n, n])
     B = theta[n**2:2*n**2].reshape([n, n])
     return A, B
 
 def convert_abc_to_theta(A, B, C):
+    """Convert parameter matrices A, B, and C to 1-dimensional array.
+    
+    Args:
+        A, B, C: (n, n) arrays, parameter matrices
+    
+    Returns:
+        1-dimensional array of parameters
+            Length depends on the model restrictions:
+            'full' - 2*n**2 + (n-1)*n/2
+            'diagonal' - 
+            'scalar' - 
+    """
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
 
 def convert_ab_to_theta(A, B):
+    """Convert parameter matrices A and B to 1-dimensional array.
+    
+    Args:
+        A, B: (n, n) arrays, parameter matrices
+    
+    Returns:
+        1-dimensional array of parameters
+            Length depends on the model restrictions:
+            'full' - 2*n**2
+            'diagonal' - 2*n
+            'scalar' - 2
+    """
     theta = [A.flatten(), B.flatten()]
     return np.concatenate(theta)
 
 def stationary_H(A, B, C):
+    """Find fixed point of H = CC' + AHA' + BHB'.
+    
+    Args:
+        A, B, C: (n, n) arrays, parameter matrices
+    
+    Returns:
+        (n, n) array
+    """
     i, norm = 0, 1e3
     Hold = np.eye(A.shape[0])
     while (norm > 1e-3) or (i < 1000):
@@ -199,6 +266,12 @@ def stationary_H(A, B, C):
     return Hnew
     
 def plot_data(u, H):
+    """Plot time series of H and u elements.
+    
+    Args:
+        u: (T, n) array, innovations
+        H: (T, n, n) array, variance/covariances
+    """
     T, n = u.shape
     fig, axes = plt.subplots(nrows = n**2, ncols = 1)
     for ax, i in zip(axes , range(n**2)):
