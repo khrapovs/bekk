@@ -1,0 +1,60 @@
+
+
+Method : SLSQP
+Total time (minutes) = 0.34
+Initial likelihood = 26240.84
+Final likelihood = 10000000000.00
+Likelihood difference = -9999973759.16
+       x: array([ 6.4 ,  5.69])
+ message: 'Optimization terminated successfully.'
+     jac: array([ 0.,  0.,  0.])
+    nfev: 53
+  status: 0
+     fun: 10000000000.0
+     nit: 5
+    njev: 5
+ success: True
+A = 
+[[ 6.4  0.   0.   0.   0.   0. ]
+ [ 0.   6.4  0.   0.   0.   0. ]
+ [ 0.   0.   6.4  0.   0.   0. ]
+ [ 0.   0.   0.   6.4  0.   0. ]
+ [ 0.   0.   0.   0.   6.4  0. ]
+ [ 0.   0.   0.   0.   0.   6.4]]
+B = 
+[[ 5.69  0.    0.    0.    0.    0.  ]
+ [ 0.    5.69  0.    0.    0.    0.  ]
+ [ 0.    0.    5.69  0.    0.    0.  ]
+ [ 0.    0.    0.    5.69  0.    0.  ]
+ [ 0.    0.    0.    0.    5.69  0.  ]
+ [ 0.    0.    0.    0.    0.    5.69]]
+
+
+Method : SLSQP
+Total time (minutes) = 0.01
+Initial likelihood = 10000000000.00
+Final likelihood = 10000000000.00
+Likelihood difference = 0.00
+       x: array([ 6.4 ,  5.69])
+ message: 'Optimization terminated successfully.'
+     jac: array([ 0.,  0.,  0.])
+    nfev: 4
+  status: 0
+     fun: 10000000000.0
+     nit: 1
+    njev: 1
+ success: True
+A = 
+[[ 6.4  0.   0.   0.   0.   0. ]
+ [ 0.   6.4  0.   0.   0.   0. ]
+ [ 0.   0.   6.4  0.   0.   0. ]
+ [ 0.   0.   0.   6.4  0.   0. ]
+ [ 0.   0.   0.   0.   6.4  0. ]
+ [ 0.   0.   0.   0.   0.   6.4]]
+B = 
+[[ 5.69  0.    0.    0.    0.    0.  ]
+ [ 0.    5.69  0.    0.    0.    0.  ]
+ [ 0.    0.    5.69  0.    0.    0.  ]
+ [ 0.    0.    0.    5.69  0.    0.  ]
+ [ 0.    0.    0.    0.    5.69  0.  ]
+ [ 0.    0.    0.    0.    0.    5.69]]

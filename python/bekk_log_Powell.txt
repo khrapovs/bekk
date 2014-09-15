@@ -1,0 +1,60 @@
+
+
+Method : Powell
+Total time (minutes) = 3.41
+Initial likelihood = 26240.84
+Final likelihood = -4280948923.69
+Likelihood difference = 4280975164.52
+       x: array([ 0.48,  0.9 ])
+ message: 'Optimization terminated successfully.'
+   direc: array([[ 1.,  0.],
+       [ 0.,  1.]])
+    nfev: 425
+  status: 0
+     fun: array(-4280948923.6879563)
+     nit: 5
+ success: True
+A = 
+[[ 0.48  0.    0.    0.    0.    0.  ]
+ [ 0.    0.48  0.    0.    0.    0.  ]
+ [ 0.    0.    0.48  0.    0.    0.  ]
+ [ 0.    0.    0.    0.48  0.    0.  ]
+ [ 0.    0.    0.    0.    0.48  0.  ]
+ [ 0.    0.    0.    0.    0.    0.48]]
+B = 
+[[ 0.9  0.   0.   0.   0.   0. ]
+ [ 0.   0.9  0.   0.   0.   0. ]
+ [ 0.   0.   0.9  0.   0.   0. ]
+ [ 0.   0.   0.   0.9  0.   0. ]
+ [ 0.   0.   0.   0.   0.9  0. ]
+ [ 0.   0.   0.   0.   0.   0.9]]
+
+
+Method : Powell
+Total time (minutes) = 0.71
+Initial likelihood = -4280948923.69
+Final likelihood = -4280948923.69
+Likelihood difference = 0.00
+       x: array([ 0.48,  0.9 ])
+ message: 'Optimization terminated successfully.'
+   direc: array([[ 1.,  0.],
+       [ 0.,  1.]])
+    nfev: 114
+  status: 0
+     fun: array(-4280948923.6879563)
+     nit: 1
+ success: True
+A = 
+[[ 0.48  0.    0.    0.    0.    0.  ]
+ [ 0.    0.48  0.    0.    0.    0.  ]
+ [ 0.    0.    0.48  0.    0.    0.  ]
+ [ 0.    0.    0.    0.48  0.    0.  ]
+ [ 0.    0.    0.    0.    0.48  0.  ]
+ [ 0.    0.    0.    0.    0.    0.48]]
+B = 
+[[ 0.9  0.   0.   0.   0.   0. ]
+ [ 0.   0.9  0.   0.   0.   0. ]
+ [ 0.   0.   0.9  0.   0.   0. ]
+ [ 0.   0.   0.   0.9  0.   0. ]
+ [ 0.   0.   0.   0.   0.9  0. ]
+ [ 0.   0.   0.   0.   0.   0.9]]
