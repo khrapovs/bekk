@@ -190,7 +190,13 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     
     Parameters
     ----------
-    
+        theta0 : 1-dim array
+            True model parameters.
+        n : int
+            Number of series to simulate
+        T : int
+            Number of observations to generate. Time series length
+            
     Returns
     -------
         u: (T, n) array
@@ -199,10 +205,6 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     
     A, B, C = convert_theta_to_abc(theta0, n)
     mean, cov = np.zeros(n), np.eye(n)
-    
-    constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-    with open(log, 'a') as texfile:
-        texfile.write('Max eigenvalue = %.2f' % constr)
     
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
