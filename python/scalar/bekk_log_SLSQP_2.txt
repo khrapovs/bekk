@@ -1,0 +1,31 @@
+
+
+Method : SLSQP
+Max eigenvalue = 0.9940
+Total time (minutes) = 0.12
+Initial likelihood = 23935.75
+Final likelihood = 23935.75
+Likelihood difference = -0.00
+ message: 'Optimization terminated successfully.'
+    njev: 1
+     jac: array([ 0.0083,  0.0938,  0.    ])
+       x: array([ 0.1646,  0.9833])
+  status: 0
+ success: True
+     nit: 1
+     fun: 23935.754504633256
+    nfev: 15
+A = 
+[[ 0.1646  0.      0.      0.      0.      0.    ]
+ [ 0.      0.1646  0.      0.      0.      0.    ]
+ [ 0.      0.      0.1646  0.      0.      0.    ]
+ [ 0.      0.      0.      0.1646  0.      0.    ]
+ [ 0.      0.      0.      0.      0.1646  0.    ]
+ [ 0.      0.      0.      0.      0.      0.1646]]
+B = 
+[[ 0.9833  0.      0.      0.      0.      0.    ]
+ [ 0.      0.9833  0.      0.      0.      0.    ]
+ [ 0.      0.      0.9833  0.      0.      0.    ]
+ [ 0.      0.      0.      0.9833  0.      0.    ]
+ [ 0.      0.      0.      0.      0.9833  0.    ]
+ [ 0.      0.      0.      0.      0.      0.9833]]

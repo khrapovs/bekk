@@ -1,0 +1,30 @@
+
+
+Method : TNC
+Max eigenvalue = 0.9940
+Total time (minutes) = 0.11
+Initial likelihood = 23935.75
+Final likelihood = 23935.75
+Likelihood difference = 0.00
+ message: 'Linear search failed'
+     jac: array([ 0.0116,  0.0076])
+       x: array([ 0.1646,  0.9833])
+  status: 4
+ success: False
+     nit: 0
+     fun: 23935.754504633172
+    nfev: 3
+A = 
+[[ 0.1646  0.      0.      0.      0.      0.    ]
+ [ 0.      0.1646  0.      0.      0.      0.    ]
+ [ 0.      0.      0.1646  0.      0.      0.    ]
+ [ 0.      0.      0.      0.1646  0.      0.    ]
+ [ 0.      0.      0.      0.      0.1646  0.    ]
+ [ 0.      0.      0.      0.      0.      0.1646]]
+B = 
+[[ 0.9833  0.      0.      0.      0.      0.    ]
+ [ 0.      0.9833  0.      0.      0.      0.    ]
+ [ 0.      0.      0.9833  0.      0.      0.    ]
+ [ 0.      0.      0.      0.9833  0.      0.    ]
+ [ 0.      0.      0.      0.      0.9833  0.    ]
+ [ 0.      0.      0.      0.      0.      0.9833]]

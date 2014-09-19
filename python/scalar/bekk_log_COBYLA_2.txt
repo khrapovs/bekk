@@ -1,0 +1,29 @@
+
+
+Method : COBYLA
+Max eigenvalue = 0.9942
+Total time (minutes) = 0.13
+Initial likelihood = 23935.75
+Final likelihood = 23935.93
+Likelihood difference = -0.17
+ message: 'Optimization terminated successfully.'
+   maxcv: 0.0
+ success: True
+  status: 1
+       x: array([ 0.1647,  0.9834])
+    nfev: 25
+     fun: 23935.926631231439
+A = 
+[[ 0.1647  0.      0.      0.      0.      0.    ]
+ [ 0.      0.1647  0.      0.      0.      0.    ]
+ [ 0.      0.      0.1647  0.      0.      0.    ]
+ [ 0.      0.      0.      0.1647  0.      0.    ]
+ [ 0.      0.      0.      0.      0.1647  0.    ]
+ [ 0.      0.      0.      0.      0.      0.1647]]
+B = 
+[[ 0.9834  0.      0.      0.      0.      0.    ]
+ [ 0.      0.9834  0.      0.      0.      0.    ]
+ [ 0.      0.      0.9834  0.      0.      0.    ]
+ [ 0.      0.      0.      0.9834  0.      0.    ]
+ [ 0.      0.      0.      0.      0.9834  0.    ]
+ [ 0.      0.      0.      0.      0.      0.9834]]

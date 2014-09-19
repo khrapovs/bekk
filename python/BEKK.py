@@ -1,3 +1,6 @@
+# Check this repo for related R library: https://github.com/vst/mgarch/
+# Alternative optimization library: http://www.pyopt.org/
+
 from __future__ import print_function, division
 
 import numpy as np
@@ -5,22 +8,24 @@ import scipy as sp
 import matplotlib.pylab as plt
 from scipy.optimize import minimize
 import scipy.linalg as sl
-#from scipy.sparse import linalg as spla
 #import cProfile
 #import numba as nb
 import time
 #from IPython.parallel import Client
 
-np.set_printoptions(precision = 3, suppress = True)
-
-# BEKK model
-# u(t)|H(t) ~ N(0,H(t))
-# u(t) = e(t)H(t)^(1/2), e(t) ~ N(0,I)
-# H(t) = E_{t-1}[u(t)u(t)']
-# One lag, no asymmetries
-# H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
+np.set_printoptions(precision = 4, suppress = True)
 
 class BEKK(object):
+    """BEKK model. Estimation class.
+    
+    u(t)|H(t) ~ N(0,H(t))
+    u(t) = e(t)H(t)^(1/2), e(t) ~ N(0,I)
+    H(t) = E_{t-1}[u(t)u(t)']
+    One lag, no asymmetries
+    H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
+    
+    """
+
     def __init__(self, u):
         # Vector of innovations, T x n
         self.u = u
@@ -31,9 +36,39 @@ class BEKK(object):
         self.method = 'L-BFGS-B'
         self.use_callback = False
         self.restriction = 'scalar'
-
+    
+    def constraint(self, A, B):
+        """Compute the largest eigenvalue of BEKK model.
+        
+        Parameters
+        ----------
+            A : (n, n) array
+            B : (n, n) array
+        
+        Returns
+        -------
+            float
+        """
+        return np.abs(sl.eigvals(np.kron(A, A) + np.kron(B, B))).max()
+        
     def likelihood(self, theta):
+        """Compute the largest eigenvalue of BEKK model.
+        
+        Parameters
+        ----------
+            theta : 1dim array
+                Dimension depends on the model restriction
+        
+        Returns
+        -------
+            float
+                The value of the minus log-likelihood function.
+                If some regularity conditions are violated, then it returns
+                some obscene number.
+        """
         A, B = convert_theta_to_ab(theta, self.n, self.restriction)
+        if self.constraint(A, B) >= 1:
+            return 1e10
         H = np.empty((self.T, self.n, self.n))
         
         H[0] = self.H0
@@ -46,10 +81,10 @@ class BEKK(object):
         self.H = H
         sumf = 0
         for t in range(self.T):
-            f, bad = contribution(self.u[t], H[t])
+            f, bad = contribution(self.u[t], self.H[t])
             sumf += f
             if bad:
-                break
+                return 1e10
         
         if np.isinf(sumf):
             return 1e10
@@ -57,7 +92,13 @@ class BEKK(object):
             return sumf
     
     def callback(self, xk):
-        """Print stuff for each iteraion."""
+        """Print stuff for each iteraion.
+        
+        Parameters
+        ----------
+            xk: 1-dimensional array
+                Current parameter value. Dimension depends on the problem        
+        """
         self.it += 1
         A, B = convert_theta_to_ab(xk, self.n, self.restriction)
         
@@ -89,18 +130,40 @@ class BEKK(object):
             for s in string:
                 texfile.write(s + '\n')
     
+    def print_results(self):
+        """Print stuff after estimation.
+        
+        """
+        self.theta_final = self.res.x
+        time_delta = (self.time_final - self.time_start) / 60
+        # Convert parameter vector to matrices
+        A, B = convert_theta_to_ab(self.theta_final, self.n, self.restriction)
+        like_start = self.likelihood(self.theta_start)
+        like_final = self.likelihood(self.theta_final)
+        like_delta = like_start - like_final
+        # Save results to the log file
+        string = ['\n\nMethod : ' + self.method]
+        string.append('Max eigenvalue = %.4f' % self.constraint(A, B))
+        string.append('Total time (minutes) = %.2f' % time_delta)
+        string.append('Initial likelihood = %.2f' % like_start)
+        string.append('Final likelihood = %.2f' % like_final)
+        string.append('Likelihood difference = %.2f' % like_delta)
+        string.append(str(self.res))
+        string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
+        with open(self.log_file, 'a') as texfile:
+            for s in string:
+                texfile.write(s + '\n')
+    
     def estimate(self, theta0):
         """Estimate parameters of the BEKK model.
         
-        Args:
-            theta0: 1-dimensional array, initial guess
+        Updates several attributes of the class.
+        
+        Parameters
+        ----------
+            theta0: 1-dimensional array
+                Initial guess. Dimension depends on the problem
         """
-        #ones = np.ones(len(theta0))
-        #bounds = list(zip(-5*ones, 5*ones))
-        # So far works:
-        # Nelder-Mead, BFGS, L-BFGS-B, TNC
-        # Works, but not so good:
-        # CG, Powell
         self.theta_start = theta0
         self.xk_old = theta0
         self.it = 0
@@ -118,34 +181,20 @@ class BEKK(object):
                        method = self.method,
                        callback = callback,
                        options = options)
-        self.theta_final = self.res.x
         # How much time did it take?
         self.time_final = time.time()
-        time_delta = (self.time_final - self.time_start) / 60
-        # Convert parameter vector to matrices
-        A, B = convert_theta_to_ab(self.theta_final, self.n, self.restriction)
-        like_start = self.likelihood(self.theta_start)
-        like_final = self.likelihood(self.theta_final)
-        like_delta = like_start - like_final
-        constr = np.abs(np.linalg.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-        # Save results to the log file
-        string = ['\n\nMethod : ' + self.method]
-        string.append('Max eigenvalue = %.2f' % constr)
-        string.append('Total time (minutes) = %.2f' % time_delta)
-        string.append('Initial likelihood = %.2f' % like_start)
-        string.append('Final likelihood = %.2f' % like_final)
-        string.append('Likelihood difference = %.2f' % like_delta)
-        string.append(str(self.res))
-        string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
-        with open(self.log_file, 'a') as texfile:
-            for s in string:
-                texfile.write(s + '\n')
+        self.print_results()
         
 def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     """Simulate data.
     
-    Returns:
-        u: (T, n) array, multivariate innovation matrix
+    Parameters
+    ----------
+    
+    Returns
+    -------
+        u: (T, n) array
+            multivariate innovation matrix
     """
     
     A, B, C = convert_theta_to_abc(theta0, n)
@@ -188,29 +237,32 @@ def contribution(u, H):
         bad: bool
             True if something is wrong
     """
-#    Heig = sl.eigs(H, k=1, which='SR')
+    # Old version
+#    Heig = sl.eigvals(H)
 #    Hdet = sl.det(H)
-#    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-20 or Heig<0
+#    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-20 or Heig.any()<0
 #    if bad:
 #        f = 1e10
 #    else:
 #        f = np.log(Hdet) + u.dot(sl.inv(H)).dot(np.atleast_2d(u).T)
 #        f = float(f/2)
-#    return f, bad
-    
+
     try:
         LU, piv = sl.lu_factor(H)
     except (sl.LinAlgError, ValueError):
         return 1e10, True
     
-    Hdet = np.prod(np.diag(LU))
+    Hdet = np.abs(np.prod(np.diag(LU)))
     if Hdet>1e20 or Hdet<1e-20:
         return 1e10, True
     
     y = sl.lu_solve((LU, piv), u)
     f = np.log(Hdet) + y.dot(np.atleast_2d(u).T)
-
-    return f, False
+    if np.isinf(f):
+        return 1e10, True
+    else:
+        return float(f), False
+    
     
 def estimate_H0(u):
     """Estimate unconditional realized covariance matrix.
@@ -438,23 +490,46 @@ def regenerate_data(u_file):
     u = np.array(ret.apply(lambda x: x - x.mean()))#[-2000:]
     print(u.shape)
     np.save(u_file, u)
+    np.savetxt(u_file[:-4] + '.csv', u, delimiter = ",")
 
-def test_real(m):
+def init_parameters(restriction, n):
+    """Initialize parameters for further estimation.
     
-    # Choose the model restriction: scalar, diagonal, full
-    restriction = 'diagonal'
-    #import numpy as np
-    log_file = restriction + '/bekk_log_' + m + '.txt'
-    # Clean log file
-    with open(log_file, 'w') as texfile:
-        texfile.write('')
-        
+    Parameters
+    ----------
+        restriction : str
+            Type of the model choisen from ['scalar', 'diagonal', 'full']
+        n : int
+            Number of assets in the model.
+    
+    Returns
+    -------
+        theta : (n,) array
+            The initial guess for parameters.
+    """
+    # Randomize initial theta
+    #theta0 = np.random.rand(2*n**2)/10
+    # Clever initial theta
+    # A, B - n x n matrices
+    A = np.eye(n) * .15 # + np.ones((n, n)) *.05
+    B = np.eye(n) * .95
+    theta = convert_ab_to_theta(A, B, restriction)
+    return theta
+    
+def test_real(method, theta_start, restriction, stage):
+    # Load data    
     u_file = 'innovations.npy'
     # Load data from the drive
     u = np.load(u_file)
+    
+    #import numpy as np
+    log_file = restriction + '/bekk_log_' + method + '_' + str(stage) + '.txt'
+    # Clean log file
+    with open(log_file, 'w') as texfile:
+        texfile.write('')
     # Initialize the object
     bekk = BEKK(u)
-    # Restriction of the model, 'scalar', 'diag', 'scalar'
+    # Restriction of the model, 'scalar', 'diagonal', 'full'
     bekk.restriction = restriction
     # maximum number of iterations
     bekk.maxiter = 1e6
@@ -465,46 +540,82 @@ def test_real(m):
     # Do we want to download data and overwrite it on the drive?
     #regenerate_data(u_file)
     
-    
-    # Randomize initial theta
-    #theta0 = np.random.rand(2*n**2)/10
-    # Clever initial theta
-    # A, B, C - n x n matrices
-    n = u.shape[1]
-    A = np.eye(n) * .1 # + np.ones((n, n)) *.05
-    B = np.eye(n) * .9
-    theta_start = convert_ab_to_theta(A, B, bekk.restriction)
     # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
-#    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
-#               'TNC','COBYLA','SLSQP']
-    # Estimate parameters
-    # for i in range(100):
-#    for m in methods:
-#        # Optimization method
-#        bekk.method = m
-#        # Estimate parameters
-#        bekk.estimate(theta_start)
+    #    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+    #               'TNC','COBYLA','SLSQP']
     # Optimization method
-    bekk.method = m
+    bekk.method = method
     # Estimate parameters
     bekk.estimate(theta_start)
     # bekk.estimate(bekk.theta_final)
     return bekk
-#        theta_new = result.x
-#        print(i, result.success)
-#        if result.success:
-#            break
-        # Print results
+
+def two_stage_estimation():
+    """Estiamte BEKK using different optimization methods in two steps.
+    
+    Choose the best method according to the reached likelihood.'
+    Take the final theta from this method.'
+    Use it as a starting point for the next stage.
+    
+    """
+    # Load data    
+    u_file = 'innovations.npy'
+    # Load data from the drive
+    u = np.load(u_file)
+    n = u.shape[1]
+    # Choose the model restriction: scalar, diagonal, full
+    restriction = 'scalar'
+    # Initialize parameters
+    theta_start = init_parameters(restriction, n)
+    print(theta_start)
+    from multiprocessing import Pool
+#    'Newton-CG', 'dogleg', 'trust-ncg' require gradient
+    # 'BFGS', 'CG', 'Nelder-Mead' do a very poor job.
+    methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
+    #methods = ['L-BFGS-B']
+    with Pool(processes=len(methods)) as pool:
+        results = pool.starmap(test_real,
+                               zip(methods,
+                                   [theta_start for x in range(len(methods))],
+                                   [restriction for x in range(len(methods))],
+                                   [1 for x in range(len(methods))]))
+        pool.close()
+    
+    likes = [res.res.fun for res in results]
+    thetas = [res.res.x for res in results]
+    theta_start = thetas[likes.index(min(likes))]
+    methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
+    print(theta_start)
+    with Pool(processes=len(methods)) as pool:
+        results = pool.starmap(test_real,
+                               zip(methods,
+                                   [theta_start for x in range(len(methods))],
+                                   [restriction for x in range(len(methods))],
+                                   [2 for x in range(len(methods))]))
+        pool.close()
+
+def one_stage_estimation():
+    """Estiamte BEKK using different optikization methods in one step.
+    """
+    # Load data    
+    u_file = 'innovations.npy'
+    # Load data from the drive
+    u = np.load(u_file)
+    n = u.shape[1]
+    # Choose the model restriction: scalar, diagonal, full
+    restriction = 'diagonal'
+    # Initialize parameters
+    theta_start = init_parameters(restriction, n)
+    print(theta_start)
+    # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
+    # 'BFGS', 'CG', 'Nelder-Mead' do a very poor job.
+    methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
+    for method in methods:
+        test_real(method, theta_start, restriction, 1)
     
 if __name__ == '__main__':
 #    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')
 #    bekk = test_real('TNC')
     
-    from multiprocessing import Pool
-#    'Newton-CG', 'dogleg', 'trust-ncg' require gradient
-    # 'BFGS', 'CG', 'Nelder-Mead' do a very poor job.
-    methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
-    with Pool(processes=5) as pool:
-        pool.map(test_real, methods)
-        pool.close()
+    one_stage_estimation()

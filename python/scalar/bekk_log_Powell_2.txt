@@ -1,0 +1,31 @@
+
+
+Method : Powell
+Max eigenvalue = 0.9940
+Total time (minutes) = 0.30
+Initial likelihood = 23935.75
+Final likelihood = 23935.75
+Likelihood difference = 0.00
+ message: 'Optimization terminated successfully.'
+       x: array([ 0.1646,  0.9833])
+  status: 0
+ success: True
+   direc: array([[ 1.,  0.],
+       [ 0.,  1.]])
+     nit: 1
+     fun: array(23935.754504632718)
+    nfev: 61
+A = 
+[[ 0.1646  0.      0.      0.      0.      0.    ]
+ [ 0.      0.1646  0.      0.      0.      0.    ]
+ [ 0.      0.      0.1646  0.      0.      0.    ]
+ [ 0.      0.      0.      0.1646  0.      0.    ]
+ [ 0.      0.      0.      0.      0.1646  0.    ]
+ [ 0.      0.      0.      0.      0.      0.1646]]
+B = 
+[[ 0.9833  0.      0.      0.      0.      0.    ]
+ [ 0.      0.9833  0.      0.      0.      0.    ]
+ [ 0.      0.      0.9833  0.      0.      0.    ]
+ [ 0.      0.      0.      0.9833  0.      0.    ]
+ [ 0.      0.      0.      0.      0.9833  0.    ]
+ [ 0.      0.      0.      0.      0.      0.9833]]
