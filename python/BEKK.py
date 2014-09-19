@@ -269,11 +269,13 @@ def estimate_H0(u):
     
     Parameters
     ----------
-        u: (T, n) array, inovations
+        u: (T, n) array
+            inovations
     
     Returns
     -------
-        E[u'u], (n, n) array
+        (n, n) array
+            E[u'u]
     """
     T = u.shape[0]
     return u.T.dot(u) / T
@@ -305,7 +307,8 @@ def convert_abc_to_theta(A, B, C):
     
     Parameters
     ----------
-        A, B, C: (n, n) arrays, parameter matrices
+        A, B, C: (n, n) arrays
+            parameter matrices
     
     Returns
     -------
@@ -323,13 +326,16 @@ def convert_theta_to_ab(theta, n, restriction):
     
     Parameters
     ----------
-        theta: array of parameters
+        theta: 1-dim array
+            Parameters of the model
             Length depends on the model restrictions:
             'full' - 2*n**2 + (n-1)*n/2
             'diagonal' - 2*n
             'scalar' - 2
-        n: number of innovations in the model
-        restriction: can be 'full', 'diagonal', 'scalar'
+        n: int
+            number of innovations in the model
+        restriction: str
+            can be 'full', 'diagonal', 'scalar'
     
     Returns
     -------
@@ -354,12 +360,17 @@ def convert_ab_to_theta(A, B, restriction):
     
     Parameters
     ----------
-        A, B: (n, n) arrays, parameter matrices
-        restriction: can be 'full', 'diagonal', 'scalar'
+        A: (n, n) array
+            Parameter matrix
+        B: (n, n) array
+            Parameter matrix
+        restriction: str
+            Can be 'full', 'diagonal', 'scalar'
     
     Returns
     -------
-        1-dimensional array of parameters
+        1-dimensional array
+            Parameters of the model
             Length depends on the model restrictions:
             'full' - 2*n**2
             'diagonal' - 2*n
@@ -381,7 +392,8 @@ def stationary_H(A, B, C):
     
     Parameters
     ----------
-        A, B, C: (n, n) arrays, parameter matrices
+        A, B, C: (n, n) arrays
+            Parameter matrices
     
     Returns
     -------
@@ -401,8 +413,10 @@ def plot_data(u, H):
     
     Parameters
     ----------
-        u: (T, n) array, innovations
-        H: (T, n, n) array, variance/covariances
+        u: (T, n) array
+            innovations
+        H: (T, n, n) array
+            variance/covariances
     """
     T, n = u.shape
     fig, axes = plt.subplots(nrows = n**2, ncols = 1)
@@ -595,7 +609,7 @@ def two_stage_estimation():
         pool.close()
 
 def one_stage_estimation():
-    """Estiamte BEKK using different optikization methods in one step.
+    """Estiamte BEKK using different optimization methods in one step.
     """
     # Load data    
     u_file = 'innovations.npy'
