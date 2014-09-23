@@ -175,12 +175,14 @@ class BEKK(object):
         else:
             callback = None
         # Optimization options
-        options = {'disp': False, 'maxiter' : int(self.maxiter)}
+        options = {'disp': False, 'maxiter' : int(self.maxiter),
+            'maxfun' : int(self.maxfun)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                        method = self.method,
                        callback = callback,
                        options = options)
+        self.theta_final = self.res.x
         # How much time did it take?
         self.time_final = time.time()
         self.print_results()
@@ -255,7 +257,7 @@ def contribution(u, H):
         return 1e10, True
     
     Hdet = np.abs(np.prod(np.diag(LU)))
-    if Hdet>1e20 or Hdet<1e-20:
+    if Hdet>1e20 or Hdet<1e-10:
         return 1e10, True
     
     y = sl.lu_solve((LU, piv), u)
@@ -549,6 +551,8 @@ def test_real(method, theta_start, restriction, stage):
     bekk.restriction = restriction
     # maximum number of iterations
     bekk.maxiter = 1e6
+    # maximum number of function evaluations
+    bekk.maxfun = 1e5
     # Print results for each iteration?
     bekk.use_callback = False
     # Set log file name
@@ -611,7 +615,7 @@ def two_stage_estimation():
         pool.close()
 
 def one_stage_estimation():
-    """Estiamte BEKK using different optimization methods in one step.
+    """Estimate BEKK using different optimization methods in one step.
     """
     # Load data    
     u_file = 'innovations.npy'
@@ -622,13 +626,38 @@ def one_stage_estimation():
     restriction = 'diagonal'
     # Initialize parameters
     theta_start = init_parameters(restriction, n)
-    print(theta_start)
+    
+    # Run first stage estimation
+    theta_start = test_real('L-BFGS-B', theta_start, restriction, 1).theta_final
+    A, B = convert_theta_to_ab(theta_start, n, 'diagonal')
+    theta_start = convert_ab_to_theta(A, B, 'full')
+    restriction = 'full'
+
     # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
     # 'BFGS', 'CG', 'Nelder-Mead' do a very poor job.
-    methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
-    for method in methods:
-        test_real(method, theta_start, restriction, 1)
-    
+    # methods = ['Powell','L-BFGS-B','TNC','COBYLA','SLSQP']
+    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+               'TNC','COBYLA','SLSQP']
+    #methods = ['TNC','COBYLA','SLSQP']
+    # for method in methods:
+    #     test_real(method, theta_start, restriction, 1)
+    from multiprocessing import Pool
+    with Pool(processes=len(methods)) as pool:
+        results = pool.starmap(test_real,
+                               zip(methods,
+                                   [theta_start for x in range(len(methods))],
+                                   [restriction for x in range(len(methods))],
+                                   [1 for x in range(len(methods))]))
+        pool.close()
+
+def one_stage_parallel():
+    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
+               'TNC','COBYLA','SLSQP']
+    from multiprocessing import Pool
+    with Pool(processes=8) as pool:
+        pool.map(test_real, methods)
+        pool.close()
+
 if __name__ == '__main__':
 #    test_simulate(n = 2, T = 100)
 #    cProfile.run('test(n = 2, T = 100)')

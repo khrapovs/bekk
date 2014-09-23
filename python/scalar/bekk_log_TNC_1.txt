@@ -2,18 +2,18 @@
 
 Method : TNC
 Max eigenvalue = 0.9940
-Total time (minutes) = 2.10
-Initial likelihood = 26240.84
+Total time (minutes) = 2.95
+Initial likelihood = 25270.66
 Final likelihood = 23935.75
-Likelihood difference = 2305.08
-     jac: array([  5.2132,  23.8109])
- success: False
+Likelihood difference = 1334.91
+     fun: 23935.754505911882
+ success: True
+    nfev: 129
+     jac: array([ 2.0889,  8.7955])
+     nit: 23
+  status: 1
        x: array([ 0.1646,  0.9833])
-    nfev: 74
-  status: 4
-     nit: 9
-     fun: 23935.75451243956
- message: 'Linear search failed'
+ message: 'Converged (|f_n-f_(n-1)| ~= 0)'
 A = 
 [[ 0.1646  0.      0.      0.      0.      0.    ]
  [ 0.      0.1646  0.      0.      0.      0.    ]

@@ -2,13 +2,17 @@
 
 Method : Powell
 Max eigenvalue = 0.9804
-Total time (minutes) = 11.09
+Total time (minutes) = 10.04
 Initial likelihood = 25270.66
-Final likelihood = -378837070351702.50
-Likelihood difference = 378837070376973.19
-  status: 0
-    nfev: 1448
+Final likelihood = -55653899647687.68
+Likelihood difference = 55653899672958.34
+       x: array([ 0.2666,  0.275 ,  0.2358,  0.2176,  0.2291,  0.265 ,  0.9536,
+        0.9468,  0.9592,  0.962 ,  0.141 ,  0.9511])
+     nit: 3
+     fun: array(-55653899647687.68)
  success: True
+ message: 'Optimization terminated successfully.'
+  status: 0
    direc: array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
        [ 0.,  1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
        [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
@@ -21,11 +25,7 @@ Likelihood difference = 378837070376973.19
        [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.,  0.,  0.],
        [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.,  0.],
        [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.]])
-     nit: 3
- message: 'Optimization terminated successfully.'
-       x: array([ 0.2666,  0.275 ,  0.2358,  0.2176,  0.2291,  0.265 ,  0.9536,
-        0.9468,  0.9592,  0.962 ,  0.141 ,  0.9511])
-     fun: array(-378837070351702.5)
+    nfev: 1494
 A = 
 [[ 0.2666  0.      0.      0.      0.      0.    ]
  [ 0.      0.275   0.      0.      0.      0.    ]

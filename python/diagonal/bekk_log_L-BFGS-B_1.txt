@@ -2,18 +2,18 @@
 
 Method : L-BFGS-B
 Max eigenvalue = 0.9967
-Total time (minutes) = 20.54
+Total time (minutes) = 12.18
 Initial likelihood = 25270.66
 Final likelihood = 23869.47
 Likelihood difference = 1401.19
-  status: 0
     nfev: 2604
+ message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
        x: array([ 0.1973,  0.272 ,  0.1783,  0.1389,  0.1384,  0.1474,  0.9751,
         0.9489,  0.9791,  0.9866,  0.9885,  0.9874])
-     nit: 114
      jac: array([-0.0193, -0.6225,  4.9051,  0.9244,  2.9006, -4.5999, -2.0504,
        -2.5128,  3.2811, -3.7857, -1.2718, -9.8076])
- message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
+     nit: 114
+  status: 0
  success: True
      fun: 23869.470336282156
 A = 
