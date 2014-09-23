@@ -175,8 +175,7 @@ class BEKK(object):
         else:
             callback = None
         # Optimization options
-        options = {'disp': False, 'maxiter' : int(self.maxiter),
-            'maxfun' : int(self.maxfun)}
+        options = {'disp': False, 'maxiter' : int(self.maxiter)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                        method = self.method,
@@ -241,15 +240,6 @@ def contribution(u, H):
         bad: bool
             True if something is wrong
     """
-    # Old version
-#    Heig = sl.eigvals(H)
-#    Hdet = sl.det(H)
-#    bad = np.any(np.isinf(H)) or Hdet>1e20 or Hdet<1e-20 or Heig.any()<0
-#    if bad:
-#        f = 1e10
-#    else:
-#        f = np.log(Hdet) + u.dot(sl.inv(H)).dot(np.atleast_2d(u).T)
-#        f = float(f/2)
 
     try:
         LU, piv = sl.lu_factor(H)
@@ -257,7 +247,7 @@ def contribution(u, H):
         return 1e10, True
     
     Hdet = np.abs(np.prod(np.diag(LU)))
-    if Hdet>1e20 or Hdet<1e-10:
+    if Hdet > 1e20 or Hdet < 1e-5:
         return 1e10, True
     
     y = sl.lu_solve((LU, piv), u)
@@ -551,8 +541,6 @@ def test_real(method, theta_start, restriction, stage):
     bekk.restriction = restriction
     # maximum number of iterations
     bekk.maxiter = 1e6
-    # maximum number of function evaluations
-    bekk.maxfun = 1e5
     # Print results for each iteration?
     bekk.use_callback = False
     # Set log file name
@@ -650,6 +638,30 @@ def one_stage_estimation():
                                    [1 for x in range(len(methods))]))
         pool.close()
 
+def three_stage_estimation():
+    """Estimate BEKK using different optimization methods in one step.
+    """
+    # Load data    
+    u_file = 'innovations.npy'
+    # Load data from the drive
+    u = np.load(u_file)
+    n = u.shape[1]
+    # Choose the model restriction: scalar, diagonal, full
+    restriction = 'diagonal'
+    # Initialize parameters
+    theta_start = init_parameters(restriction, n)
+    
+    # Run first stage estimation
+    theta_start = test_real('L-BFGS-B', theta_start, restriction, 1).theta_final
+    A, B = convert_theta_to_ab(theta_start, n, 'diagonal')
+    theta_start = convert_ab_to_theta(A, B, 'full')
+    restriction = 'full'
+
+    method = 'Nelder-Mead'
+    for stage in range(1, 6):
+        print(stage)
+        theta_start = test_real(method, theta_start, restriction, stage)
+
 def one_stage_parallel():
     methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
                'TNC','COBYLA','SLSQP']
@@ -663,4 +675,5 @@ if __name__ == '__main__':
 #    cProfile.run('test(n = 2, T = 100)')
 #    bekk = test_real('TNC')
     
-    one_stage_estimation()
+    # one_stage_estimation()
+    three_stage_estimation()
