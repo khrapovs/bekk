@@ -474,7 +474,7 @@ def regenerate_data(u_file):
     import Quandl
     import pandas as pd
     
-    token = 'ECK8bso5CLKnNui4kNpk'
+    token = open('Quandl.token', 'r').read()
     tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL"]
     tickers2 = ["GOOG/NYSE_XOM", "GOOG/NYSE_OXY"]
     tickers3 = ["GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
@@ -660,7 +660,7 @@ def three_stage_estimation():
     method = 'Nelder-Mead'
     for stage in range(1, 6):
         print(stage)
-        theta_start = test_real(method, theta_start, restriction, stage)
+        theta_start = test_real(method, theta_start, restriction, stage).theta_final
 
 def one_stage_parallel():
     methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',

@@ -22,4 +22,5 @@
 *.dat
 *.p
 *.npy
+*.token
 .ipynb_checkpoints
