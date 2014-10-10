@@ -327,11 +327,14 @@ def convert_theta_to_abc(theta, nstocks,
 
     Parameters
     ----------
-    theta: array of parameters
-        Length depends on the model restrictions:
-        'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' -
-        'scalar' -
+    theta: 1d array of parameters
+        Length depends on the model restrictions and variance targeting
+        If var_targeting:
+            'full' - 2*n**2
+            'diagonal' - 2*n
+            'scalar' - 2
+        If not var_targeting:
+            + (n-1)*n/2 for parameter C
     nstocks: number of innovations in the model
 
     Returns
@@ -370,40 +373,6 @@ def convert_theta_to_abc(theta, nstocks,
         C[np.tril_indices(nstocks)] = theta[2*chunk:]
         return A, B, C
 
-def convert_theta_to_ab(theta, n, restriction):
-    """Convert 1-dimensional array of parameters to matrices A, and B.
-
-    Parameters
-    ----------
-    theta: 1-dim array
-        Parameters of the model
-        Length depends on the model restrictions:
-        'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' - 2*n
-        'scalar' - 2
-    n: int
-        number of innovations in the model
-    restriction: str
-        can be 'full', 'diagonal', 'scalar'
-
-    Returns
-    -------
-    A, B: (n, n) arrays, parameter matrices
-    """
-    if restriction == 'full':
-        A = theta[:n**2].reshape([n, n])
-        B = theta[n**2:].reshape([n, n])
-    elif restriction == 'diagonal':
-        A = np.diag(theta[:n])
-        B = np.diag(theta[n:])
-    elif restriction == 'scalar':
-        A = np.eye(n) * theta[0]
-        B = np.eye(n) * theta[1]
-    else:
-        # !!! Should raise exception "Wrong restriction'
-        pass
-    return A, B
-
 def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
     """Convert parameter matrices A, B, and C to 1-dimensional array.
 
@@ -423,10 +392,14 @@ def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
     Returns
     -------
     1-dimensional array of parameters
-        Length depends on the model restrictions:
-        'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' -
-        'scalar' -
+        Length depends on the model restrictions and variance targeting
+        If var_targeting:
+            'full' - 2*n**2
+            'diagonal' - 2*n
+            'scalar' - 2
+        If not var_targeting:
+            + (n-1)*n/2 for parameter C
+            
     """
     if restriction == 'full':
         theta = [A.flatten(), B.flatten()]
@@ -438,38 +411,6 @@ def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
         raise ValueError('This restriction is not supported!')
     if var_target:
         theta.append(C[np.tril_indices(C.shape[0])])
-    return np.concatenate(theta)
-
-def convert_ab_to_theta(A, B, restriction):
-    """Convert parameter matrices A and B to 1-dimensional array.
-
-    Parameters
-    ----------
-    A: (n, n) array
-        Parameter matrix
-    B: (n, n) array
-        Parameter matrix
-    restriction: str
-        Can be 'full', 'diagonal', 'scalar'
-
-    Returns
-    -------
-    1-dimensional array
-        Parameters of the model
-        Length depends on the model restrictions:
-        'full' - 2*n**2
-        'diagonal' - 2*n
-        'scalar' - 2
-    """
-    if restriction == 'full':
-        theta = [A.flatten(), B.flatten()]
-    elif restriction == 'diagonal':
-        theta = [np.diag(A), np.diag(B)]
-    elif restriction == 'scalar':
-        return np.array([A[0, 0], B[0, 0]])
-    else:
-        # !!! Should raise exception "Wrong restriction'
-        pass
     return np.concatenate(theta)
 
 def find_stationary_var(A, B, C):

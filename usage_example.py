@@ -8,7 +8,6 @@ import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_BEKK, estimate_H0, init_parameters
 from MGARCH.bekk import convert_abc_to_theta
-from MGARCH.bekk import convert_ab_to_theta
 
 def test_simulate(n=2, T=100):
     log_file = 'bekk_log.txt'
