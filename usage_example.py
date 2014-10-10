@@ -11,7 +11,7 @@ from bekk import convert_ab_to_theta
 
 np.set_printoptions(precision=4, suppress=True)
 
-def test_simulate(n = 2, T = 100):
+def test_simulate(n=2, T=100):
     log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
@@ -23,7 +23,7 @@ def test_simulate(n = 2, T = 100):
     theta = convert_abc_to_theta(A, B, C)
     
     # Simulate data    
-    u = simulate_BEKK(theta, n = n, T = T, log = log_file)
+    u = simulate_BEKK(theta, n=n, T=T, log=log_file)
     
     # Initialize the object
     bekk = BEKK(u)
@@ -163,4 +163,4 @@ def simple_test():
     test_real('L-BFGS-B', theta_start, restriction, 1)
  
 if __name__ == '__main__':
-    simple_test()
+    test_simulate(n=2, T=100)

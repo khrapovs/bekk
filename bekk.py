@@ -175,6 +175,7 @@ class BEKK(object):
         ----------
         theta0: 1-dimensional array
             Initial guess. Dimension depends on the problem
+            
         """
         self.theta_start = theta0
         self.xk_old = theta0
@@ -190,20 +191,20 @@ class BEKK(object):
         options = {'disp': False, 'maxiter' : int(self.maxiter)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
-                       method = self.method,
-                       callback = callback,
-                       options = options)
+                            method=self.method,
+                            callback=callback,
+                            options=options)
         self.theta_final = self.res.x
         # How much time did it take?
         self.time_final = time.time()
         self.print_results()
         
-def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
+def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
     """Simulate data.
     
     Parameters
     ----------
-    theta0 : 1-dim array
+    theta : 1-dim array
         True model parameters.
     n : int
         Number of series to simulate
@@ -216,9 +217,9 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
         multivariate innovation matrix
     """
     
-    A, B, C = convert_theta_to_abc(theta0, n)
-    mean, cov = np.zeros(n), np.eye(n)
+    A, B, C = convert_theta_to_abc(theta, n)
     
+    mean, cov = np.zeros(n), np.eye(n)
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
     u = np.zeros((T, n))
