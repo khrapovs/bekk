@@ -79,7 +79,7 @@ class BEKK(object):
             some obscene number.
 
         """
-        A, B = convert_theta_to_abc(theta, self.nstocks,
+        A, B, C = convert_theta_to_abc(theta, self.nstocks,
                                     self.restriction, self.var_target)
         if self.constraint(A, B) >= 1:
             return 1e10
@@ -115,7 +115,7 @@ class BEKK(object):
             Current parameter value. Dimension depends on the problem
         """
         self.iteration += 1
-        A, B = convert_theta_to_abc(xk, self.nstocks,
+        A, B, C = convert_theta_to_abc(xk, self.nstocks,
                                     self.restriction, self.var_target)
 
         start_like = self.likelihood(self.theta_start)
@@ -151,7 +151,7 @@ class BEKK(object):
         self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
-        A, B = convert_theta_to_abc(self.theta_final, self.nstocks,
+        A, B, C = convert_theta_to_abc(self.theta_final, self.nstocks,
                                     self.restriction, self.var_target)
         if kwargs['theta_true'] is not None:
             like_true = self.likelihood(kwargs['theta_true'])
@@ -209,6 +209,10 @@ class BEKK(object):
             maxiter = 1e6
         else:
             maxiter = kwargs['maxiter']
+        if not 'disp' in kwargs:
+            disp = False
+        else:
+            disp = kwargs['disp']
         if not 'use_callback' in kwargs:
             use_callback = False
         else:
@@ -225,7 +229,7 @@ class BEKK(object):
         self.time_start = time.time()
         self.time_old = time.time()
         # Optimization options
-        options = {'disp': False, 'maxiter' : int(maxiter)}
+        options = {'disp': disp, 'maxiter' : int(maxiter)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                             method=self.method,
@@ -344,7 +348,7 @@ def convert_theta_to_abc(theta, nstocks,
         Parameter matrix
     B : (nstocks, nstocks) array
         Parameter matrix
-    C : (nstocks, nstocks) array
+    C : (nstocks, nstocks) array or None
         Parameter matrix (lower triangular)
     restriction : str
         Can be 'full', 'diagonal', 'scalar'
@@ -368,11 +372,11 @@ def convert_theta_to_abc(theta, nstocks,
         raise ValueError('This restriction is not supported!')
     
     if var_target:
-        return A, B
+        C = None
     else:
         C = np.zeros((nstocks, nstocks))
         C[np.tril_indices(nstocks)] = theta[2*chunk:]
-        return A, B, C
+    return A, B, C
 
 def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
     """Convert parameter matrices A, B, and C to 1-dimensional array.
