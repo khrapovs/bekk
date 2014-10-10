@@ -52,12 +52,13 @@ class BEKK(object):
         
         Parameters
         ----------
-            A : (n, n) array
-            B : (n, n) array
+        A : (n, n) array
+        B : (n, n) array
         
         Returns
         -------
-            float
+        float
+        
         """
         return np.abs(sl.eigvals(np.kron(A, A) + np.kron(B, B))).max()
         
@@ -66,15 +67,16 @@ class BEKK(object):
         
         Parameters
         ----------
-            theta : 1dim array
-                Dimension depends on the model restriction
+        theta : 1dim array
+            Dimension depends on the model restriction
         
         Returns
         -------
-            float
-                The value of the minus log-likelihood function.
-                If some regularity conditions are violated, then it returns
-                some obscene number.
+        float
+            The value of the minus log-likelihood function.
+            If some regularity conditions are violated, then it returns
+            some obscene number.
+            
         """
         A, B = convert_theta_to_ab(theta, self.n, self.restriction)
         if self.constraint(A, B) >= 1:
@@ -106,8 +108,8 @@ class BEKK(object):
         
         Parameters
         ----------
-            xk: 1-dimensional array
-                Current parameter value. Dimension depends on the problem        
+        xk: 1-dimensional array
+            Current parameter value. Dimension depends on the problem        
         """
         self.it += 1
         A, B = convert_theta_to_ab(xk, self.n, self.restriction)
@@ -171,8 +173,8 @@ class BEKK(object):
         
         Parameters
         ----------
-            theta0: 1-dimensional array
-                Initial guess. Dimension depends on the problem
+        theta0: 1-dimensional array
+            Initial guess. Dimension depends on the problem
         """
         self.theta_start = theta0
         self.xk_old = theta0
@@ -201,17 +203,17 @@ def simulate_BEKK(theta0, n = 2, T = 1000, log = 'bekk_log.txt'):
     
     Parameters
     ----------
-        theta0 : 1-dim array
-            True model parameters.
-        n : int
-            Number of series to simulate
-        T : int
-            Number of observations to generate. Time series length
+    theta0 : 1-dim array
+        True model parameters.
+    n : int
+        Number of series to simulate
+    T : int
+        Number of observations to generate. Time series length
             
     Returns
     -------
-        u: (T, n) array
-            multivariate innovation matrix
+    u: (T, n) array
+        multivariate innovation matrix
     """
     
     A, B, C = convert_theta_to_abc(theta0, n)
@@ -238,17 +240,17 @@ def contribution(u, H):
     
     Parameters
     ----------
-        u: (n,) array
-            inovations
-        H: (n, n) array
-            variance/covariances
+    u: (n,) array
+        inovations
+    H: (n, n) array
+        variance/covariances
     
     Returns
     -------
-        f: float
-            log-likelihood contribution
-        bad: bool
-            True if something is wrong
+    f: float
+        log-likelihood contribution
+    bad: bool
+        True if something is wrong
     """
 
     try:
@@ -273,13 +275,14 @@ def estimate_H0(u):
     
     Parameters
     ----------
-        u: (T, n) array
-            inovations
+    u: (T, n) array
+        inovations
     
     Returns
     -------
-        (n, n) array
-            E[u'u]
+    (n, n) array
+        E[u'u]
+        
     """
     T = u.shape[0]
     return u.T.dot(u) / T
@@ -289,16 +292,17 @@ def convert_theta_to_abc(theta, n):
     
     Parameters
     ----------
-        theta: array of parameters
-            Length depends on the model restrictions:
-            'full' - 2*n**2 + (n-1)*n/2
-            'diagonal' - 
-            'scalar' - 
-        n: number of innovations in the model
+    theta: array of parameters
+        Length depends on the model restrictions:
+        'full' - 2*n**2 + (n-1)*n/2
+        'diagonal' - 
+        'scalar' - 
+    n: number of innovations in the model
     
     Returns
     -------
-        A, B, C: (n, n) array, parameter matrices
+    A, B, C: (n, n) array, parameter matrices
+    
     """
     A = theta[:n**2].reshape([n, n])
     B = theta[n**2:2*n**2].reshape([n, n])
@@ -311,16 +315,16 @@ def convert_abc_to_theta(A, B, C):
     
     Parameters
     ----------
-        A, B, C: (n, n) arrays
-            parameter matrices
+    A, B, C: (n, n) arrays
+        parameter matrices
     
     Returns
     -------
-        1-dimensional array of parameters
-            Length depends on the model restrictions:
-            'full' - 2*n**2 + (n-1)*n/2
-            'diagonal' - 
-            'scalar' - 
+    1-dimensional array of parameters
+        Length depends on the model restrictions:
+        'full' - 2*n**2 + (n-1)*n/2
+        'diagonal' - 
+        'scalar' - 
     """
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
@@ -330,20 +334,20 @@ def convert_theta_to_ab(theta, n, restriction):
     
     Parameters
     ----------
-        theta: 1-dim array
-            Parameters of the model
-            Length depends on the model restrictions:
-            'full' - 2*n**2 + (n-1)*n/2
-            'diagonal' - 2*n
-            'scalar' - 2
-        n: int
-            number of innovations in the model
-        restriction: str
-            can be 'full', 'diagonal', 'scalar'
+    theta: 1-dim array
+        Parameters of the model
+        Length depends on the model restrictions:
+        'full' - 2*n**2 + (n-1)*n/2
+        'diagonal' - 2*n
+        'scalar' - 2
+    n: int
+        number of innovations in the model
+    restriction: str
+        can be 'full', 'diagonal', 'scalar'
     
     Returns
     -------
-        A, B: (n, n) arrays, parameter matrices
+    A, B: (n, n) arrays, parameter matrices
     """
     if restriction == 'full':
         A = theta[:n**2].reshape([n, n])
@@ -364,21 +368,21 @@ def convert_ab_to_theta(A, B, restriction):
     
     Parameters
     ----------
-        A: (n, n) array
-            Parameter matrix
-        B: (n, n) array
-            Parameter matrix
-        restriction: str
-            Can be 'full', 'diagonal', 'scalar'
+    A: (n, n) array
+        Parameter matrix
+    B: (n, n) array
+        Parameter matrix
+    restriction: str
+        Can be 'full', 'diagonal', 'scalar'
     
     Returns
     -------
-        1-dimensional array
-            Parameters of the model
-            Length depends on the model restrictions:
-            'full' - 2*n**2
-            'diagonal' - 2*n
-            'scalar' - 2
+    1-dimensional array
+        Parameters of the model
+        Length depends on the model restrictions:
+        'full' - 2*n**2
+        'diagonal' - 2*n
+        'scalar' - 2
     """
     if restriction == 'full':
         theta = [A.flatten(), B.flatten()]
@@ -396,8 +400,8 @@ def stationary_H(A, B, C):
     
     Parameters
     ----------
-        A, B, C: (n, n) arrays
-            Parameter matrices
+    A, B, C: (n, n) arrays
+        Parameter matrices
     
     Returns
     -------
@@ -417,10 +421,10 @@ def plot_data(u, H):
     
     Parameters
     ----------
-        u: (T, n) array
-            innovations
-        H: (T, n, n) array
-            variance/covariances
+    u: (T, n) array
+        innovations
+    H: (T, n, n) array
+        variance/covariances
     """
     T, n = u.shape
     fig, axes = plt.subplots(nrows = n**2, ncols = 1)
