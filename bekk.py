@@ -453,6 +453,24 @@ def find_stationary_var(A, B, C):
         i += 1
     return Hnew
 
+def find_Cmat(A, B, stationary_var):
+    """Find C in H = CC' + AHA' + BHB'.
+
+    Parameters
+    ----------
+    A, B, stationary_var: (n, n) arrays
+        Parameter matrices
+
+    Returns
+    -------
+    C : (n, n) array
+        Lower triangular matrix
+    """
+    CC = stationary_var - A.dot(stationary_var).dot(A.T) \
+        - B.dot(stationary_var).dot(B.T)
+    # Extract C parameter
+    return sp.linalg.cholesky(CC, 1)
+
 def init_parameters(innov, restriction, var_target):
     """Initialize parameters for further estimation.
     
@@ -478,10 +496,7 @@ def init_parameters(innov, restriction, var_target):
     # Estimate stationary variance
     stationary_var = estimate_H0(innov)
     # Compute the constant term
-    CC = stationary_var - A.dot(stationary_var).dot(A.T) \
-        - B.dot(stationary_var).dot(B.T)
-    # Extract C parameter
-    C = sp.linalg.cholesky(CC, 1)
+    C = find_Cmat(A, B, stationary_var)
     theta = convert_abc_to_theta(A, B, C, restriction, var_target)
     return theta
 
