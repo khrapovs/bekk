@@ -14,7 +14,7 @@ def test_simulate(n=2, T=100):
     with open(log_file, 'w') as texfile:
         texfile.write('')
         
-    restriction = 'scalar'
+    restriction = 'diagonal'
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
@@ -40,7 +40,8 @@ def test_simulate(n=2, T=100):
     
     # Estimate parameters
     bekk.estimate(theta_start=theta_start, theta_true=theta[:2*n**2],
-                  var_target=var_target, method='Powell', log_file=log_file)
+                  restriction=restriction, var_target=var_target,
+                  method='Powell', log_file=log_file)
     
 def regenerate_data(u_file):
     """Download and save data to disk.

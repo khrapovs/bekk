@@ -80,7 +80,7 @@ class BEKK(object):
 
         """
         A, B, C = convert_theta_to_abc(theta, self.nstocks,
-                                    self.restriction, self.var_target)
+                                       self.restriction, self.var_target)
         if self.constraint(A, B) >= 1:
             return 1e10
         H = np.empty((self.nobs, self.nstocks, self.nstocks))
@@ -155,7 +155,7 @@ class BEKK(object):
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
         A, B, C = convert_theta_to_abc(self.theta_final, self.nstocks,
-                                    self.restriction, self.var_target)
+                                       self.restriction, self.var_target)
         if kwargs['theta_true'] is not None:
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
@@ -197,7 +197,7 @@ class BEKK(object):
         if not 'restriction' in kwargs:
             self.restriction = 'scalar'
         else:
-            self.restriction = kwargs['theta_start']
+            self.restriction = kwargs['restriction']
         if not 'theta_start' in kwargs:
             self.theta_start = init_parameters(self.innov, self.restriction,
                                                self.var_target)
