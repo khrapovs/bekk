@@ -193,7 +193,8 @@ class BEKK(object):
         else:
             self.restriction = kwargs['theta_start']
         if not 'theta_start' in kwargs:
-            self.theta_start = init_parameters(self.restriction, self.nstocks)
+            self.theta_start = init_parameters(self.innov, self.restriction,
+                                               self.var_target)
         else:
             self.theta_start = kwargs['theta_start']
         if not 'log_file' in kwargs:
@@ -385,7 +386,7 @@ def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
     C : (nstocks, nstocks) array
         Parameter matrix (lower triangular)
     restriction : str
-        Can be 'full', 'diagonal', 'scalar'
+        Model type. Can be 'full', 'diagonal', 'scalar'
     var_target : bool
         Variance targeting flag. If True, then C is not returned.
 
@@ -434,23 +435,27 @@ def find_stationary_var(A, B, C):
         i += 1
     return Hnew
 
-def init_parameters(innov, restriction, nstocks):
+def init_parameters(innov, restriction, var_target):
     """Initialize parameters for further estimation.
     
     Parameters
     ----------
-        restriction : str
-            Type of the model choisen from ['scalar', 'diagonal', 'full']
-        n : int
-            Number of assets in the model.
+    innov: (T, n) array
+        Return innovations
+    restriction : str
+        Model type. Can be 'full', 'diagonal', 'scalar'
+    var_target : bool
+        Variance targeting flag. If True, then C is not returned.
     
     Returns
     -------
-        theta : (n,) array
-            The initial guess for parameters.
+    theta : 1-dimensional array of parameters
+        The initial guess for parameters.
+        Length depends of restriction and var_target.
+        
     """
-    nstocks = innov.shape
-    A = np.eye(nstocks) * .15 # + np.ones((n, n)) *.05
+    nstocks = innov.shape[1]
+    A = np.eye(nstocks) * .15
     B = np.eye(nstocks) * .95
     # Estimate stationary variance
     stationary_var = estimate_H0(innov)
