@@ -161,8 +161,8 @@ class BEKK(object):
         like_start = self.likelihood(self.theta_start)
         like_final = self.likelihood(self.theta_final)
         like_delta = like_start - like_final
-        # Save results to the log file
-        string = ['\n\nMethod : ' + self.method]
+        # Form the string
+        string = ['Method = ' + self.method]
         string.append('Max eigenvalue = %.4f' % self.constraint(A, B))
         string.append('Total time (minutes) = %.2f' % time_delta)
         if kwargs['theta_true'] is not None:
@@ -170,11 +170,15 @@ class BEKK(object):
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
         string.append('Likelihood difference = %.2f' % like_delta)
-        string.append(str(self.res))
+        string.append('Success = ' + str(self.res.success))
+        string.append('Message = ' + self.res.message)
+        string.append('Iterations = ' + str(self.res.nit))
+        #string.append(str(self.res))
         param_str = ['A = ', np.array_str(A), 'B = ', np.array_str(B)]
         if not self.var_target:
             param_str.extend(['C = ', np.array_str(C)])
         string.extend(param_str)
+        # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for s in string:
                 texfile.write(s + '\n')
