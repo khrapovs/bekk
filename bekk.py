@@ -175,18 +175,8 @@ class BEKK(object):
         with open(self.log_file, 'a') as texfile:
             for s in string:
                 texfile.write(s + '\n')
-
-    def estimate(self, **kwargs):
-        """Estimate parameters of the BEKK model.
-
-        Updates several attributes of the class.
-
-        Parameters
-        ----------
-        theta0: 1-dimensional array
-            Initial guess. Dimension depends on the problem
-
-        """
+    
+    def update_settings(self, **kwargs):
         if not 'var_target' in kwargs:
             self.var_target = True
         else:
@@ -209,22 +199,32 @@ class BEKK(object):
         else:
             self.method = kwargs['method']
         if not 'maxiter' in kwargs:
-            maxiter = 1e6
+            self.maxiter = 1e6
         else:
-            maxiter = kwargs['maxiter']
+            self.maxiter = kwargs['maxiter']
         if not 'disp' in kwargs:
-            disp = False
+            self.disp = False
         else:
-            disp = kwargs['disp']
-        if not 'use_callback' in kwargs:
-            use_callback = False
+            self.disp = kwargs['disp']
+        if not 'callback' in kwargs:
+            self.callback = None
         else:
-            use_callback = kwargs['use_callback']
-        if use_callback:
-            callback = self.callback
-        else:
-            callback = None
+            self.callback = kwargs['callback']
+    
+    def estimate(self, **kwargs):
+        """Estimate parameters of the BEKK model.
 
+        Updates several attributes of the class.
+
+        Parameters
+        ----------
+        theta0: 1-dimensional array
+            Initial guess. Dimension depends on the problem
+
+        """
+        
+        self.update_settings( **kwargs)
+        
         self.xk_old = self.theta_start.copy()
         # Iteration number
         self.iteration = 0
@@ -232,11 +232,11 @@ class BEKK(object):
         self.time_start = time.time()
         self.time_old = time.time()
         # Optimization options
-        options = {'disp': disp, 'maxiter' : int(maxiter)}
+        options = {'disp': self.disp, 'maxiter' : int(self.maxiter)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                             method=self.method,
-                            callback=callback,
+                            callback=self.callback,
                             options=options)
         self.theta_final = self.res.x
         # How much time did it take?
