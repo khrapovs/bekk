@@ -149,7 +149,10 @@ class BEKK(object):
         like_final = self.likelihood(self.theta_final)
         like_delta = like_start - like_final
         # Form the string
-        string = ['Method = ' + self.method]
+        string = []
+        string.append('Varinace targeting = ' + str(self.var_target))
+        string.append('Model restriction = ' + str(self.restriction))
+        string.append('Method = ' + self.method)
         string.append('Max eigenvalue = %.4f' % constraint(A, B))
         string.append('Total time (minutes) = %.2f' % time_delta)
         if kwargs['theta_true'] is not None:
