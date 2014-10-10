@@ -27,104 +27,102 @@ __status__ = "Development"
 
 class BEKK(object):
     """BEKK model. Estimation class.
-    
+
     u(t)|H(t) ~ N(0,H(t))
     u(t) = e(t)H(t)^(1/2), e(t) ~ N(0,I)
     H(t) = E_{t-1}[u(t)u(t)']
     One lag, no asymmetries
     H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
-    
+
     """
 
-    def __init__(self, u):
+    def __init__(self, innov):
         # Vector of innovations, T x n
-        self.u = u
-        self.T, self.n = u.shape
-        # Estimate unconditional realized covariance matrix
-        self.H0 = estimate_H0(u)
-        self.use_callback = False
+        self.innov = innov
+        self.nobs, self.nstocks = innov.shape
         self.restriction = 'scalar'
-    
+
     def constraint(self, A, B):
         """Compute the largest eigenvalue of BEKK model.
-        
+
         Parameters
         ----------
         A : (n, n) array
         B : (n, n) array
-        
+
         Returns
         -------
         float
-        
+
         """
         return np.abs(sl.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-        
+
     def likelihood(self, theta):
         """Compute the largest eigenvalue of BEKK model.
-        
+
         Parameters
         ----------
         theta : 1dim array
             Dimension depends on the model restriction
-        
+
         Returns
         -------
         float
             The value of the minus log-likelihood function.
             If some regularity conditions are violated, then it returns
             some obscene number.
-            
+
         """
-        A, B = convert_theta_to_ab(theta, self.n, self.restriction)
+        A, B = convert_theta_to_ab(theta, self.nstocks, self.restriction)
         if self.constraint(A, B) >= 1:
             return 1e10
-        H = np.empty((self.T, self.n, self.n))
+        H = np.empty((self.nobs, self.nstocks, self.nstocks))
         
-        H[0] = self.H0
-        
-        for t in range(1, self.T):
+        # Estimate unconditional realized covariance matrix
+        H[0] = estimate_H0(self.innov)
+
+        for t in range(1, self.nobs):
             H[t] = H[0]
-            uu = self.u[t-1, np.newaxis].T * self.u[t-1]
+            uu = self.innov[t-1, np.newaxis].T * self.innov[t-1]
             H[t] += A.dot(uu - H[0]).dot(A.T)
             H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
         self.H = H
         sumf = 0
-        for t in range(self.T):
-            f, bad = contribution(self.u[t], self.H[t])
+        for t in range(self.nobs):
+            f, bad = contribution(self.innov[t], self.H[t])
             sumf += f
             if bad:
                 return 1e10
-        
+
         if np.isinf(sumf):
             return 1e10
         else:
             return sumf
-    
+
     def callback(self, xk):
         """Print stuff for each iteraion.
-        
+
         Parameters
         ----------
         xk: 1-dimensional array
-            Current parameter value. Dimension depends on the problem        
+            Current parameter value. Dimension depends on the problem
         """
-        self.it += 1
-        A, B = convert_theta_to_ab(xk, self.n, self.restriction)
-        
+        self.iteration += 1
+        A, B = convert_theta_to_ab(xk, self.nstocks, self.restriction)
+
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
         true_like = 0
         old_like = self.likelihood(self.xk_old)
-        
+
         time_new = time.time()
         time_diff = (time_new - self.time_old) / 60
         since_start = (time_new - self.time_start) / 60
 
         self.xk_old = xk.copy()
         self.time_old = time_new
-        
-        string = ['\nIteration = ' + str(self.it)]
+
+        string = ['\nIteration = ' + str(self.iteration)]
         string.append('Time spent (minutes) = %.2f' % time_diff)
         string.append('Since start (minutes) = %.2f' % since_start)
         string.append('Initial likelihood = %.2f' % start_like)
@@ -137,15 +135,16 @@ class BEKK(object):
         with open(self.log_file, 'a') as texfile:
             for s in string:
                 texfile.write(s + '\n')
-    
+
     def print_results(self, **kwargs):
         """Print stuff after estimation.
-        
+
         """
         self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
-        A, B = convert_theta_to_ab(self.theta_final, self.n, self.restriction)
+        A, B = convert_theta_to_ab(self.theta_final,
+                                   self.nstocks, self.restriction)
         if kwargs['theta_true'] is not None:
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
@@ -165,18 +164,22 @@ class BEKK(object):
         with open(self.log_file, 'a') as texfile:
             for s in string:
                 texfile.write(s + '\n')
-    
-    def estimate(self, theta0, **kwargs):
+
+    def estimate(self, **kwargs):
         """Estimate parameters of the BEKK model.
-        
+
         Updates several attributes of the class.
-        
+
         Parameters
         ----------
         theta0: 1-dimensional array
             Initial guess. Dimension depends on the problem
-            
+
         """
+        if not 'theta_start' in kwargs:
+            self.theta_start = init_parameters(self.restriction, self.nstocks)
+        else:
+            self.theta_start = kwargs['theta_start']
         if not 'log_file' in kwargs:
             self.log_file = 'log.txt'
         else:
@@ -197,11 +200,10 @@ class BEKK(object):
             callback = self.callback
         else:
             callback = None
-        
-        self.theta_start = theta0
-        self.xk_old = theta0
+
+        self.xk_old = self.theta_start.copy()
         # Iteration number
-        self.it = 0
+        self.iteration = 0
         # Start timer for the whole optimization
         self.time_start = time.time()
         self.time_old = time.time()
@@ -216,10 +218,10 @@ class BEKK(object):
         # How much time did it take?
         self.time_final = time.time()
         self.print_results(**kwargs)
-        
+
 def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
     """Simulate data.
-    
+
     Parameters
     ----------
     theta : 1-dim array
@@ -228,42 +230,42 @@ def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
         Number of series to simulate
     T : int
         Number of observations to generate. Time series length
-            
+
     Returns
     -------
     u: (T, n) array
         multivariate innovation matrix
     """
-    
+
     A, B, C = convert_theta_to_abc(theta, n)
-    
+
     mean, cov = np.zeros(n), np.eye(n)
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
-    u = np.zeros((T, n))
-    
-    H[0] = stationary_H(A, B, C)
-    
+    innov = np.zeros((T, n))
+
+    H[0] = find_stationary_var(A, B, C)
+
     for t in range(1, T):
         H[t] = C.dot(C.T)
-        H[t] += A.dot(u[t-1, np.newaxis].T * u[t-1]).dot(A.T)
+        H[t] += A.dot(innov[t-1, np.newaxis].T * innov[t-1]).dot(A.T)
         H[t] += B.dot(H[t-1]).dot(B.T)
         H12 = sp.linalg.cholesky(H[t], 1)
-        u[t] = H12.dot(np.atleast_2d(e[t]).T).flatten()
-    
-    return u
+        innov[t] = H12.dot(np.atleast_2d(e[t]).T).flatten()
+
+    return innov
 
 #@profile
-def contribution(u, H):
+def contribution(innov, H):
     """Contribution to the log-likelihood function for each observation.
-    
+
     Parameters
     ----------
-    u: (n,) array
+    innov: (n,) array
         inovations
     H: (n, n) array
         variance/covariances
-    
+
     Returns
     -------
     f: float
@@ -276,52 +278,51 @@ def contribution(u, H):
         LU, piv = sl.lu_factor(H)
     except (sl.LinAlgError, ValueError):
         return 1e10, True
-    
+
     Hdet = np.abs(np.prod(np.diag(LU)))
     if Hdet > 1e20 or Hdet < 1e-5:
         return 1e10, True
-    
-    y = sl.lu_solve((LU, piv), u)
-    f = np.log(Hdet) + y.dot(np.atleast_2d(u).T)
+
+    y = sl.lu_solve((LU, piv), innov)
+    f = np.log(Hdet) + y.dot(np.atleast_2d(innov).T)
     if np.isinf(f):
         return 1e10, True
     else:
         return float(f), False
-    
-    
-def estimate_H0(u):
+
+
+def estimate_H0(innov):
     """Estimate unconditional realized covariance matrix.
-    
+
     Parameters
     ----------
-    u: (T, n) array
+    innov: (T, n) array
         inovations
-    
+
     Returns
     -------
     (n, n) array
-        E[u'u]
-        
+        E[innov'innov]
+
     """
-    T = u.shape[0]
-    return u.T.dot(u) / T
+    return innov.T.dot(innov) / innov.shape[0]
 
 def convert_theta_to_abc(theta, n):
     """Convert 1-dimensional array of parameters to matrices A, B, and C.
-    
+
     Parameters
     ----------
     theta: array of parameters
         Length depends on the model restrictions:
         'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' - 
-        'scalar' - 
+        'diagonal' -
+        'scalar' -
     n: number of innovations in the model
-    
+
     Returns
     -------
     A, B, C: (n, n) array, parameter matrices
-    
+
     """
     A = theta[:n**2].reshape([n, n])
     B = theta[n**2:2*n**2].reshape([n, n])
@@ -331,26 +332,26 @@ def convert_theta_to_abc(theta, n):
 
 def convert_abc_to_theta(A, B, C):
     """Convert parameter matrices A, B, and C to 1-dimensional array.
-    
+
     Parameters
     ----------
     A, B, C: (n, n) arrays
         parameter matrices
-    
+
     Returns
     -------
     1-dimensional array of parameters
         Length depends on the model restrictions:
         'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' - 
-        'scalar' - 
+        'diagonal' -
+        'scalar' -
     """
     theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
     return np.concatenate(theta)
 
 def convert_theta_to_ab(theta, n, restriction):
     """Convert 1-dimensional array of parameters to matrices A, and B.
-    
+
     Parameters
     ----------
     theta: 1-dim array
@@ -363,7 +364,7 @@ def convert_theta_to_ab(theta, n, restriction):
         number of innovations in the model
     restriction: str
         can be 'full', 'diagonal', 'scalar'
-    
+
     Returns
     -------
     A, B: (n, n) arrays, parameter matrices
@@ -384,7 +385,7 @@ def convert_theta_to_ab(theta, n, restriction):
 
 def convert_ab_to_theta(A, B, restriction):
     """Convert parameter matrices A and B to 1-dimensional array.
-    
+
     Parameters
     ----------
     A: (n, n) array
@@ -393,7 +394,7 @@ def convert_ab_to_theta(A, B, restriction):
         Parameter matrix
     restriction: str
         Can be 'full', 'diagonal', 'scalar'
-    
+
     Returns
     -------
     1-dimensional array
@@ -414,14 +415,14 @@ def convert_ab_to_theta(A, B, restriction):
         pass
     return np.concatenate(theta)
 
-def stationary_H(A, B, C):
+def find_stationary_var(A, B, C):
     """Find fixed point of H = CC' + AHA' + BHB'.
-    
+
     Parameters
     ----------
     A, B, C: (n, n) arrays
         Parameter matrices
-    
+
     Returns
     -------
         (n, n) array
@@ -434,28 +435,52 @@ def stationary_H(A, B, C):
         Hold = Hnew[:]
         i += 1
     return Hnew
-    
-def plot_data(u, H):
-    """Plot time series of H and u elements.
+
+def init_parameters(restriction, nstocks):
+    """Initialize parameters for further estimation.
     
     Parameters
     ----------
-    u: (T, n) array
+        restriction : str
+            Type of the model choisen from ['scalar', 'diagonal', 'full']
+        n : int
+            Number of assets in the model.
+    
+    Returns
+    -------
+        theta : (n,) array
+            The initial guess for parameters.
+    """
+    # Randomize initial theta
+    #theta0 = np.random.rand(2*n**2)/10
+    # Clever initial theta
+    # A, B - n x n matrices
+    A = np.eye(nstocks) * .15 # + np.ones((n, n)) *.05
+    B = np.eye(nstocks) * .95
+    theta = convert_ab_to_theta(A, B, restriction)
+    return theta
+
+def plot_data(innov, H):
+    """Plot time series of H and u elements.
+
+    Parameters
+    ----------
+    innov: (T, n) array
         innovations
     H: (T, n, n) array
         variance/covariances
     """
-    T, n = u.shape
-    fig, axes = plt.subplots(nrows = n**2, ncols = 1)
-    for ax, i in zip(axes , range(n**2)):
+    T, n = innov.shape
+    fig, axes = plt.subplots(nrows=n**2, ncols=1)
+    for ax, i in zip(axes, range(n**2)):
         ax.plot(range(T), H.reshape([T, n**2])[:, i])
     plt.plot()
-    
-    fig, axes = plt.subplots(nrows = n, ncols = 1)
-    for ax, i in zip(axes , range(n)):
-        ax.plot(range(T), u[:, i])
+
+    fig, axes = plt.subplots(nrows=n, ncols=1)
+    for ax, i in zip(axes, range(n)):
+        ax.plot(range(T), innov[:, i])
     plt.plot()
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(n=2, T=500)
+    test_simulate(n=2, T=100)

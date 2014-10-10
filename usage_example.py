@@ -6,7 +6,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pylab as plt
 
-from MGARCH.bekk import BEKK, simulate_BEKK
+from MGARCH.bekk import BEKK, simulate_BEKK, estimate_H0, init_parameters
 from MGARCH.bekk import convert_abc_to_theta, convert_theta_to_ab
 from MGARCH.bekk import convert_ab_to_theta
 
@@ -23,15 +23,22 @@ def test_simulate(n=2, T=100):
     
     # Simulate data    
     u = simulate_BEKK(theta, n=n, T=T, log=log_file)
+    # Estimate stationary variance
+    stationary_var = estimate_H0(u)
+    # Compute the constant term
+    CC = stationary_var - A.dot(stationary_var).dot(A.T) \
+        - B.dot(stationary_var).dot(B.T)
+    # Extract C parameter
+    Cstart = sp.linalg.cholesky(CC, 1)
     
     # Initialize the object
     bekk = BEKK(u)
     
-    # Randomize initial theta
-    theta_start = np.random.rand(2*n**2)/10
+    # Choose initial theta
+    theta_start = convert_abc_to_theta(A, B, Cstart)[:2*n**2]
     
     # Estimate parameters
-    bekk.estimate(theta_start, theta_true=theta[:2*n**2],
+    bekk.estimate(theta_start=theta_start, theta_true=theta[:2*n**2],
                   method='Powell', log_file=log_file)
     
 def regenerate_data(u_file):
@@ -69,30 +76,6 @@ def regenerate_data(u_file):
     print(u.shape)
     np.save(u_file, u)
     np.savetxt(u_file[:-4] + '.csv', u, delimiter = ",")
-
-def init_parameters(restriction, n):
-    """Initialize parameters for further estimation.
-    
-    Parameters
-    ----------
-        restriction : str
-            Type of the model choisen from ['scalar', 'diagonal', 'full']
-        n : int
-            Number of assets in the model.
-    
-    Returns
-    -------
-        theta : (n,) array
-            The initial guess for parameters.
-    """
-    # Randomize initial theta
-    #theta0 = np.random.rand(2*n**2)/10
-    # Clever initial theta
-    # A, B - n x n matrices
-    A = np.eye(n) * .15 # + np.ones((n, n)) *.05
-    B = np.eye(n) * .95
-    theta = convert_ab_to_theta(A, B, restriction)
-    return theta
 
 def test_real(method, theta_start, restriction, stage):
     # Load data    
