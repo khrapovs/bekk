@@ -40,7 +40,6 @@ class BEKK(object):
         # Vector of innovations, T x n
         self.u = u
         self.T, self.n = u.shape
-        self.theta_true = None
         # Estimate unconditional realized covariance matrix
         self.H0 = estimate_H0(u)
         self.use_callback = False
@@ -116,8 +115,6 @@ class BEKK(object):
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
         true_like = 0
-        if self.theta_true is not None:
-            true_like = self.likelihood(self.theta_true)
         old_like = self.likelihood(self.xk_old)
         
         time_new = time.time()
@@ -141,7 +138,7 @@ class BEKK(object):
             for s in string:
                 texfile.write(s + '\n')
     
-    def print_results(self):
+    def print_results(self, **kwargs):
         """Print stuff after estimation.
         
         """
@@ -149,6 +146,8 @@ class BEKK(object):
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
         A, B = convert_theta_to_ab(self.theta_final, self.n, self.restriction)
+        if kwargs['theta_true'] is not None:
+            like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
         like_final = self.likelihood(self.theta_final)
         like_delta = like_start - like_final
@@ -156,6 +155,8 @@ class BEKK(object):
         string = ['\n\nMethod : ' + self.method]
         string.append('Max eigenvalue = %.4f' % self.constraint(A, B))
         string.append('Total time (minutes) = %.2f' % time_delta)
+        if kwargs['theta_true'] is not None:
+            string.append('True likelihood = %.2f' % like_true)
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
         string.append('Likelihood difference = %.2f' % like_delta)
@@ -176,6 +177,10 @@ class BEKK(object):
             Initial guess. Dimension depends on the problem
             
         """
+        if not 'log_file' in kwargs:
+            self.log_file = 'log.txt'
+        else:
+            self.log_file = kwargs['log_file']
         if not 'method' in kwargs:
             self.method = 'L-BFGS-B'
         else:
@@ -210,7 +215,7 @@ class BEKK(object):
         self.theta_final = self.res.x
         # How much time did it take?
         self.time_final = time.time()
-        self.print_results()
+        self.print_results(**kwargs)
         
 def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
     """Simulate data.
@@ -453,4 +458,4 @@ def plot_data(u, H):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(n=2, T=100)
+    test_simulate(n=2, T=500)

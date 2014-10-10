@@ -26,18 +26,13 @@ def test_simulate(n=2, T=100):
     
     # Initialize the object
     bekk = BEKK(u)
-    bekk.theta_true = theta[:2*n**2]
-    bekk.log_file = log_file
-    
-    # Shift initial theta    
-    #theta_AB = theta[:2*n**2]
-    #theta0_AB = theta_AB - .1
     
     # Randomize initial theta
     theta_start = np.random.rand(2*n**2)/10
     
     # Estimate parameters
-    bekk.estimate(theta_start, method='Powell')
+    bekk.estimate(theta_start, theta_true=theta[:2*n**2],
+                  method='Powell', log_file=log_file)
     
 def regenerate_data(u_file):
     """Download and save data to disk.
