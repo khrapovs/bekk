@@ -184,17 +184,22 @@ class BEKK(object):
             maxiter = 1e6
         else:
             maxiter = kwargs['maxiter']
+        if not 'use_callback' in kwargs:
+            use_callback = False
+        else:
+            use_callback = kwargs['use_callback']
+        if use_callback:
+            callback = self.callback
+        else:
+            callback = None
         
         self.theta_start = theta0
         self.xk_old = theta0
+        # Iteration number
         self.it = 0
         # Start timer for the whole optimization
         self.time_start = time.time()
         self.time_old = time.time()
-        if self.use_callback:
-            callback = self.callback
-        else:
-            callback = None
         # Optimization options
         options = {'disp': False, 'maxiter' : int(maxiter)}
         # Run optimization

@@ -4,7 +4,6 @@ from __future__ import print_function, division
 
 import numpy as np
 import scipy as sp
-import time
 import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_BEKK
@@ -17,7 +16,7 @@ def test_simulate(n=2, T=100):
         texfile.write('')
         
     # A, B, C - n x n matrices
-    A = np.eye(n) * .15
+    A = np.eye(n) * .25
     B = np.eye(n) * .95
     C = sp.linalg.cholesky(np.ones((n,n))*.5 + np.eye(n)*.5, 1)
     theta = convert_abc_to_theta(A, B, C)
@@ -35,10 +34,10 @@ def test_simulate(n=2, T=100):
     #theta0_AB = theta_AB - .1
     
     # Randomize initial theta
-    theta0_AB = np.random.rand(2*n**2)/10
+    theta_start = np.random.rand(2*n**2)/10
     
     # Estimate parameters
-    bekk.estimate(theta0_AB)
+    bekk.estimate(theta_start, method='Powell')
     
 def regenerate_data(u_file):
     """Download and save data to disk.
@@ -150,4 +149,4 @@ def simple_test():
  
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    test_simulate(n=2, T=100)
+    test_simulate(n=2, T=500)
