@@ -15,7 +15,7 @@ def test_simulate(n=2, T=100):
         texfile.write('')
         
     # scalar, diagonal, full
-    restriction = 'diagonal'
+    restriction = 'scalar'
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95

@@ -48,21 +48,6 @@ class BEKK(object):
         self.innov = innov
         self.nobs, self.nstocks = innov.shape
 
-    def constraint(self, A, B):
-        """Compute the largest eigenvalue of BEKK model.
-
-        Parameters
-        ----------
-        A : (n, n) array
-        B : (n, n) array
-
-        Returns
-        -------
-        float
-
-        """
-        return np.abs(sl.eigvals(np.kron(A, A) + np.kron(B, B))).max()
-
     def likelihood(self, theta):
         """Compute the largest eigenvalue of BEKK model.
 
@@ -81,7 +66,7 @@ class BEKK(object):
         """
         A, B, C = convert_theta_to_abc(theta, self.nstocks,
                                        self.restriction, self.var_target)
-        if self.constraint(A, B) >= 1:
+        if constraint(A, B) >= 1:
             return 1e10
         H = np.empty((self.nobs, self.nstocks, self.nstocks))
         
@@ -165,7 +150,7 @@ class BEKK(object):
         like_delta = like_start - like_final
         # Form the string
         string = ['Method = ' + self.method]
-        string.append('Max eigenvalue = %.4f' % self.constraint(A, B))
+        string.append('Max eigenvalue = %.4f' % constraint(A, B))
         string.append('Total time (minutes) = %.2f' % time_delta)
         if kwargs['theta_true'] is not None:
             string.append('True likelihood = %.2f' % like_true)
@@ -499,6 +484,21 @@ def init_parameters(innov, restriction, var_target):
     C = find_Cmat(A, B, stationary_var)
     theta = convert_abc_to_theta(A, B, C, restriction, var_target)
     return theta
+
+def constraint(A, B):
+    """Compute the largest eigenvalue of BEKK model.
+
+    Parameters
+    ----------
+    A : (n, n) array
+    B : (n, n) array
+
+    Returns
+    -------
+    float
+
+    """
+    return np.abs(sl.eigvals(np.kron(A, A) + np.kron(B, B))).max()
 
 def plot_data(innov, H):
     """Plot time series of H and u elements.

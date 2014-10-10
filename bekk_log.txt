@@ -1,0 +1,19 @@
+Method = Powell
+Max eigenvalue = 0.8974
+Total time (minutes) = 0.12
+True likelihood = 4132.48
+Initial likelihood = 4132.48
+Final likelihood = 4123.94
+Likelihood difference = 8.54
+Success = True
+Message = Optimization terminated successfully.
+Iterations = 3
+A = 
+[[ 0.2265  0.    ]
+ [ 0.      0.2265]]
+B = 
+[[ 0.9198  0.    ]
+ [ 0.      0.9198]]
+H0 target = 
+[[ 25.2593  10.9314]
+ [ 10.9314  25.9112]]
