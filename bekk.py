@@ -87,10 +87,12 @@ class BEKK(object):
         
         if self.var_target:
             # Estimate unconditional realized covariance matrix
-            H[0] = estimate_H0(self.innov)
+            self.stationary_var = estimate_H0(self.innov)
         else:
-            H[0] = find_stationary_var(A, B, C)
-
+            self.stationary_var = find_stationary_var(A, B, C)
+        
+        H[0] = self.stationary_var.copy()
+        
         for t in range(1, self.nobs):
             H[t] = H[0]
             uu = self.innov[t-1, np.newaxis].T * self.innov[t-1]
@@ -175,9 +177,12 @@ class BEKK(object):
         string.append('Iterations = ' + str(self.res.nit))
         #string.append(str(self.res))
         param_str = ['A = ', np.array_str(A), 'B = ', np.array_str(B)]
-        if not self.var_target:
-            param_str.extend(['C = ', np.array_str(C)])
         string.extend(param_str)
+        if not self.var_target:
+            string.extend(['C = ', np.array_str(C)])
+            stationary_var = find_stationary_var(A, B, C)
+            string.extend(['H0 estim = ', np.array_str(stationary_var)])
+        string.extend(['H0 target = ', np.array_str(estimate_H0(self.innov))])
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for s in string:

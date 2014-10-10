@@ -14,7 +14,7 @@ def test_simulate(n=2, T=100):
     with open(log_file, 'w') as texfile:
         texfile.write('')
         
-    restriction = 'full'
+    restriction = 'scalar'
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
