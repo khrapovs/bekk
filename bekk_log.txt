@@ -1,31 +1,24 @@
 
 
 Method : Powell
-Max eigenvalue = 0.8193
-Total time (minutes) = 0.08
-True likelihood = 745.76
-Initial likelihood = 745.76
-Final likelihood = 743.47
-Likelihood difference = 2.29
+Max eigenvalue = 0.9255
+Total time (minutes) = 0.02
+True likelihood = 848.57
+Initial likelihood = 848.57
+Final likelihood = 846.82
+Likelihood difference = 1.75
   status: 0
-   direc: array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
-       [ 0.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
-       [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
-       [ 0.,  0.,  0.,  1.,  0.,  0.,  0.,  0.],
-       [ 0.,  0.,  0.,  0.,  1.,  0.,  0.,  0.],
-       [ 0.,  0.,  0.,  0.,  0.,  1.,  0.,  0.],
-       [ 0.,  0.,  0.,  0.,  0.,  0.,  1.,  0.],
-       [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.]])
+   direc: array([[ 0.    ,  1.    ],
+       [ 0.0061,  0.0007]])
  message: 'Optimization terminated successfully.'
  success: True
-     fun: array(743.4688264476071)
-       x: array([ 0.2371, -0.8735,  7.7638,  8.0138,  8.7138,  7.7638,  7.7638,
-        8.7138])
-    nfev: 312
-     nit: 3
+     fun: array(846.8195628160348)
+       x: array([ 0.1997,  0.9411])
+    nfev: 74
+     nit: 2
 A = 
-[[ 0.2371  0.    ]
- [ 0.      0.2371]]
+[[ 0.1997  0.    ]
+ [ 0.      0.1997]]
 B = 
-[[-0.8735 -0.    ]
- [-0.     -0.8735]]
+[[ 0.9411  0.    ]
+ [ 0.      0.9411]]

@@ -37,10 +37,16 @@ class BEKK(object):
     """
 
     def __init__(self, innov):
-        # Vector of innovations, T x n
+        """Initialize the class.
+
+        Parameters
+        ----------
+        innov : (nobs, nstocks) array
+            Return innovations
+
+        """
         self.innov = innov
         self.nobs, self.nstocks = innov.shape
-        self.restriction = 'scalar'
 
     def constraint(self, A, B):
         """Compute the largest eigenvalue of BEKK model.
@@ -73,7 +79,8 @@ class BEKK(object):
             some obscene number.
 
         """
-        A, B = convert_theta_to_ab(theta, self.nstocks, self.restriction)
+        A, B = convert_theta_to_abc(theta, self.nstocks,
+                                    self.restriction, self.var_target)
         if self.constraint(A, B) >= 1:
             return 1e10
         H = np.empty((self.nobs, self.nstocks, self.nstocks))
@@ -108,7 +115,8 @@ class BEKK(object):
             Current parameter value. Dimension depends on the problem
         """
         self.iteration += 1
-        A, B = convert_theta_to_ab(xk, self.nstocks, self.restriction)
+        A, B = convert_theta_to_abc(xk, self.nstocks,
+                                    self.restriction, self.var_target)
 
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
@@ -143,8 +151,8 @@ class BEKK(object):
         self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
-        A, B = convert_theta_to_ab(self.theta_final,
-                                   self.nstocks, self.restriction)
+        A, B = convert_theta_to_abc(self.theta_final, self.nstocks,
+                                    self.restriction, self.var_target)
         if kwargs['theta_true'] is not None:
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
@@ -176,6 +184,14 @@ class BEKK(object):
             Initial guess. Dimension depends on the problem
 
         """
+        if not 'var_target' in kwargs:
+            self.var_target = True
+        else:
+            self.var_target = kwargs['var_target']
+        if not 'restriction' in kwargs:
+            self.restriction = 'scalar'
+        else:
+            self.restriction = kwargs['theta_start']
         if not 'theta_start' in kwargs:
             self.theta_start = init_parameters(self.restriction, self.nstocks)
         else:
@@ -219,7 +235,7 @@ class BEKK(object):
         self.time_final = time.time()
         self.print_results(**kwargs)
 
-def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
+def simulate_BEKK(A, B, C, T=1000):
     """Simulate data.
 
     Parameters
@@ -236,9 +252,7 @@ def simulate_BEKK(theta, n=2, T=1000, log='bekk_log.txt'):
     u: (T, n) array
         multivariate innovation matrix
     """
-
-    A, B, C = convert_theta_to_abc(theta, n)
-
+    n = A.shape[0]
     mean, cov = np.zeros(n), np.eye(n)
     e = np.random.multivariate_normal(mean, cov, T)
     H = np.empty((T, n, n))
@@ -302,12 +316,13 @@ def estimate_H0(innov):
     Returns
     -------
     (n, n) array
-        E[innov'innov]
+        E[innov' * innov]
 
     """
     return innov.T.dot(innov) / innov.shape[0]
 
-def convert_theta_to_abc(theta, n):
+def convert_theta_to_abc(theta, nstocks,
+                         restriction='scalar', var_target=True):
     """Convert 1-dimensional array of parameters to matrices A, B, and C.
 
     Parameters
@@ -317,37 +332,43 @@ def convert_theta_to_abc(theta, n):
         'full' - 2*n**2 + (n-1)*n/2
         'diagonal' -
         'scalar' -
-    n: number of innovations in the model
+    nstocks: number of innovations in the model
 
     Returns
     -------
-    A, B, C: (n, n) array, parameter matrices
-
+    A : (nstocks, nstocks) array
+        Parameter matrix
+    B : (nstocks, nstocks) array
+        Parameter matrix
+    C : (nstocks, nstocks) array
+        Parameter matrix (lower triangular)
+    restriction : str
+        Can be 'full', 'diagonal', 'scalar'
+    var_target : bool
+        Variance targeting flag. If True, then C is not returned.
+        
     """
-    A = theta[:n**2].reshape([n, n])
-    B = theta[n**2:2*n**2].reshape([n, n])
-    C = np.zeros((n, n))
-    C[np.tril_indices(n)] = theta[2*n**2:]
-    return A, B, C
-
-def convert_abc_to_theta(A, B, C):
-    """Convert parameter matrices A, B, and C to 1-dimensional array.
-
-    Parameters
-    ----------
-    A, B, C: (n, n) arrays
-        parameter matrices
-
-    Returns
-    -------
-    1-dimensional array of parameters
-        Length depends on the model restrictions:
-        'full' - 2*n**2 + (n-1)*n/2
-        'diagonal' -
-        'scalar' -
-    """
-    theta = [A.flatten(), B.flatten(), C[np.tril_indices(C.shape[0])]]
-    return np.concatenate(theta)
+    if restriction == 'full':
+        chunk = nstocks**2
+        A = theta[:chunk].reshape([nstocks, nstocks])
+        B = theta[chunk:2*chunk].reshape([nstocks, nstocks])
+    elif restriction == 'diagonal':
+        chunk = nstocks
+        A = np.diag(theta[:chunk])
+        B = np.diag(theta[chunk:2*chunk])
+    elif restriction == 'scalar':
+        chunk = 1
+        A = np.eye(nstocks) * theta[:chunk]
+        B = np.eye(nstocks) * theta[chunk:2*chunk]
+    else:
+        raise ValueError('This restriction is not supported!')
+    
+    if var_target:
+        return A, B
+    else:
+        C = np.zeros((nstocks, nstocks))
+        C[np.tril_indices(nstocks)] = theta[2*chunk:]
+        return A, B, C
 
 def convert_theta_to_ab(theta, n, restriction):
     """Convert 1-dimensional array of parameters to matrices A, and B.
@@ -382,6 +403,42 @@ def convert_theta_to_ab(theta, n, restriction):
         # !!! Should raise exception "Wrong restriction'
         pass
     return A, B
+
+def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
+    """Convert parameter matrices A, B, and C to 1-dimensional array.
+
+    Parameters
+    ----------
+    A : (nstocks, nstocks) array
+        Parameter matrix
+    B : (nstocks, nstocks) array
+        Parameter matrix
+    C : (nstocks, nstocks) array
+        Parameter matrix (lower triangular)
+    restriction : str
+        Can be 'full', 'diagonal', 'scalar'
+    var_target : bool
+        Variance targeting flag. If True, then C is not returned.
+
+    Returns
+    -------
+    1-dimensional array of parameters
+        Length depends on the model restrictions:
+        'full' - 2*n**2 + (n-1)*n/2
+        'diagonal' -
+        'scalar' -
+    """
+    if restriction == 'full':
+        theta = [A.flatten(), B.flatten()]
+    elif restriction == 'diagonal':
+        theta = [np.diag(A), np.diag(B)]
+    elif restriction == 'scalar':
+        return np.array([A[0, 0], B[0, 0]])
+    else:
+        raise ValueError('This restriction is not supported!')
+    if var_target:
+        theta.append(C[np.tril_indices(C.shape[0])])
+    return np.concatenate(theta)
 
 def convert_ab_to_theta(A, B, restriction):
     """Convert parameter matrices A and B to 1-dimensional array.
@@ -436,7 +493,7 @@ def find_stationary_var(A, B, C):
         i += 1
     return Hnew
 
-def init_parameters(restriction, nstocks):
+def init_parameters(innov, restriction, nstocks):
     """Initialize parameters for further estimation.
     
     Parameters
@@ -451,13 +508,17 @@ def init_parameters(restriction, nstocks):
         theta : (n,) array
             The initial guess for parameters.
     """
-    # Randomize initial theta
-    #theta0 = np.random.rand(2*n**2)/10
-    # Clever initial theta
-    # A, B - n x n matrices
+    nstocks = innov.shape
     A = np.eye(nstocks) * .15 # + np.ones((n, n)) *.05
     B = np.eye(nstocks) * .95
-    theta = convert_ab_to_theta(A, B, restriction)
+    # Estimate stationary variance
+    stationary_var = estimate_H0(innov)
+    # Compute the constant term
+    CC = stationary_var - A.dot(stationary_var).dot(A.T) \
+        - B.dot(stationary_var).dot(B.T)
+    # Extract C parameter
+    C = sp.linalg.cholesky(CC, 1)
+    theta = convert_abc_to_theta(A, B, C, restriction, var_target)
     return theta
 
 def plot_data(innov, H):

@@ -7,7 +7,7 @@ import scipy as sp
 import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_BEKK, estimate_H0, init_parameters
-from MGARCH.bekk import convert_abc_to_theta, convert_theta_to_ab
+from MGARCH.bekk import convert_abc_to_theta
 from MGARCH.bekk import convert_ab_to_theta
 
 def test_simulate(n=2, T=100):
@@ -15,14 +15,15 @@ def test_simulate(n=2, T=100):
     with open(log_file, 'w') as texfile:
         texfile.write('')
         
+    restriction = 'scalar'
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
     C = sp.linalg.cholesky(np.ones((n,n))*.5 + np.eye(n)*.5, 1)
-    theta = convert_abc_to_theta(A, B, C)
+    theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
-    u = simulate_BEKK(theta, n=n, T=T, log=log_file)
+    u = simulate_BEKK(A, B, C, T=T)
     # Estimate stationary variance
     stationary_var = estimate_H0(u)
     # Compute the constant term
@@ -34,12 +35,13 @@ def test_simulate(n=2, T=100):
     # Initialize the object
     bekk = BEKK(u)
     
+    var_target = True
     # Choose initial theta
-    theta_start = convert_abc_to_theta(A, B, Cstart)[:2*n**2]
+    theta_start = convert_abc_to_theta(A, B, Cstart, restriction, var_target)
     
     # Estimate parameters
     bekk.estimate(theta_start=theta_start, theta_true=theta[:2*n**2],
-                  method='Powell', log_file=log_file)
+                  var_target=var_target, method='Powell', log_file=log_file)
     
 def regenerate_data(u_file):
     """Download and save data to disk.
