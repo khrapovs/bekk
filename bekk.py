@@ -43,7 +43,6 @@ class BEKK(object):
         self.theta_true = None
         # Estimate unconditional realized covariance matrix
         self.H0 = estimate_H0(u)
-        self.method = 'L-BFGS-B'
         self.use_callback = False
         self.restriction = 'scalar'
     
@@ -166,7 +165,7 @@ class BEKK(object):
             for s in string:
                 texfile.write(s + '\n')
     
-    def estimate(self, theta0):
+    def estimate(self, theta0, **kwargs):
         """Estimate parameters of the BEKK model.
         
         Updates several attributes of the class.
@@ -177,6 +176,15 @@ class BEKK(object):
             Initial guess. Dimension depends on the problem
             
         """
+        if not 'method' in kwargs:
+            self.method = 'L-BFGS-B'
+        else:
+            self.method = kwargs['method']
+        if not 'maxiter' in kwargs:
+            maxiter = 1e6
+        else:
+            maxiter = kwargs['maxiter']
+        
         self.theta_start = theta0
         self.xk_old = theta0
         self.it = 0
@@ -188,7 +196,7 @@ class BEKK(object):
         else:
             callback = None
         # Optimization options
-        options = {'disp': False, 'maxiter' : int(self.maxiter)}
+        options = {'disp': False, 'maxiter' : int(maxiter)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                             method=self.method,
@@ -439,4 +447,5 @@ def plot_data(u, H):
     plt.plot()
 
 if __name__ == '__main__':
-    pass
+    from MGARCH.usage_example import test_simulate
+    test_simulate(n=2, T=100)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import print_function, division
 
 import numpy as np
@@ -5,11 +7,9 @@ import scipy as sp
 import time
 import matplotlib.pylab as plt
 
-from bekk import BEKK, simulate_BEKK
-from bekk import convert_abc_to_theta, convert_theta_to_ab
-from bekk import convert_ab_to_theta
-
-np.set_printoptions(precision=4, suppress=True)
+from MGARCH.bekk import BEKK, simulate_BEKK
+from MGARCH.bekk import convert_abc_to_theta, convert_theta_to_ab
+from MGARCH.bekk import convert_ab_to_theta
 
 def test_simulate(n=2, T=100):
     log_file = 'bekk_log.txt'
@@ -17,9 +17,9 @@ def test_simulate(n=2, T=100):
         texfile.write('')
         
     # A, B, C - n x n matrices
-    A = np.eye(n) * .25
+    A = np.eye(n) * .15
     B = np.eye(n) * .95
-    C = sp.linalg.cholesky(np.ones((n,n)) * .5 + np.eye(n) * .5, 1)
+    C = sp.linalg.cholesky(np.ones((n,n))*.5 + np.eye(n)*.5, 1)
     theta = convert_abc_to_theta(A, B, C)
     
     # Simulate data    
@@ -37,21 +37,9 @@ def test_simulate(n=2, T=100):
     # Randomize initial theta
     theta0_AB = np.random.rand(2*n**2)/10
     
-    # maximum number of iterations
-    nit = 1e6
-    # Start timer for the whole optimization
-    time_old = time.time()
     # Estimate parameters
-    result = bekk.estimate(theta0_AB, nit)
-    # How much time did it take?
-    time_delta = (time.time() - time_old) / 60
-    # Convert parameter vector to matrices
-    A, B = convert_theta_to_ab(result.x, n)
-    # Print results
-    with open(log_file, 'a') as texfile:
-        texfile.write('\n' + str(result) + 2*'\n')
-        texfile.write('Total time (minutes) = %.2f' % time_delta)
-
+    bekk.estimate(theta0_AB)
+    
 def regenerate_data(u_file):
     """Download and save data to disk.
     
@@ -127,8 +115,6 @@ def test_real(method, theta_start, restriction, stage):
     bekk = BEKK(u)
     # Restriction of the model, 'scalar', 'diagonal', 'full'
     bekk.restriction = restriction
-    # maximum number of iterations
-    bekk.maxiter = 1e6
     # Print results for each iteration?
     bekk.use_callback = False
     # Set log file name
@@ -163,4 +149,5 @@ def simple_test():
     test_real('L-BFGS-B', theta_start, restriction, 1)
  
 if __name__ == '__main__':
+    np.set_printoptions(precision=4, suppress=True)
     test_simulate(n=2, T=100)
