@@ -85,8 +85,11 @@ class BEKK(object):
             return 1e10
         H = np.empty((self.nobs, self.nstocks, self.nstocks))
         
-        # Estimate unconditional realized covariance matrix
-        H[0] = estimate_H0(self.innov)
+        if self.var_target:
+            # Estimate unconditional realized covariance matrix
+            H[0] = estimate_H0(self.innov)
+        else:
+            H[0] = find_stationary_var(A, B, C)
 
         for t in range(1, self.nobs):
             H[t] = H[0]
@@ -116,7 +119,7 @@ class BEKK(object):
         """
         self.iteration += 1
         A, B, C = convert_theta_to_abc(xk, self.nstocks,
-                                    self.restriction, self.var_target)
+                                       self.restriction, self.var_target)
 
         start_like = self.likelihood(self.theta_start)
         current_like = self.likelihood(xk)
@@ -168,7 +171,10 @@ class BEKK(object):
         string.append('Final likelihood = %.2f' % like_final)
         string.append('Likelihood difference = %.2f' % like_delta)
         string.append(str(self.res))
-        string.extend(['A = ', np.array_str(A), 'B = ', np.array_str(B)])
+        param_str = ['A = ', np.array_str(A), 'B = ', np.array_str(B)]
+        if not self.var_target:
+            param_str.extend(['C = ', np.array_str(C)])
+        string.extend(param_str)
         with open(self.log_file, 'a') as texfile:
             for s in string:
                 texfile.write(s + '\n')
@@ -309,7 +315,6 @@ def contribution(innov, H):
     else:
         return float(f), False
 
-
 def estimate_H0(innov):
     """Estimate unconditional realized covariance matrix.
 
@@ -411,10 +416,10 @@ def convert_abc_to_theta(A, B, C, restriction='scalar', var_target=True):
     elif restriction == 'diagonal':
         theta = [np.diag(A), np.diag(B)]
     elif restriction == 'scalar':
-        return np.array([A[0, 0], B[0, 0]])
+        theta = [[A[0, 0]], [B[0, 0]]]
     else:
         raise ValueError('This restriction is not supported!')
-    if var_target:
+    if not var_target:
         theta.append(C[np.tril_indices(C.shape[0])])
     return np.concatenate(theta)
 

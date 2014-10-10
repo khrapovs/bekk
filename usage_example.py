@@ -33,8 +33,8 @@ def test_simulate(n=2, T=100):
     
     # Initialize the object
     bekk = BEKK(u)
-    
-    var_target = True
+    # Variance targetign flag
+    var_target = False
     # Choose initial theta
     theta_start = convert_abc_to_theta(A, B, Cstart, restriction, var_target)
     

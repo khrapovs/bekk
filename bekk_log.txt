@@ -1,24 +1,30 @@
 
 
 Method : Powell
-Max eigenvalue = 0.8043
-Total time (minutes) = 0.03
-True likelihood = 785.34
-Initial likelihood = 785.34
-Final likelihood = 779.02
-Likelihood difference = 6.32
+Max eigenvalue = 0.9468
+Total time (minutes) = 0.19
+True likelihood = 817.42
+Initial likelihood = 817.59
+Final likelihood = 814.76
+Likelihood difference = 2.83
   status: 0
-   direc: array([[ 0.    ,  1.    ],
-       [ 0.0584, -0.0236]])
+   direc: array([[ 0.    ,  0.    ,  0.    ,  0.    ,  1.    ],
+       [ 0.    ,  1.    ,  0.    ,  0.    ,  0.    ],
+       [ 0.    ,  0.    ,  1.    ,  0.    ,  0.    ],
+       [ 0.    ,  0.    ,  0.    ,  1.    ,  0.    ],
+       [-0.0543,  0.0053,  0.1609,  0.0518,  0.1144]])
  message: 'Optimization terminated successfully.'
  success: True
-     fun: array(779.0233560929091)
-       x: array([ 0.3568,  0.8228])
-    nfev: 107
-     nit: 3
+     fun: array(814.7633566191008)
+       x: array([ 0.1717,  0.9578,  1.1056,  0.5238,  1.0688])
+    nfev: 281
+     nit: 4
 A = 
-[[ 0.3568  0.    ]
- [ 0.      0.3568]]
+[[ 0.1717  0.    ]
+ [ 0.      0.1717]]
 B = 
-[[ 0.8228  0.    ]
- [ 0.      0.8228]]
+[[ 0.9578  0.    ]
+ [ 0.      0.9578]]
+C = 
+[[ 1.1056  0.    ]
+ [ 0.5238  1.0688]]
