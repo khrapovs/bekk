@@ -83,52 +83,15 @@ class BEKK(object):
         else:
             return sumf
 
-    def callback(self, theta):
-        """Print stuff for each iteraion.
-
-        Parameters
-        ----------
-        theta: 1-dimensional array
-            Current parameter value. Dimension depends on the problem
-        """
-        self.iteration += 1
-        nobs, nstocks = self.innov.shape
-        a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
-                                       self.restriction, self.var_target)
-
-        start_like = self.likelihood(self.theta_start)
-        current_like = self.likelihood(theta)
-        true_like = 0
-        old_like = self.likelihood(self.theta_old)
-
-        time_new = time.time()
-        time_diff = (time_new - self.time_old) / 60
-        since_start = (time_new - self.time_start) / 60
-
-        self.theta_old = theta.copy()
-        self.time_old = time_new
-
-        string = ['\nIteration = ' + str(self.iteration)]
-        string.append('Time spent (minutes) = %.2f' % time_diff)
-        string.append('Since start (minutes) = %.2f' % since_start)
-        string.append('Initial likelihood = %.2f' % start_like)
-        string.append('Current likelihood = %.2f' % current_like)
-        string.append('Current - true likelihood = %.2f' \
-            % (current_like - true_like))
-        string.append('Current - previous likelihood = %.2f' \
-            % (current_like - old_like))
-        string.extend(['A = ', np.array_str(a_mat),
-                       'B = ', np.array_str(b_mat)])
-
-        with open(self.log_file, 'a') as texfile:
-            for istring in string:
-                texfile.write(istring + '\n')
+    def empty_callback(self, theta):
+        """Empty callback function."""
+        pass
 
     def print_results(self, **kwargs):
         """Print stuff after estimation.
 
         """
-        nobs, nstocks = self.innov.shape
+        nstocks = self.innov.shape[1]
         self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
@@ -138,7 +101,6 @@ class BEKK(object):
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
         like_final = self.likelihood(self.theta_final)
-        like_delta = like_start - like_final
         # Form the string
         string = []
         string.append('Varinace targeting = ' + str(self.var_target))
@@ -150,7 +112,8 @@ class BEKK(object):
             string.append('True likelihood = %.2f' % like_true)
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
-        string.append('Likelihood difference = %.2f' % like_delta)
+        string.append('Likelihood difference = %.2f' % \
+            (like_start - like_final))
         string.append('Success = ' + str(self.res.success))
         string.append('Message = ' + self.res.message)
         string.append('Iterations = ' + str(self.res.nit))
@@ -163,7 +126,7 @@ class BEKK(object):
             stationary_var = find_stationary_var(a_mat, b_mat, c_mat)
             string.extend(['\nH0 estim = ', np.array_str(stationary_var)])
         string.extend(['\nH0 target = ',
-                       np.array_str(estimate_H0(self.innov))])
+                       np.array_str(estimate_h0(self.innov))])
 
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
@@ -173,6 +136,7 @@ class BEKK(object):
     def update_settings(self, **kwargs):
         """
         TODO : Rewrite as a dictionary
+        TODO : Decide on 'use_callback' parameter
 
         """
         if not 'theta_true' in kwargs:
@@ -208,12 +172,8 @@ class BEKK(object):
             self.disp = False
         else:
             self.disp = kwargs['disp']
-        #if not 'callback' in kwargs:
-            #self.callback = None
-        try:
-            self.callback = kwargs['callback']
-        except:
-            self.callback = None
+        if not 'use_callback' in kwargs:
+            kwargs['callback'] = self.empty_callback
 
     def estimate(self, **kwargs):
         """Estimate parameters of the BEKK model.
@@ -240,7 +200,7 @@ class BEKK(object):
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                             method=self.method,
-                            callback=self.callback,
+                            callback=kwargs['callback'],
                             options=options)
         self.theta_final = self.res.x
         # How much time did it take?
@@ -276,7 +236,8 @@ def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
 
     for tobs in range(1, nobs):
         hvar[tobs] = c_mat.dot(c_mat.T)
-        hvar[tobs] += a_mat.dot(innov[tobs-1, np.newaxis].T * innov[tobs-1]).dot(a_mat.T)
+        innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
+        hvar[tobs] += a_mat.dot(innov2).dot(a_mat.T)
         hvar[tobs] += b_mat.dot(hvar[tobs-1]).dot(b_mat.T)
         hvar12 = sp.linalg.cholesky(hvar[tobs], 1)
         innov[tobs] = hvar12.dot(np.atleast_2d(error[tobs]).T).flatten()
@@ -310,18 +271,18 @@ def filter_var(innov, a_mat, b_mat, c_mat, var_target):
 
     if var_target:
         # Estimate unconditional realized covariance matrix
-        stationary_var = estimate_H0(innov)
+        stationary_var = estimate_h0(innov)
     else:
         stationary_var = find_stationary_var(a_mat, b_mat, c_mat)
 
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = stationary_var.copy()
 
-    for t in range(1, nobs):
-        hvar[t] = hvar[0]
-        uu = innov[t-1, np.newaxis].T * innov[t-1]
-        hvar[t] += a_mat.dot(uu - hvar[0]).dot(a_mat.T)
-        hvar[t] += b_mat.dot(hvar[t-1] - hvar[0]).dot(b_mat.T)
+    for tobs in range(1, nobs):
+        hvar[tobs] = hvar[0]
+        innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
+        hvar[tobs] += a_mat.dot(innov2 - hvar[0]).dot(a_mat.T)
+        hvar[tobs] += b_mat.dot(hvar[tobs-1] - hvar[0]).dot(b_mat.T)
 
     return hvar
 
@@ -345,22 +306,22 @@ def contribution(innov, hvar):
     """
 
     try:
-        LU, piv = sl.lu_factor(hvar)
+        lu_decomp, piv = sl.lu_factor(hvar)
     except (sl.LinAlgError, ValueError):
         return 1e10, True
 
-    hvardet = np.abs(np.prod(np.diag(LU)))
+    hvardet = np.abs(np.prod(np.diag(lu_decomp)))
     if hvardet > 1e20 or hvardet < 1e-5:
         return 1e10, True
 
-    y = sl.lu_solve((LU, piv), innov)
-    f = np.log(hvardet) + y.dot(np.atleast_2d(innov).T)
-    if np.isinf(f):
+    norm_innov = sl.lu_solve((lu_decomp, piv), innov)
+    fvalue = np.log(hvardet) + norm_innov.dot(np.atleast_2d(innov).T)
+    if np.isinf(fvalue):
         return 1e10, True
     else:
-        return float(f), False
+        return float(fvalue), False
 
-def estimate_H0(innov):
+def estimate_h0(innov):
     """Estimate unconditional realized covariance matrix.
 
     Parameters
@@ -491,7 +452,7 @@ def find_stationary_var(a_mat, b_mat, c_mat):
         i += 1
     return hvarnew
 
-def find_Cmat(a_mat, b_mat, stationary_var):
+def find_c_mat(a_mat, b_mat, stationary_var):
     """Find C in H = CC' + AHA' + BHB'.
 
     Parameters
@@ -504,10 +465,10 @@ def find_Cmat(a_mat, b_mat, stationary_var):
     c_mat : (n, n) array
         Lower triangular matrix
     """
-    CC = stationary_var - a_mat.dot(stationary_var).dot(a_mat.T) \
+    c_mat_sq = stationary_var - a_mat.dot(stationary_var).dot(a_mat.T) \
         - b_mat.dot(stationary_var).dot(b_mat.T)
     # Extract C parameter
-    return sp.linalg.cholesky(CC, 1)
+    return sp.linalg.cholesky(c_mat_sq, 1)
 
 def init_parameters(innov, restriction, var_target):
     """Initialize parameters for further estimation.
@@ -532,9 +493,9 @@ def init_parameters(innov, restriction, var_target):
     a_mat = np.eye(nstocks) * .15
     b_mat = np.eye(nstocks) * .95
     # Estimate stationary variance
-    stationary_var = estimate_H0(innov)
+    stationary_var = estimate_h0(innov)
     # Compute the constant term
-    c_mat = find_Cmat(a_mat, b_mat, stationary_var)
+    c_mat = find_c_mat(a_mat, b_mat, stationary_var)
     theta = convert_abc_to_theta(a_mat, b_mat, c_mat, restriction, var_target)
     return theta
 
@@ -565,14 +526,14 @@ def plot_data(innov, hvar):
         variance/covariances
     """
     nobs, nstocks = innov.shape
-    fig, axes = plt.subplots(nrows=nstocks**2, ncols=1)
-    for ax, i in zip(axes, range(nstocks**2)):
-        ax.plot(range(nobs), hvar.reshape([nobs, nstocks**2])[:, i])
+    axes = plt.subplots(nrows=nstocks**2, ncols=1)[1]
+    for axi, i in zip(axes, range(nstocks**2)):
+        axi.plot(range(nobs), hvar.reshape([nobs, nstocks**2])[:, i])
     plt.plot()
 
-    fig, axes = plt.subplots(nrows=nstocks, ncols=1)
-    for ax, i in zip(axes, range(nstocks)):
-        ax.plot(range(nobs), innov[:, i])
+    axes = plt.subplots(nrows=nstocks, ncols=1)[1]
+    for axi, i in zip(axes, range(nstocks)):
+        axi.plot(range(nobs), innov[:, i])
     plt.plot()
 
 if __name__ == '__main__':
