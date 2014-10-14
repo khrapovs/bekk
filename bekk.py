@@ -177,6 +177,14 @@ class BEKK(object):
                 texfile.write(s + '\n')
     
     def update_settings(self, **kwargs):
+        """
+        TODO : Rewrite as a dictionary
+                
+        """
+        if not 'theta_true' in kwargs:
+            self.theta_true = None
+        else:
+            self.theta_true = kwargs['theta_true']
         if not 'var_target' in kwargs:
             self.var_target = True
         else:
@@ -206,10 +214,12 @@ class BEKK(object):
             self.disp = False
         else:
             self.disp = kwargs['disp']
-        if not 'callback' in kwargs:
-            self.callback = None
-        else:
+        #if not 'callback' in kwargs:
+            #self.callback = None
+        try:
             self.callback = kwargs['callback']
+        except:
+            self.callback = None
     
     def estimate(self, **kwargs):
         """Estimate parameters of the BEKK model.

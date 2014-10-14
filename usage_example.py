@@ -24,6 +24,7 @@ def test_simulate(n=2, T=100):
     
     # Simulate data    
     u = simulate_BEKK(A, B, C, T=T)
+    
     # Estimate stationary variance
     stationary_var = estimate_H0(u)
     # Compute the constant term
