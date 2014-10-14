@@ -143,7 +143,7 @@ class BEKK(object):
         # Convert parameter vector to matrices
         A, B, C = convert_theta_to_abc(self.theta_final, self.nstocks,
                                        self.restriction, self.var_target)
-        if kwargs['theta_true'] is not None:
+        if 'theta_true' in kwargs:
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
         like_final = self.likelihood(self.theta_final)
@@ -155,7 +155,7 @@ class BEKK(object):
         string.append('Method = ' + self.method)
         string.append('Max eigenvalue = %.4f' % constraint(A, B))
         string.append('Total time (minutes) = %.2f' % time_delta)
-        if kwargs['theta_true'] is not None:
+        if 'theta_true' in kwargs:
             string.append('True likelihood = %.2f' % like_true)
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
@@ -233,7 +233,7 @@ class BEKK(object):
 
         """
         
-        self.update_settings( **kwargs)
+        self.update_settings(**kwargs)
         
         self.xk_old = self.theta_start.copy()
         # Iteration number
