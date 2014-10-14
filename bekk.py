@@ -69,11 +69,11 @@ class BEKK(object):
         if constraint(a_mat, b_mat) >= 1:
             return 1e10
 
-        H = filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
+        hvar = filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
 
         sumf = 0
         for t in range(nobs):
-            f, bad = contribution(self.innov[t], H[t])
+            f, bad = contribution(self.innov[t], hvar[t])
             sumf += f
             if bad:
                 return 1e10
@@ -164,7 +164,7 @@ class BEKK(object):
             string.extend(['\nH0 estim = ', np.array_str(stationary_var)])
         string.extend(['\nH0 target = ',
                        np.array_str(estimate_H0(self.innov))])
-        
+
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for s in string:
@@ -267,17 +267,17 @@ def simulate_BEKK(a_mat, b_mat, c_mat, nobs=1000):
     nstocks = a_mat.shape[0]
     mean, cov = np.zeros(nstocks), np.eye(nstocks)
     e = np.random.multivariate_normal(mean, cov, nobs)
-    H = np.empty((nobs, nstocks, nstocks))
+    hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
-    H[0] = find_stationary_var(a_mat, b_mat, c_mat)
+    hvar[0] = find_stationary_var(a_mat, b_mat, c_mat)
 
     for t in range(1, nobs):
-        H[t] = c_mat.dot(c_mat.T)
-        H[t] += a_mat.dot(innov[t-1, np.newaxis].T * innov[t-1]).dot(a_mat.T)
-        H[t] += b_mat.dot(H[t-1]).dot(b_mat.T)
-        H12 = sp.linalg.cholesky(H[t], 1)
-        innov[t] = H12.dot(np.atleast_2d(e[t]).T).flatten()
+        hvar[t] = c_mat.dot(c_mat.T)
+        hvar[t] += a_mat.dot(innov[t-1, np.newaxis].T * innov[t-1]).dot(a_mat.T)
+        hvar[t] += b_mat.dot(hvar[t-1]).dot(b_mat.T)
+        hvar12 = sp.linalg.cholesky(hvar[t], 1)
+        innov[t] = hvar12.dot(np.atleast_2d(e[t]).T).flatten()
 
     return innov
 
@@ -299,7 +299,7 @@ def filter_var(innov, a_mat, b_mat, c_mat, var_target):
 
     Returns
     -------
-    H : (nobs, nstocks, nstocks) array
+    hvar : (nobs, nstocks, nstocks) array
         Variances and covariances of innovations
 
     """
@@ -312,26 +312,26 @@ def filter_var(innov, a_mat, b_mat, c_mat, var_target):
     else:
         stationary_var = find_stationary_var(a_mat, b_mat, c_mat)
 
-    H = np.empty((nobs, nstocks, nstocks))
-    H[0] = stationary_var.copy()
+    hvar = np.empty((nobs, nstocks, nstocks))
+    hvar[0] = stationary_var.copy()
 
     for t in range(1, nobs):
-        H[t] = H[0]
+        hvar[t] = hvar[0]
         uu = innov[t-1, np.newaxis].T * innov[t-1]
-        H[t] += a_mat.dot(uu - H[0]).dot(a_mat.T)
-        H[t] += b_mat.dot(H[t-1] - H[0]).dot(b_mat.T)
+        hvar[t] += a_mat.dot(uu - hvar[0]).dot(a_mat.T)
+        hvar[t] += b_mat.dot(hvar[t-1] - hvar[0]).dot(b_mat.T)
 
-    return H
+    return hvar
 
 #@profile
-def contribution(innov, H):
+def contribution(innov, hvar):
     """Contribution to the log-likelihood function for each observation.
 
     Parameters
     ----------
     innov: (n,) array
         inovations
-    H: (n, n) array
+    hvar: (n, n) array
         variance/covariances
 
     Returns
@@ -343,16 +343,16 @@ def contribution(innov, H):
     """
 
     try:
-        LU, piv = sl.lu_factor(H)
+        LU, piv = sl.lu_factor(hvar)
     except (sl.LinAlgError, ValueError):
         return 1e10, True
 
-    Hdet = np.abs(np.prod(np.diag(LU)))
-    if Hdet > 1e20 or Hdet < 1e-5:
+    hvardet = np.abs(np.prod(np.diag(LU)))
+    if hvardet > 1e20 or hvardet < 1e-5:
         return 1e10, True
 
     y = sl.lu_solve((LU, piv), innov)
-    f = np.log(Hdet) + y.dot(np.atleast_2d(innov).T)
+    f = np.log(hvardet) + y.dot(np.atleast_2d(innov).T)
     if np.isinf(f):
         return 1e10, True
     else:
@@ -480,14 +480,14 @@ def find_stationary_var(a_mat, b_mat, c_mat):
         (n, n) array
     """
     i, norm = 0, 1e3
-    Hold = np.eye(a_mat.shape[0])
+    hvarold = np.eye(a_mat.shape[0])
     while (norm > 1e-3) or (i < 1000):
-        Hnew = c_mat.dot(c_mat.T) + \
-            a_mat.dot(Hold).dot(a_mat.T) + b_mat.dot(Hold).dot(b_mat.T)
-        norm = np.linalg.norm(Hnew - Hold)
-        Hold = Hnew[:]
+        hvarnew = c_mat.dot(c_mat.T) + \
+            a_mat.dot(hvarold).dot(a_mat.T) + b_mat.dot(hvarold).dot(b_mat.T)
+        norm = np.linalg.norm(hvarnew - hvarold)
+        hvarold = hvarnew[:]
         i += 1
-    return Hnew
+    return hvarnew
 
 def find_Cmat(a_mat, b_mat, stationary_var):
     """Find C in H = CC' + AHA' + BHB'.
@@ -552,20 +552,20 @@ def constraint(a_mat, b_mat):
     return np.abs(sl.eigvals(np.kron(a_mat, a_mat) \
         + np.kron(b_mat, b_mat))).max()
 
-def plot_data(innov, H):
-    """Plot time series of H and u elements.
+def plot_data(innov, hvar):
+    """Plot time series of hvar and u elements.
 
     Parameters
     ----------
     innov: (T, n) array
         innovations
-    H: (T, n, n) array
+    hvar: (T, n, n) array
         variance/covariances
     """
     nobs, nstocks = innov.shape
     fig, axes = plt.subplots(nrows=nstocks**2, ncols=1)
     for ax, i in zip(axes, range(nstocks**2)):
-        ax.plot(range(nobs), H.reshape([nobs, nstocks**2])[:, i])
+        ax.plot(range(nobs), hvar.reshape([nobs, nstocks**2])[:, i])
     plt.plot()
 
     fig, axes = plt.subplots(nrows=nstocks, ncols=1)
