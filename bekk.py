@@ -164,13 +164,13 @@ class BEKK(object):
         string.append('Message = ' + self.res.message)
         string.append('Iterations = ' + str(self.res.nit))
         #string.append(str(self.res))
-        param_str = ['A = ', np.array_str(A), 'B = ', np.array_str(B)]
+        param_str = ['\nA = ', np.array_str(A), '\nB = ', np.array_str(B)]
         string.extend(param_str)
         if not self.var_target:
-            string.extend(['C = ', np.array_str(C)])
+            string.extend(['\nC = ', np.array_str(C)])
             stationary_var = find_stationary_var(A, B, C)
-            string.extend(['H0 estim = ', np.array_str(stationary_var)])
-        string.extend(['H0 target = ', np.array_str(estimate_H0(self.innov))])
+            string.extend(['\nH0 estim = ', np.array_str(stationary_var)])
+        string.extend(['\nH0 target = ', np.array_str(estimate_H0(self.innov))])
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for s in string:
