@@ -9,17 +9,19 @@ import matplotlib.pylab as plt
 from MGARCH.bekk import BEKK, simulate_BEKK, estimate_H0, init_parameters
 from MGARCH.bekk import convert_abc_to_theta, find_Cmat
 
-def test_simulate(n=2, T=100):
+def test_simulate(n=2, T=500):
     log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
         
     # scalar, diagonal, full
     restriction = 'scalar'
+    # Variance targetign flag
+    var_target = False
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
-    C = sp.linalg.cholesky(np.ones((n,n))*.5 + np.eye(n)*.5, 1)
+    C = sp.linalg.cholesky(np.ones((n, n))*.5 + np.eye(n)*.5, 1)
     theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
@@ -32,8 +34,6 @@ def test_simulate(n=2, T=100):
     
     # Initialize the object
     bekk = BEKK(u)
-    # Variance targetign flag
-    var_target = True
     # Choose initial theta
     theta_start = convert_abc_to_theta(A, B, Cstart, restriction, var_target)
     
@@ -128,4 +128,4 @@ def simple_test():
  
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    test_simulate(n=2, T=500)
+    test_simulate()

@@ -68,25 +68,12 @@ class BEKK(object):
                                        self.restriction, self.var_target)
         if constraint(A, B) >= 1:
             return 1e10
-        H = np.empty((self.nobs, self.nstocks, self.nstocks))
         
-        if self.var_target:
-            # Estimate unconditional realized covariance matrix
-            self.stationary_var = estimate_H0(self.innov)
-        else:
-            self.stationary_var = find_stationary_var(A, B, C)
+        H = filter_var(self.innov, A, B, C, self.var_target)
         
-        H[0] = self.stationary_var.copy()
-        
-        for t in range(1, self.nobs):
-            H[t] = H[0]
-            uu = self.innov[t-1, np.newaxis].T * self.innov[t-1]
-            H[t] += A.dot(uu - H[0]).dot(A.T)
-            H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
-        self.H = H
         sumf = 0
         for t in range(self.nobs):
-            f, bad = contribution(self.innov[t], self.H[t])
+            f, bad = contribution(self.innov[t], H[t])
             sumf += f
             if bad:
                 return 1e10
@@ -95,7 +82,7 @@ class BEKK(object):
             return 1e10
         else:
             return sumf
-
+    
     def callback(self, xk):
         """Print stuff for each iteraion.
 
@@ -287,6 +274,48 @@ def simulate_BEKK(A, B, C, T=1000):
 
     return innov
 
+def filter_var(innov, A, B, C, var_target):
+    """Filter out variances and covariances of innovations.
+    
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+    A : (nstocks, nstocks) array
+        Parameter matrix
+    B : (nstocks, nstocks) array
+        Parameter matrix
+    C : (nstocks, nstocks) array or None
+        Parameter matrix (lower triangular)
+    var_target : bool
+        Variance targeting flag
+        
+    Returns
+    -------
+    H : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+        
+    """
+    
+    nobs, nstocks = innov.shape
+    
+    if var_target:
+        # Estimate unconditional realized covariance matrix
+        stationary_var = estimate_H0(innov)
+    else:
+        stationary_var = find_stationary_var(A, B, C)
+    
+    H = np.empty((nobs, nstocks, nstocks))
+    H[0] = stationary_var.copy()
+    
+    for t in range(1, nobs):
+        H[t] = H[0]
+        uu = innov[t-1, np.newaxis].T * innov[t-1]
+        H[t] += A.dot(uu - H[0]).dot(A.T)
+        H[t] += B.dot(H[t-1] - H[0]).dot(B.T)
+    
+    return H
+    
 #@profile
 def contribution(innov, H):
     """Contribution to the log-likelihood function for each observation.
