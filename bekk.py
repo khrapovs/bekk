@@ -46,7 +46,6 @@ class BEKK(object):
 
         """
         self.innov = innov
-        self.nobs, self.nstocks = innov.shape
 
     def likelihood(self, theta):
         """Compute the largest eigenvalue of BEKK model.
@@ -64,7 +63,8 @@ class BEKK(object):
             some obscene number.
 
         """
-        A, B, C = convert_theta_to_abc(theta, self.nstocks,
+        nobs, nstocks = self.innov.shape
+        A, B, C = convert_theta_to_abc(theta, nstocks,
                                        self.restriction, self.var_target)
         if constraint(A, B) >= 1:
             return 1e10
@@ -72,7 +72,7 @@ class BEKK(object):
         H = filter_var(self.innov, A, B, C, self.var_target)
         
         sumf = 0
-        for t in range(self.nobs):
+        for t in range(nobs):
             f, bad = contribution(self.innov[t], H[t])
             sumf += f
             if bad:
@@ -92,7 +92,8 @@ class BEKK(object):
             Current parameter value. Dimension depends on the problem
         """
         self.iteration += 1
-        A, B, C = convert_theta_to_abc(xk, self.nstocks,
+        nobs, nstocks = self.innov.shape
+        A, B, C = convert_theta_to_abc(xk, nstocks,
                                        self.restriction, self.var_target)
 
         start_like = self.likelihood(self.theta_start)
@@ -125,10 +126,11 @@ class BEKK(object):
         """Print stuff after estimation.
 
         """
+        nobs, nstocks = self.innov.shape
         self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
-        A, B, C = convert_theta_to_abc(self.theta_final, self.nstocks,
+        A, B, C = convert_theta_to_abc(self.theta_final, nstocks,
                                        self.restriction, self.var_target)
         if 'theta_true' in kwargs:
             like_true = self.likelihood(kwargs['theta_true'])
@@ -240,7 +242,7 @@ class BEKK(object):
         self.time_final = time.time()
         self.print_results(**kwargs)
 
-def simulate_BEKK(A, B, C, T=1000):
+def simulate_BEKK(A, B, C, nobs=1000):
     """Simulate data.
 
     Parameters
@@ -257,15 +259,15 @@ def simulate_BEKK(A, B, C, T=1000):
     u: (T, n) array
         multivariate innovation matrix
     """
-    n = A.shape[0]
-    mean, cov = np.zeros(n), np.eye(n)
-    e = np.random.multivariate_normal(mean, cov, T)
-    H = np.empty((T, n, n))
-    innov = np.zeros((T, n))
+    nstocks = A.shape[0]
+    mean, cov = np.zeros(nstocks), np.eye(nstocks)
+    e = np.random.multivariate_normal(mean, cov, nobs)
+    H = np.empty((nobs, nstocks, nstocks))
+    innov = np.zeros((nobs, nstocks))
 
     H[0] = find_stationary_var(A, B, C)
 
-    for t in range(1, T):
+    for t in range(1, nobs):
         H[t] = C.dot(C.T)
         H[t] += A.dot(innov[t-1, np.newaxis].T * innov[t-1]).dot(A.T)
         H[t] += B.dot(H[t-1]).dot(B.T)
@@ -552,15 +554,15 @@ def plot_data(innov, H):
     H: (T, n, n) array
         variance/covariances
     """
-    T, n = innov.shape
-    fig, axes = plt.subplots(nrows=n**2, ncols=1)
-    for ax, i in zip(axes, range(n**2)):
-        ax.plot(range(T), H.reshape([T, n**2])[:, i])
+    nobs, nstocks = innov.shape
+    fig, axes = plt.subplots(nrows=nstocks**2, ncols=1)
+    for ax, i in zip(axes, range(nstocks**2)):
+        ax.plot(range(nobs), H.reshape([nobs, nstocks**2])[:, i])
     plt.plot()
 
-    fig, axes = plt.subplots(nrows=n, ncols=1)
-    for ax, i in zip(axes, range(n)):
-        ax.plot(range(T), innov[:, i])
+    fig, axes = plt.subplots(nrows=nstocks, ncols=1)
+    for ax, i in zip(axes, range(nstocks)):
+        ax.plot(range(nobs), innov[:, i])
     plt.plot()
 
 if __name__ == '__main__':
