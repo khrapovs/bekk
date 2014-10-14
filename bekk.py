@@ -72,9 +72,9 @@ class BEKK(object):
         hvar = filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
 
         sumf = 0
-        for t in range(nobs):
-            f, bad = contribution(self.innov[t], hvar[t])
-            sumf += f
+        for tobs in range(nobs):
+            fvalue, bad = contribution(self.innov[tobs], hvar[tobs])
+            sumf += fvalue
             if bad:
                 return 1e10
 
@@ -83,29 +83,29 @@ class BEKK(object):
         else:
             return sumf
 
-    def callback(self, xk):
+    def callback(self, theta):
         """Print stuff for each iteraion.
 
         Parameters
         ----------
-        xk: 1-dimensional array
+        theta: 1-dimensional array
             Current parameter value. Dimension depends on the problem
         """
         self.iteration += 1
         nobs, nstocks = self.innov.shape
-        a_mat, b_mat, c_mat = convert_theta_to_abc(xk, nstocks,
+        a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
                                        self.restriction, self.var_target)
 
         start_like = self.likelihood(self.theta_start)
-        current_like = self.likelihood(xk)
+        current_like = self.likelihood(theta)
         true_like = 0
-        old_like = self.likelihood(self.xk_old)
+        old_like = self.likelihood(self.theta_old)
 
         time_new = time.time()
         time_diff = (time_new - self.time_old) / 60
         since_start = (time_new - self.time_start) / 60
 
-        self.xk_old = xk.copy()
+        self.theta_old = theta.copy()
         self.time_old = time_new
 
         string = ['\nIteration = ' + str(self.iteration)]
@@ -121,8 +121,8 @@ class BEKK(object):
                        'B = ', np.array_str(b_mat)])
 
         with open(self.log_file, 'a') as texfile:
-            for s in string:
-                texfile.write(s + '\n')
+            for istring in string:
+                texfile.write(istring + '\n')
 
     def print_results(self, **kwargs):
         """Print stuff after estimation.
@@ -167,8 +167,8 @@ class BEKK(object):
 
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
-            for s in string:
-                texfile.write(s + '\n')
+            for istring in string:
+                texfile.write(istring + '\n')
 
     def update_settings(self, **kwargs):
         """
@@ -229,7 +229,7 @@ class BEKK(object):
 
         self.update_settings(**kwargs)
 
-        self.xk_old = self.theta_start.copy()
+        self.theta_old = self.theta_start.copy()
         # Iteration number
         self.iteration = 0
         # Start timer for the whole optimization
@@ -247,16 +247,18 @@ class BEKK(object):
         self.time_final = time.time()
         self.print_results(**kwargs)
 
-def simulate_BEKK(a_mat, b_mat, c_mat, nobs=1000):
+def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
     """Simulate data.
 
     Parameters
     ----------
-    theta : 1-dim array
-        True model parameters.
-    n : int
-        Number of series to simulate
-    T : int
+    a_mat : (nstocks, nstocks) array
+        Parameter matrix
+    b_mat : (nstocks, nstocks) array
+        Parameter matrix
+    c_mat : (nstocks, nstocks) array or None
+        Parameter matrix (lower triangular)
+    nobs : int
         Number of observations to generate. Time series length
 
     Returns
@@ -266,18 +268,18 @@ def simulate_BEKK(a_mat, b_mat, c_mat, nobs=1000):
     """
     nstocks = a_mat.shape[0]
     mean, cov = np.zeros(nstocks), np.eye(nstocks)
-    e = np.random.multivariate_normal(mean, cov, nobs)
+    error = np.random.multivariate_normal(mean, cov, nobs)
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
     hvar[0] = find_stationary_var(a_mat, b_mat, c_mat)
 
-    for t in range(1, nobs):
-        hvar[t] = c_mat.dot(c_mat.T)
-        hvar[t] += a_mat.dot(innov[t-1, np.newaxis].T * innov[t-1]).dot(a_mat.T)
-        hvar[t] += b_mat.dot(hvar[t-1]).dot(b_mat.T)
-        hvar12 = sp.linalg.cholesky(hvar[t], 1)
-        innov[t] = hvar12.dot(np.atleast_2d(e[t]).T).flatten()
+    for tobs in range(1, nobs):
+        hvar[tobs] = c_mat.dot(c_mat.T)
+        hvar[tobs] += a_mat.dot(innov[tobs-1, np.newaxis].T * innov[tobs-1]).dot(a_mat.T)
+        hvar[tobs] += b_mat.dot(hvar[tobs-1]).dot(b_mat.T)
+        hvar12 = sp.linalg.cholesky(hvar[tobs], 1)
+        innov[tobs] = hvar12.dot(np.atleast_2d(error[tobs]).T).flatten()
 
     return innov
 

@@ -6,7 +6,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pylab as plt
 
-from MGARCH.bekk import BEKK, simulate_BEKK, estimate_H0, init_parameters
+from MGARCH.bekk import BEKK, simulate_bekk, estimate_H0, init_parameters
 from MGARCH.bekk import convert_abc_to_theta, find_Cmat
 
 def test_simulate(n=2, T=500):
@@ -25,7 +25,7 @@ def test_simulate(n=2, T=500):
     theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
-    u = simulate_BEKK(A, B, C, T=T)
+    u = simulate_bekk(A, B, C, T=T)
     
     # Estimate stationary variance
     stationary_var = estimate_H0(u)
