@@ -75,6 +75,9 @@ class BEKK(object):
             If some regularity conditions are violated, then it returns
             some obscene number.
 
+        TODO : likelihood should depend on the full parameter vector,
+            regardless of var_target or restriction
+
         """
         nobs, nstocks = self.innov.shape
         a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
@@ -116,7 +119,7 @@ class BEKK(object):
         like_start = self.likelihood(self.theta_start)
         like_final = self.likelihood(self.theta_final)
         # Form the string
-        string = []
+        string = ['\n'*2]
         string.append('Varinace targeting = ' + str(self.var_target))
         string.append('Model restriction = ' + str(self.restriction))
         string.append('Method = ' + self.method)
@@ -508,4 +511,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(n=2, T=500)
+    test_simulate(nstocks=2, T=500)

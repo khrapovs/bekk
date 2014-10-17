@@ -7,9 +7,9 @@ import scipy as sp
 import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_bekk, estimate_h0, init_parameters
-from MGARCH.bekk import convert_abc_to_theta, find_c_mat
+from MGARCH.bekk import convert_abc_to_theta, convert_theta_to_abc, find_c_mat
 
-def test_simulate(n=2, T=500):
+def test_simulate(nstocks=2, T=500):
     log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
@@ -19,9 +19,10 @@ def test_simulate(n=2, T=500):
     # Variance targetign flag
     var_target = True
     # A, B, C - n x n matrices
-    A = np.eye(n) * .25
-    B = np.eye(n) * .95
-    C = sp.linalg.cholesky(np.ones((n, n))*.5 + np.eye(n)*.5, 1)
+    A = np.eye(nstocks) * .25
+    B = np.eye(nstocks) * .95
+    Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
+    C = sp.linalg.cholesky(Craw, 1)
     theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
@@ -38,6 +39,15 @@ def test_simulate(n=2, T=500):
     theta_start = convert_abc_to_theta(A, B, Cstart, restriction, var_target)
     
     # Estimate parameters
+    bekk.estimate(theta_start=theta_start, theta_true=theta,
+                  restriction=restriction, var_target=var_target,
+                  method='Powell', log_file=log_file)
+    # Second stage, diagonal
+    a_mat, b_mat, c_mat = convert_theta_to_abc(bekk.theta_final, nstocks,
+                                               restriction, var_target)
+    restriction = 'diagonal'
+    theta_start = convert_abc_to_theta(a_mat, b_mat, c_mat,
+                                       restriction, var_target)
     bekk.estimate(theta_start=theta_start, theta_true=theta,
                   restriction=restriction, var_target=var_target,
                   method='Powell', log_file=log_file)
