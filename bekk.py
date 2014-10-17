@@ -46,6 +46,19 @@ class BEKK(object):
 
         """
         self.innov = innov
+        self.set_defaults()        
+        
+    def set_defaults(self):
+        """Set default model options.
+        
+        These options can be updated via self.__dict__.update(kwargs)
+        
+        """
+        self.log_file = 'log.txt'
+        self.restriction = 'scalar'
+        self.var_target = False
+        self.theta_start = init_parameters(self.innov, self.restriction,
+                                           self.var_target)
 
     def likelihood(self, theta):
         """Compute the largest eigenvalue of BEKK model.
@@ -133,22 +146,6 @@ class BEKK(object):
             for istring in string:
                 texfile.write(istring + '\n')
 
-    def update_settings(self, **kwargs):
-        """
-        TODO : Rewrite as a dictionary
-
-        """
-        self.__dict__.update(kwargs)
-        if not 'restriction' in kwargs:
-            self.restriction = 'scalar'
-        else:
-            self.restriction = kwargs['restriction']
-        if not 'theta_start' in kwargs:
-            self.theta_start = init_parameters(self.innov, self.restriction,
-                                               self.var_target)
-        if not 'log_file' in kwargs:
-            self.log_file = 'log.txt'
-        
     def estimate(self, **kwargs):
         """Estimate parameters of the BEKK model.
 
@@ -160,8 +157,8 @@ class BEKK(object):
             Initial guess. Dimension depends on the problem
 
         """
-
-        self.update_settings(**kwargs)
+        # Update default settings
+        self.__dict__.update(kwargs)
 
         # Start timer for the whole optimization
         self.time_start = time.time()
