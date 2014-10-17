@@ -60,12 +60,12 @@ def regenerate_data(u_file):
     tickers.extend(tickers3)
     prices = []
     for tic in tickers:
-        df = Quandl.get(tic, authtoken = token,
-                        trim_start = "2000-01-01",
-                        trim_end = "2007-12-31")[['Close']]
-        df.rename(columns = {'Close' : tic}, inplace = True)
+        df = Quandl.get(tic, authtoken=token,
+                        trim_start="2000-01-01",
+                        trim_end="2007-12-31")[['Close']]
+        df.rename(columns={'Close' : tic}, inplace=True)
         prices.append(df)
-    prices = pd.concat(prices, axis = 1)
+    prices = pd.concat(prices, axis=1)
     
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace = True)
@@ -73,10 +73,9 @@ def regenerate_data(u_file):
     plt.show()
     
     # Create array of innovations    
-    u = np.array(ret.apply(lambda x: x - x.mean()))#[-2000:]
-    print(u.shape)
+    u = np.array(ret.apply(lambda x: x - x.mean()))
     np.save(u_file, u)
-    np.savetxt(u_file[:-4] + '.csv', u, delimiter = ",")
+    np.savetxt(u_file[:-4] + '.csv', u, delimiter=",")
 
 def test_real(method, theta_start, restriction, stage):
     # Load data    

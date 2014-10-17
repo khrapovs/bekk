@@ -46,19 +46,19 @@ class BEKK(object):
 
         """
         self.innov = innov
-        self.set_defaults()        
-        
-    def set_defaults(self):
-        """Set default model options.
-        
-        These options can be updated via self.__dict__.update(kwargs)
-        
-        """
         self.log_file = 'log.txt'
         self.restriction = 'scalar'
         self.var_target = False
         self.theta_start = init_parameters(self.innov, self.restriction,
                                            self.var_target)
+        # TODO : the following attributes seem excessive:
+        self.method = 'L-BFGS-B'
+        self.time_start = None
+        self.time_final = None
+        self.theta_final = None
+        self.success = None
+        self.nit = None
+        self.message = None
 
     def likelihood(self, theta):
         """Compute the largest eigenvalue of BEKK model.
@@ -97,7 +97,7 @@ class BEKK(object):
         else:
             return sumf
 
-    def empty_callback(self, theta):
+    def callback(self, theta):
         """Empty callback function."""
         pass
 
@@ -128,9 +128,9 @@ class BEKK(object):
         string.append('Final likelihood = %.2f' % like_final)
         string.append('Likelihood difference = %.2f' % \
             (like_start - like_final))
-        string.append('Success = ' + str(self.res.success))
-        string.append('Message = ' + self.res.message)
-        string.append('Iterations = ' + str(self.res.nit))
+        string.append('Success = ' + str(self.success))
+        string.append('Message = ' + self.message)
+        string.append('Iterations = ' + str(self.nit))
         param_str = ['\nA = ', np.array_str(a_mat),
                      '\nB = ', np.array_str(b_mat)]
         string.extend(param_str)
@@ -165,11 +165,14 @@ class BEKK(object):
         # Optimization options
         options = {'disp': False, 'maxiter' : int(1e6)}
         # Run optimization
-        self.res = minimize(self.likelihood, self.theta_start,
-                            method=self.method,
-                            callback=self.empty_callback,
-                            options=options)
-        self.theta_final = self.res.x
+        output = minimize(self.likelihood, self.theta_start,
+                          method=self.method,
+                          callback=self.callback,
+                          options=options)
+        self.theta_final = output.x
+        self.success = output.success
+        self.nit = output.nit
+        self.message = output.message
         # How much time did it take?
         self.time_final = time.time()
         self.print_results(**kwargs)
