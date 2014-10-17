@@ -65,7 +65,8 @@ class BEKK(object):
         """
         nobs, nstocks = self.innov.shape
         a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
-                                       self.restriction, self.var_target)
+                                                   self.restriction,
+                                                   self.var_target)
         if constraint(a_mat, b_mat) >= 1:
             return 1e10
 
@@ -92,11 +93,11 @@ class BEKK(object):
 
         """
         nstocks = self.innov.shape[1]
-        self.theta_final = self.res.x
         time_delta = (self.time_final - self.time_start) / 60
         # Convert parameter vector to matrices
         a_mat, b_mat, c_mat = convert_theta_to_abc(self.theta_final, nstocks,
-                                       self.restriction, self.var_target)
+                                                   self.restriction,
+                                                   self.var_target)
         if 'theta_true' in kwargs:
             like_true = self.likelihood(kwargs['theta_true'])
         like_start = self.likelihood(self.theta_start)
@@ -117,7 +118,6 @@ class BEKK(object):
         string.append('Success = ' + str(self.res.success))
         string.append('Message = ' + self.res.message)
         string.append('Iterations = ' + str(self.res.nit))
-        #string.append(str(self.res))
         param_str = ['\nA = ', np.array_str(a_mat),
                      '\nB = ', np.array_str(b_mat)]
         string.extend(param_str)
@@ -136,17 +136,9 @@ class BEKK(object):
     def update_settings(self, **kwargs):
         """
         TODO : Rewrite as a dictionary
-        TODO : Decide on 'use_callback' parameter
 
         """
-        if not 'theta_true' in kwargs:
-            self.theta_true = None
-        else:
-            self.theta_true = kwargs['theta_true']
-        if not 'var_target' in kwargs:
-            self.var_target = True
-        else:
-            self.var_target = kwargs['var_target']
+        self.__dict__.update(kwargs)
         if not 'restriction' in kwargs:
             self.restriction = 'scalar'
         else:
@@ -154,27 +146,9 @@ class BEKK(object):
         if not 'theta_start' in kwargs:
             self.theta_start = init_parameters(self.innov, self.restriction,
                                                self.var_target)
-        else:
-            self.theta_start = kwargs['theta_start']
         if not 'log_file' in kwargs:
             self.log_file = 'log.txt'
-        else:
-            self.log_file = kwargs['log_file']
-        if not 'method' in kwargs:
-            self.method = 'L-BFGS-B'
-        else:
-            self.method = kwargs['method']
-        if not 'maxiter' in kwargs:
-            self.maxiter = 1e6
-        else:
-            self.maxiter = kwargs['maxiter']
-        if not 'disp' in kwargs:
-            self.disp = False
-        else:
-            self.disp = kwargs['disp']
-        if not 'use_callback' in kwargs:
-            kwargs['callback'] = self.empty_callback
-
+        
     def estimate(self, **kwargs):
         """Estimate parameters of the BEKK model.
 
@@ -182,25 +156,21 @@ class BEKK(object):
 
         Parameters
         ----------
-        theta0: 1-dimensional array
+        theta0 : 1-dimensional array
             Initial guess. Dimension depends on the problem
 
         """
 
         self.update_settings(**kwargs)
 
-        self.theta_old = self.theta_start.copy()
-        # Iteration number
-        self.iteration = 0
         # Start timer for the whole optimization
         self.time_start = time.time()
-        self.time_old = time.time()
         # Optimization options
-        options = {'disp': self.disp, 'maxiter' : int(self.maxiter)}
+        options = {'disp': False, 'maxiter' : int(1e6)}
         # Run optimization
         self.res = minimize(self.likelihood, self.theta_start,
                             method=self.method,
-                            callback=kwargs['callback'],
+                            callback=self.empty_callback,
                             options=options)
         self.theta_final = self.res.x
         # How much time did it take?
@@ -538,4 +508,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(n=2, T=100)
+    test_simulate(n=2, T=500)

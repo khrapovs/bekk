@@ -7,7 +7,7 @@ import scipy as sp
 import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_bekk, estimate_h0, init_parameters
-from MGARCH.bekk import convert_abc_to_theta, find_Cmat
+from MGARCH.bekk import convert_abc_to_theta, find_c_mat
 
 def test_simulate(n=2, T=500):
     log_file = 'bekk_log.txt'
@@ -17,7 +17,7 @@ def test_simulate(n=2, T=500):
     # scalar, diagonal, full
     restriction = 'scalar'
     # Variance targetign flag
-    var_target = False
+    var_target = True
     # A, B, C - n x n matrices
     A = np.eye(n) * .25
     B = np.eye(n) * .95
@@ -25,12 +25,12 @@ def test_simulate(n=2, T=500):
     theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
-    u = simulate_bekk(A, B, C, T=T)
+    u = simulate_bekk(A, B, C, nobs=T)
     
     # Estimate stationary variance
     stationary_var = estimate_h0(u)
     # Compute the constant term
-    Cstart = find_Cmat(A, B, stationary_var)
+    Cstart = find_c_mat(A, B, stationary_var)
     
     # Initialize the object
     bekk = BEKK(u)
