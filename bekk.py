@@ -70,8 +70,7 @@ class BEKK(object):
         self.log_file = 'log.txt'
         self.restriction = 'scalar'
         self.var_target = False
-        self.theta_start = init_parameters(self.innov, self.restriction,
-                                           self.var_target)
+        self.theta_start = None
         # TODO : the following attributes seem excessive:
         self.method = 'L-BFGS-B'
         self.time_start = None
@@ -183,21 +182,29 @@ class BEKK(object):
         """
         # Update default settings
         self.__dict__.update(kwargs)
-        # Start timer for the whole optimization
-        self.time_start = time.time()
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
+        # Check for existence of initial guess among arguments.
+        # Otherwise, initialize.
+        if not 'theta_start' in kwargs:
+            self.theta_start = init_parameters(self.innov, self.restriction,
+                                               self.var_target)
+
+        # Start timer for the whole optimization
+        self.time_start = time.time()
         # Run optimization
         output = minimize(self.__likelihood, self.theta_start,
                           method=self.method,
                           callback=self.callback,
                           options=options)
+        # Stop timer
+        self.time_final = time.time()
+
         self.theta_final = output.x
         self.success = output.success
         self.nit = output.nit
         self.message = output.message
         # How much time did it take?
-        self.time_final = time.time()
         self.print_results(**kwargs)
 
 
@@ -455,7 +462,7 @@ def find_stationary_var(a_mat, b_mat, c_mat):
 
 
 def find_c_mat(a_mat, b_mat, stationary_var):
-    """Find C in H = CC' + AHA' + BHB'.
+    """Solve for C in H = CC' + AHA' + BHB'.
 
     Parameters
     ----------
