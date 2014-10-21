@@ -2,37 +2,58 @@
 # -*- coding: utf-8 -*-
 """This module allows to simulate and estimate the BEKK(1,1) model.
 
-Robert F. Engle and Kenneth F. Kroner
-"Multivariate Simultaneous Generalized Arch"
-Econometric Theory, Vol. 11, No. 1 (Mar., 1995), pp. 122-150
-http://www.jstor.org/stable/3532933
+References
+----------
+.. [1] Robert F. Engle and Kenneth F. Kroner
+    "Multivariate Simultaneous Generalized Arch",
+    Econometric Theory, Vol. 11, No. 1 (Mar., 1995), pp. 122-150,
+    <http://www.jstor.org/stable/3532933>
+
+Notes
+-----
+
+Check this repo for related R library: https://github.com/vst/mgarch/
+
+Alternative optimization library: http://www.pyopt.org/
 
 """
-
-# Check this repo for related R library: https://github.com/vst/mgarch/
-# Alternative optimization library: http://www.pyopt.org/
-
 from __future__ import print_function, division
 
-import numpy as np
-import scipy as sp
-import matplotlib.pylab as plt
-from scipy.optimize import minimize
-import scipy.linalg as sl
 import time
+
+import matplotlib.pylab as plt
+import numpy as np
+import scipy.linalg as sl
+from scipy.optimize import minimize
+
 
 __author__ = "Stanislav Khrapov, Stanislav Anatolyev"
 __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
+
 class BEKK(object):
     """BEKK model. Estimation class.
 
-    u(t)|H(t) ~ N(0,H(t))
-    u(t) = e(t)H(t)^(1/2), e(t) ~ N(0,I)
-    H(t) = E_{t-1}[u(t)u(t)']
+    .. math::
+        u_t|H_t &\sim N(0,H_t) \\
+        u_t     &= e_t H_t^{1/2}, e_t \sim N(0,I) \\
+        H_t     &= E_{t-1}[u_tu_t^\prime]
+
     One lag, no asymmetries
-    H(t) = CC' + Au(t-1)u(t-1)'A' + BH(t-1)B'
+
+    .. math::
+        H_t = CC^\prime + Au_{t-1}u_{t-1}^\prime A^\prime + BH_{t-1}B^\prime
+
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+
+    Attributes
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
 
     """
 
@@ -60,8 +81,8 @@ class BEKK(object):
         self.nit = None
         self.message = None
 
-    def likelihood(self, theta):
-        """Compute the largest eigenvalue of BEKK model.
+    def __likelihood(self, theta):
+        """Compute the conditional log-likelihood function.
 
         Parameters
         ----------
@@ -83,14 +104,14 @@ class BEKK(object):
         a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
                                                    self.restriction,
                                                    self.var_target)
-        if constraint(a_mat, b_mat) >= 1:
+        if _constraint(a_mat, b_mat) >= 1:
             return 1e10
 
-        hvar = filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
+        hvar = _filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
 
         sumf = 0
         for tobs in range(nobs):
-            fvalue, bad = contribution(self.innov[tobs], hvar[tobs])
+            fvalue, bad = _contribution(self.innov[tobs], hvar[tobs])
             sumf += fvalue
             if bad:
                 return 1e10
@@ -115,22 +136,22 @@ class BEKK(object):
                                                    self.restriction,
                                                    self.var_target)
         if 'theta_true' in kwargs:
-            like_true = self.likelihood(kwargs['theta_true'])
-        like_start = self.likelihood(self.theta_start)
-        like_final = self.likelihood(self.theta_final)
+            like_true = self.__likelihood(kwargs['theta_true'])
+        like_start = self.__likelihood(self.theta_start)
+        like_final = self.__likelihood(self.theta_final)
         # Form the string
         string = ['\n'*2]
         string.append('Varinace targeting = ' + str(self.var_target))
         string.append('Model restriction = ' + str(self.restriction))
         string.append('Method = ' + self.method)
-        string.append('Max eigenvalue = %.4f' % constraint(a_mat, b_mat))
+        string.append('Max eigenvalue = %.4f' % _constraint(a_mat, b_mat))
         string.append('Total time (minutes) = %.2f' % time_delta)
         if 'theta_true' in kwargs:
             string.append('True likelihood = %.2f' % like_true)
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
-        string.append('Likelihood difference = %.2f' % \
-            (like_start - like_final))
+        string.append('Likelihood difference = %.2f' %
+                      (like_start - like_final))
         string.append('Success = ' + str(self.success))
         string.append('Message = ' + self.message)
         string.append('Iterations = ' + str(self.nit))
@@ -156,19 +177,18 @@ class BEKK(object):
 
         Parameters
         ----------
-        theta0 : 1-dimensional array
+        theta : 1-dimensional array
             Initial guess. Dimension depends on the problem
 
         """
         # Update default settings
         self.__dict__.update(kwargs)
-
         # Start timer for the whole optimization
         self.time_start = time.time()
         # Optimization options
-        options = {'disp': False, 'maxiter' : int(1e6)}
+        options = {'disp': False, 'maxiter': int(1e6)}
         # Run optimization
-        output = minimize(self.likelihood, self.theta_start,
+        output = minimize(self.__likelihood, self.theta_start,
                           method=self.method,
                           callback=self.callback,
                           options=options)
@@ -179,6 +199,7 @@ class BEKK(object):
         # How much time did it take?
         self.time_final = time.time()
         self.print_results(**kwargs)
+
 
 def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
     """Simulate data.
@@ -212,12 +233,13 @@ def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
         innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
         hvar[tobs] += a_mat.dot(innov2).dot(a_mat.T)
         hvar[tobs] += b_mat.dot(hvar[tobs-1]).dot(b_mat.T)
-        hvar12 = sp.linalg.cholesky(hvar[tobs], 1)
+        hvar12 = sl.cholesky(hvar[tobs], 1)
         innov[tobs] = hvar12.dot(np.atleast_2d(error[tobs]).T).flatten()
 
     return innov
 
-def filter_var(innov, a_mat, b_mat, c_mat, var_target):
+
+def _filter_var(innov, a_mat, b_mat, c_mat, var_target):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -259,8 +281,8 @@ def filter_var(innov, a_mat, b_mat, c_mat, var_target):
 
     return hvar
 
-#@profile
-def contribution(innov, hvar):
+
+def _contribution(innov, hvar):
     """Contribution to the log-likelihood function for each observation.
 
     Parameters
@@ -294,6 +316,7 @@ def contribution(innov, hvar):
     else:
         return float(fvalue), False
 
+
 def estimate_h0(innov):
     """Estimate unconditional realized covariance matrix.
 
@@ -309,6 +332,7 @@ def estimate_h0(innov):
 
     """
     return innov.T.dot(innov) / innov.shape[0]
+
 
 def convert_theta_to_abc(theta, nstocks,
                          restriction='scalar', var_target=True):
@@ -363,6 +387,7 @@ def convert_theta_to_abc(theta, nstocks,
         c_mat[np.tril_indices(nstocks)] = theta[2*chunk:]
     return a_mat, b_mat, c_mat
 
+
 def convert_abc_to_theta(a_mat, b_mat, c_mat,
                          restriction='scalar', var_target=True):
     """Convert parameter matrices to 1-dimensional array.
@@ -405,6 +430,7 @@ def convert_abc_to_theta(a_mat, b_mat, c_mat,
         theta.append(c_mat[np.tril_indices(c_mat.shape[0])])
     return np.concatenate(theta)
 
+
 def find_stationary_var(a_mat, b_mat, c_mat):
     """Find fixed point of H = CC' + AHA' + BHB'.
 
@@ -427,6 +453,7 @@ def find_stationary_var(a_mat, b_mat, c_mat):
         i += 1
     return hvarnew
 
+
 def find_c_mat(a_mat, b_mat, stationary_var):
     """Find C in H = CC' + AHA' + BHB'.
 
@@ -443,7 +470,8 @@ def find_c_mat(a_mat, b_mat, stationary_var):
     c_mat_sq = stationary_var - a_mat.dot(stationary_var).dot(a_mat.T) \
         - b_mat.dot(stationary_var).dot(b_mat.T)
     # Extract C parameter
-    return sp.linalg.cholesky(c_mat_sq, 1)
+    return sl.cholesky(c_mat_sq, 1)
+
 
 def init_parameters(innov, restriction, var_target):
     """Initialize parameters for further estimation.
@@ -473,7 +501,8 @@ def init_parameters(innov, restriction, var_target):
     c_mat = find_c_mat(a_mat, b_mat, stationary_var)
     return convert_abc_to_theta(a_mat, b_mat, c_mat, restriction, var_target)
 
-def constraint(a_mat, b_mat):
+
+def _constraint(a_mat, b_mat):
     """Compute the largest eigenvalue of BEKK model.
 
     Parameters
@@ -489,6 +518,7 @@ def constraint(a_mat, b_mat):
     kron_a = np.kron(a_mat, a_mat)
     kron_b = np.kron(b_mat, b_mat)
     return np.abs(sl.eigvals(kron_a + kron_b)).max()
+
 
 def plot_data(innov, hvar):
     """Plot time series of hvar and u elements.
