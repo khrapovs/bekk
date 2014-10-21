@@ -272,9 +272,9 @@ def contribution(innov, hvar):
 
     Returns
     -------
-    f: float
+    fvalue : float
         log-likelihood contribution
-    bad: bool
+    bad : bool
         True if something is wrong
     """
 
@@ -319,12 +319,13 @@ def convert_theta_to_abc(theta, nstocks,
     theta: 1d array of parameters
         Length depends on the model restrictions and variance targeting
         If var_targeting:
-            'full' - 2*n**2
-            'diagonal' - 2*n
-            'scalar' - 2
+        'full' - 2*n**2
+        'diagonal' - 2*n
+        'scalar' - 2
         If not var_targeting:
-            + (n-1)*n/2 for parameter C
-    nstocks: number of innovations in the model
+        + (n-1)*n/2 for parameter C
+    nstocks: int
+        number of innovations in the model
 
     Returns
     -------
@@ -384,13 +385,14 @@ def convert_abc_to_theta(a_mat, b_mat, c_mat,
     1-dimensional array of parameters
         Length depends on the model restrictions and variance targeting
         If var_targeting:
-            'full' - 2*n**2
-            'diagonal' - 2*n
-            'scalar' - 2
+        'full' - 2*n**2
+        'diagonal' - 2*n
+        'scalar' - 2
         If not var_targeting:
-            + (n-1)*n/2 for parameter c_mat
+        + (n-1)*n/2 for parameter c_mat
 
     """
+
     if restriction == 'full':
         theta = [a_mat.flatten(), b_mat.flatten()]
     elif restriction == 'diagonal':
