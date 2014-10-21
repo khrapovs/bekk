@@ -99,7 +99,7 @@ class BEKKParams(object):
         self.__convert_abc_to_theta()
 
     def __find_c_mat(self, stationary_var):
-        """Solve for C in H = CC' + AHA' + BHB'.
+        """Solve for C in H = CC' + AHA' + BHB' given A, B, H.
 
         Parameters
         ----------
@@ -182,7 +182,7 @@ class BEKKParams(object):
         self.theta = np.concatenate(self.theta)
 
     def find_stationary_var(self):
-        """Find fixed point of H = CC' + AHA' + BHB'.
+        """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
 
         Returns
         -------
@@ -222,8 +222,8 @@ class BEKKParams(object):
                   '\nB = ', np.array_str(self.b_mat)]
         if self.c_mat is not None:
             string.extend(['\nC = ', np.array_str(self.c_mat)])
-#        string.extend(['\nH0 estim = ',
-#                       np.array_str(self.find_stationary_var())])
+            string.extend(['\nH0 estim = ',
+                           np.array_str(self.find_stationary_var())])
         return string
 
 
@@ -378,7 +378,6 @@ class BEKK(object):
             self.param_start = BEKKParams(restriction=restriction,
                                           var_target=var_target,
                                           innov=self.innov)
-
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization

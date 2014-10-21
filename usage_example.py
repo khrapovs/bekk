@@ -27,7 +27,7 @@ def test_simulate(nstocks=2, nobs=500):
     # scalar, diagonal, full
     restriction = 'scalar'
     # Variance targetign flag
-    var_target = True
+    var_target = False
     # A, B, C - n x n matrices
     A = np.eye(nstocks) * .15
     B = np.eye(nstocks) * .95
