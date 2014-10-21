@@ -41,7 +41,7 @@ class BEKKParams(object):
         Matrix representations of BEKK parameters
     theta : 1-dimensional array
         Vector of model parameters
-    nstocks: int
+    nstocks : int
         Number of innovations in the model
     restriction : str
         Can be 'full', 'diagonal', 'scalar'
@@ -249,7 +249,15 @@ class BEKK(object):
     ----------
     innov : (nobs, nstocks) array
         Return innovations
-
+    log_file : str
+        File name to write the results of estimation
+    param_start : BEKKParams instance
+        Initial values of model parameters
+    param_final : BEKKParams instance
+        Final values of model parameters
+    opt_out : scipy.minimize.OptimizeResult instance
+        Optimization results
+        
     """
 
     def __init__(self, innov):
@@ -285,9 +293,6 @@ class BEKK(object):
             If some regularity conditions are violated, then it returns
             some obscene number.
 
-        TODO : likelihood should depend on the full parameter vector,
-            regardless of var_target or restriction
-
         """
         nobs, nstocks = self.innov.shape
         param = BEKKParams(theta=theta, nstocks=nstocks,
@@ -312,7 +317,14 @@ class BEKK(object):
             return sumf
 
     def callback(self, theta):
-        """Empty callback function."""
+        """Empty callback function.
+
+        Parameters
+        ----------
+        theta : 1dim array
+            Parameter vector
+
+        """
         pass
 
     def print_results(self, **kwargs):
