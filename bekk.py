@@ -32,6 +32,24 @@ __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
 
+class BEKKParameters(object):
+    """Class to hold parameters of the BEKK model in different representations.
+
+    Attributes
+    ----------
+    a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+        Matrix representations of BEKK parameters
+
+    """
+
+    def __init__(self, **kwargs):
+        """Class constructor.
+
+        """
+        self.a_mat, self.b_mat, self.c_mat = None, None, None
+        self.__dict__.update(kwargs)
+
+
 class BEKK(object):
     """BEKK model. Estimation class.
 
@@ -71,6 +89,7 @@ class BEKK(object):
         self.restriction = 'scalar'
         self.var_target = False
         self.theta_start = None
+        self.param_start = None
         # TODO : the following attributes seem excessive:
         self.method = 'L-BFGS-B'
         self.time_start = None
@@ -208,17 +227,13 @@ class BEKK(object):
         self.print_results(**kwargs)
 
 
-def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
+def simulate_bekk(param, nobs=1000):
     """Simulate data.
 
     Parameters
     ----------
-    a_mat : (nstocks, nstocks) array
-        Parameter matrix
-    b_mat : (nstocks, nstocks) array
-        Parameter matrix
-    c_mat : (nstocks, nstocks) array or None
-        Parameter matrix (lower triangular)
+    param : instance of BEKKParameters class
+        Attributes of this class hold parameter matrices
     nobs : int
         Number of observations to generate. Time series length
 
@@ -227,19 +242,19 @@ def simulate_bekk(a_mat, b_mat, c_mat, nobs=1000):
     u: (T, n) array
         multivariate innovation matrix
     """
-    nstocks = a_mat.shape[0]
+    nstocks = param.a_mat.shape[0]
     mean, cov = np.zeros(nstocks), np.eye(nstocks)
     error = np.random.multivariate_normal(mean, cov, nobs)
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
-    hvar[0] = find_stationary_var(a_mat, b_mat, c_mat)
+    hvar[0] = find_stationary_var(param.a_mat, param.b_mat, param.c_mat)
 
     for tobs in range(1, nobs):
-        hvar[tobs] = c_mat.dot(c_mat.T)
+        hvar[tobs] = param.c_mat.dot(param.c_mat.T)
         innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
-        hvar[tobs] += a_mat.dot(innov2).dot(a_mat.T)
-        hvar[tobs] += b_mat.dot(hvar[tobs-1]).dot(b_mat.T)
+        hvar[tobs] += param.a_mat.dot(innov2).dot(param.a_mat.T)
+        hvar[tobs] += param.b_mat.dot(hvar[tobs-1]).dot(param.b_mat.T)
         hvar12 = sl.cholesky(hvar[tobs], 1)
         innov[tobs] = hvar12.dot(np.atleast_2d(error[tobs]).T).flatten()
 

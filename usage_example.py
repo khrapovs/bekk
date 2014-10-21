@@ -8,6 +8,7 @@ import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_bekk, init_parameters
 from MGARCH.bekk import convert_abc_to_theta
+from MGARCH.bekk import BEKKParameters
 
 def test_simulate(nstocks=2, nobs=500):
     """Simulate and estimate BEKK model.
@@ -35,8 +36,10 @@ def test_simulate(nstocks=2, nobs=500):
     C = sl.cholesky(Craw, 1)
     theta_true = convert_abc_to_theta(A, B, C, restriction, False)
 
+    true_param = BEKKParameters(a_mat=A, b_mat=B, c_mat=C)
+
     # Simulate data
-    innov = simulate_bekk(A, B, C, nobs=nobs)
+    innov = simulate_bekk(true_param, nobs=nobs)
     # Plot data
     plt.plot(innov)
     plt.show()
