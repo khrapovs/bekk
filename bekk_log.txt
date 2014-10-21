@@ -1,34 +1,26 @@
 
 
 
-Varinace targeting = False
+Varinace targeting = True
 Model restriction = scalar
 Method = Powell
-Max eigenvalue = 0.9230
-Total time (minutes) = 0.37
-Initial likelihood = 3412.46
-Final likelihood = 3411.69
-Likelihood difference = 0.77
+Max eigenvalue = 0.8212
+Total time (minutes) = 0.14
+Initial likelihood = 3380.80
+Final likelihood = 3378.06
+Likelihood difference = 2.75
 Success = True
 Message = Optimization terminated successfully.
 Iterations = 2
 
 A = 
-[[ 0.14788584  0.        ]
- [ 0.          0.14788584]]
+[[ 0.1038  0.    ]
+ [ 0.      0.1038]]
 
 B = 
-[[ 0.9492728  0.       ]
- [ 0.         0.9492728]]
-
-C = 
-[[ 1.01835172  0.        ]
- [ 0.50567208  0.84607983]]
-
-H0 estim = 
-[[ 13.46614369   6.68673977]
- [  6.68673977  12.61581138]]
+[[ 0.9003  0.    ]
+ [ 0.      0.9003]]
 
 H0 target = 
-[[ 13.59453598   6.72533822]
- [  6.72533822  12.58407383]]
+[[ 11.4129   5.9213]
+ [  5.9213  13.2743]]

@@ -70,12 +70,17 @@ class BEKKParams(object):
         self.var_target = var_target
         # Update attributes from kwargs
         self.__dict__.update(kwargs)
+
         if 'theta' in kwargs:
             self.__convert_theta_to_abc()
         elif 'a_mat' and 'b_mat' in kwargs:
             self.__convert_abc_to_theta()
+        elif 'innov' in kwargs:
+            self.__init_parameters(kwargs['innov'])
+        else:
+            raise TypeError('Not enough arguments to initialize BEKKParams!')
 
-    def init_parameters(self, innov):
+    def __init_parameters(self, innov):
         """Initialize parameter class given innovations only.
 
         Parameters
@@ -176,6 +181,26 @@ class BEKKParams(object):
             self.theta.append(self.c_mat[np.tril_indices(self.c_mat.shape[0])])
         self.theta = np.concatenate(self.theta)
 
+    def find_stationary_var(self):
+        """Find fixed point of H = CC' + AHA' + BHB'.
+
+        Returns
+        -------
+        hvarnew : (nstocks, nstocks) array
+            Stationary variance amtrix
+
+        """
+        i, norm = 0, 1e3
+        hvarold = np.eye(self.a_mat.shape[0])
+        while (norm > 1e-3) or (i < 1000):
+            hvarnew = self.c_mat.dot(self.c_mat.T) \
+                + self.a_mat.dot(hvarold).dot(self.a_mat.T) \
+                + self.b_mat.dot(hvarold).dot(self.b_mat.T)
+            norm = np.linalg.norm(hvarnew - hvarold)
+            hvarold = hvarnew[:]
+            i += 1
+        return hvarnew
+
     def constraint(self):
         """Compute the largest eigenvalue of BEKK model.
 
@@ -188,6 +213,18 @@ class BEKKParams(object):
         kron_a = np.kron(self.a_mat, self.a_mat)
         kron_b = np.kron(self.b_mat, self.b_mat)
         return np.abs(sl.eigvals(kron_a + kron_b)).max()
+
+    def log_string(self):
+        """Create string for log file.
+
+        """
+        string = ['\nA = ', np.array_str(self.a_mat),
+                  '\nB = ', np.array_str(self.b_mat)]
+        if self.c_mat is not None:
+            string.extend(['\nC = ', np.array_str(self.c_mat)])
+#        string.extend(['\nH0 estim = ',
+#                       np.array_str(self.find_stationary_var())])
+        return string
 
 
 class BEKK(object):
@@ -226,17 +263,12 @@ class BEKK(object):
         """
         self.innov = innov
         self.log_file = 'log.txt'
-        self.restriction = 'scalar'
-        self.var_target = False
         self.param_start = None
         self.param_final = None
         # TODO : the following attributes seem excessive:
         self.method = 'L-BFGS-B'
-        self.time_start = None
-        self.time_final = None
-        self.success = None
-        self.nit = None
-        self.message = None
+        self.time_delta = None
+        self.opt_out = None
 
     def __likelihood(self, theta):
         """Compute the conditional log-likelihood function.
@@ -259,13 +291,13 @@ class BEKK(object):
         """
         nobs, nstocks = self.innov.shape
         param = BEKKParams(theta=theta, nstocks=nstocks,
-                           restriction=self.restriction,
-                           var_target=self.var_target)
+                           restriction=self.param_start.restriction,
+                           var_target=self.param_start.var_target)
 
         if param.constraint() >= 1:
             return 1e10
 
-        hvar = _filter_var(self.innov, param, self.var_target)
+        hvar = _filter_var(self.innov, param, self.param_start.var_target)
 
         sumf = 0
         for i in range(nobs):
@@ -286,52 +318,54 @@ class BEKK(object):
     def print_results(self, **kwargs):
         """Print stuff after estimation.
 
+        Parameters
+        ----------
+        kwargs : dict, optional
+            Keyword arguments
+
         """
-        time_delta = (self.time_final - self.time_start) / 60
         if 'param_true' in kwargs:
             like_true = self.__likelihood(kwargs['param_true'].theta)
         like_start = self.__likelihood(self.param_start.theta)
         like_final = self.__likelihood(self.param_final.theta)
         # Form the string
         string = ['\n'*2]
-        string.append('Varinace targeting = ' + str(self.var_target))
-        string.append('Model restriction = ' + str(self.restriction))
+        string.append('Varinace targeting = '
+                      + str(self.param_final.var_target))
+        string.append('Model restriction = '
+                      + str(self.param_final.restriction))
         string.append('Method = ' + self.method)
         string.append('Max eigenvalue = %.4f' % self.param_final.constraint())
-        string.append('Total time (minutes) = %.2f' % time_delta)
+        string.append('Total time (minutes) = %.2f' % self.time_delta)
         if 'theta_true' in kwargs:
             string.append('True likelihood = %.2f' % like_true)
         string.append('Initial likelihood = %.2f' % like_start)
         string.append('Final likelihood = %.2f' % like_final)
         string.append('Likelihood difference = %.2f' %
                       (like_start - like_final))
-        string.append('Success = ' + str(self.success))
-        string.append('Message = ' + self.message)
-        string.append('Iterations = ' + str(self.nit))
-        param_str = ['\nA = ', np.array_str(self.param_final.a_mat),
-                     '\nB = ', np.array_str(self.param_final.b_mat)]
-        string.extend(param_str)
-        if not self.var_target:
-            string.extend(['\nC = ', np.array_str(self.param_final.c_mat)])
-            stationary_var = find_stationary_var(self.param_final)
-            string.extend(['\nH0 estim = ', np.array_str(stationary_var)])
+        string.append('Success = ' + str(self.opt_out.success))
+        string.append('Message = ' + self.opt_out.message)
+        string.append('Iterations = ' + str(self.opt_out.nit))
+        string.extend(self.param_final.log_string())
         string.extend(['\nH0 target = ',
                        np.array_str(estimate_h0(self.innov))])
-
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for istring in string:
                 texfile.write(istring + '\n')
 
-    def estimate(self, **kwargs):
+    def estimate(self, restriction='scalar', var_target=True, **kwargs):
         """Estimate parameters of the BEKK model.
 
         Updates several attributes of the class.
 
         Parameters
         ----------
-        theta : 1-dimensional array
-            Initial guess. Dimension depends on the problem
+        restriction : str
+            Can be 'full', 'diagonal', 'scalar'
+        var_target : bool
+            Variance targeting flag. If True, then c_mat is not returned.
+        kwargs : keyword arguments, optional
 
         """
         # Update default settings
@@ -341,30 +375,27 @@ class BEKK(object):
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
         if not 'param_start' in kwargs:
-            # TODO : What if A, B, C are included in kwargs?
-            self.param_start = BEKKParams(restriction=self.restriction,
-                                          var_target=self.var_target)
-            self.param_start.init_parameters(self.innov)
+            self.param_start = BEKKParams(restriction=restriction,
+                                          var_target=var_target,
+                                          innov=self.innov)
 
         # Start timer for the whole optimization
-        self.time_start = time.time()
+        time_start = time.time()
         # Run optimization
-        output = minimize(self.__likelihood, self.param_start.theta,
-                          method=self.method,
-                          callback=self.callback,
-                          options=options)
-        # Stop timer
-        self.time_final = time.time()
-
-        self.param_final = BEKKParams(theta=output.x,
-                                      nstocks=self.innov.shape[1],
-                                      restriction=self.restriction,
-                                      var_target=self.var_target)
-        self.success = output.success
-        self.nit = output.nit
-        self.message = output.message
+        self.opt_out = minimize(self.__likelihood,
+                                self.param_start.theta,
+                                method=self.method,
+                                callback=self.callback,
+                                options=options)
         # How much time did it take?
-        self.print_results(**kwargs)
+        self.time_delta = (time.time() - time_start) / 60
+
+        self.param_final = BEKKParams(theta=self.opt_out.x,
+                                      nstocks=self.innov.shape[1],
+                                      restriction=restriction,
+                                      var_target=var_target)
+        if 'log_file' in kwargs:
+            self.print_results(**kwargs)
 
 
 def simulate_bekk(param, nobs=1000):
@@ -374,13 +405,14 @@ def simulate_bekk(param, nobs=1000):
     ----------
     param : instance of BEKKParams class
         Attributes of this class hold parameter matrices
-    nobs : int
+    nobs : int, optional
         Number of observations to generate. Time series length
 
     Returns
     -------
-    u: (T, n) array
-        multivariate innovation matrix
+    innov : (nobs, nstocks) array
+        Multivariate innovation matrix
+
     """
     nstocks = param.a_mat.shape[0]
     mean, cov = np.zeros(nstocks), np.eye(nstocks)
@@ -388,7 +420,7 @@ def simulate_bekk(param, nobs=1000):
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
-    hvar[0] = find_stationary_var(param)
+    hvar[0] = param.find_stationary_var()
 
     for tobs in range(1, nobs):
         hvar[tobs] = param.c_mat.dot(param.c_mat.T)
@@ -426,7 +458,7 @@ def _filter_var(innov, param, var_target):
         # Estimate unconditional realized covariance matrix
         stationary_var = estimate_h0(innov)
     else:
-        stationary_var = find_stationary_var(param)
+        stationary_var = param.find_stationary_var()
 
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = stationary_var.copy()
@@ -490,30 +522,6 @@ def estimate_h0(innov):
 
     """
     return innov.T.dot(innov) / innov.shape[0]
-
-
-def find_stationary_var(param):
-    """Find fixed point of H = CC' + AHA' + BHB'.
-
-    Parameters
-    ----------
-    param : instance of BEKKParams class
-        Attributes of this class hold parameter matrices
-
-    Returns
-    -------
-        (n, n) array
-    """
-    i, norm = 0, 1e3
-    hvarold = np.eye(param.a_mat.shape[0])
-    while (norm > 1e-3) or (i < 1000):
-        hvarnew = param.c_mat.dot(param.c_mat.T) \
-            + param.a_mat.dot(hvarold).dot(param.a_mat.T) \
-            + param.b_mat.dot(hvarold).dot(param.b_mat.T)
-        norm = np.linalg.norm(hvarnew - hvarold)
-        hvarold = hvarnew[:]
-        i += 1
-    return hvarnew
 
 
 def plot_data(innov, hvar):
