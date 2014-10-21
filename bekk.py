@@ -459,9 +459,9 @@ def init_parameters(innov, restriction, var_target):
 
     Returns
     -------
-    theta : 1-dimensional array of parameters
+    theta : 1-dimensional array
         The initial guess for parameters.
-        Length depends of restriction and var_target.
+        Length depends on restriction and var_target.
 
     """
     nstocks = innov.shape[1]
@@ -471,8 +471,7 @@ def init_parameters(innov, restriction, var_target):
     stationary_var = estimate_h0(innov)
     # Compute the constant term
     c_mat = find_c_mat(a_mat, b_mat, stationary_var)
-    theta = convert_abc_to_theta(a_mat, b_mat, c_mat, restriction, var_target)
-    return theta
+    return convert_abc_to_theta(a_mat, b_mat, c_mat, restriction, var_target)
 
 def constraint(a_mat, b_mat):
     """Compute the largest eigenvalue of BEKK model.
@@ -487,8 +486,9 @@ def constraint(a_mat, b_mat):
     float
 
     """
-    return np.abs(sl.eigvals(np.kron(a_mat, a_mat) \
-        + np.kron(b_mat, b_mat))).max()
+    kron_a = np.kron(a_mat, a_mat)
+    kron_b = np.kron(b_mat, b_mat)
+    return np.abs(sl.eigvals(kron_a + kron_b)).max()
 
 def plot_data(innov, hvar):
     """Plot time series of hvar and u elements.
@@ -513,4 +513,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(nstocks=2, T=500)
+    test_simulate(nstocks=2, nobs=500)

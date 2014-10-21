@@ -7,9 +7,19 @@ import scipy as sp
 import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_bekk, estimate_h0, init_parameters
-from MGARCH.bekk import convert_abc_to_theta, convert_theta_to_abc, find_c_mat
+from MGARCH.bekk import convert_abc_to_theta, find_c_mat
 
-def test_simulate(nstocks=2, T=500):
+def test_simulate(nstocks=2, nobs=500):
+    """Simulate and estimate BEKK model.
+
+    Parameters
+    ----------
+    nstocks : int
+        Number of stocks in the model
+    nobs : int
+        The length of time series
+        
+    """
     log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
@@ -17,24 +27,26 @@ def test_simulate(nstocks=2, T=500):
     # scalar, diagonal, full
     restriction = 'scalar'
     # Variance targetign flag
-    var_target = True
+    var_target = False
     # A, B, C - n x n matrices
-    A = np.eye(nstocks) * .25
+    A = np.eye(nstocks) * .15
     B = np.eye(nstocks) * .95
     Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     C = sp.linalg.cholesky(Craw, 1)
     theta = convert_abc_to_theta(A, B, C, restriction, False)
     
     # Simulate data    
-    u = simulate_bekk(A, B, C, nobs=T)
+    innov = simulate_bekk(A, B, C, nobs=nobs)
+    plt.plot(innov)
+    plt.show()
     
     # Estimate stationary variance
-    stationary_var = estimate_h0(u)
+    stationary_var = estimate_h0(innov)
     # Compute the constant term
     Cstart = find_c_mat(A, B, stationary_var)
     
     # Initialize the object
-    bekk = BEKK(u)
+    bekk = BEKK(innov)
     # Choose initial theta
     theta_start = convert_abc_to_theta(A, B, Cstart, restriction, var_target)
     
@@ -42,56 +54,52 @@ def test_simulate(nstocks=2, T=500):
     bekk.estimate(theta_start=theta_start, theta_true=theta,
                   restriction=restriction, var_target=var_target,
                   method='Powell', log_file=log_file)
-    # Second stage, diagonal
-    a_mat, b_mat, c_mat = convert_theta_to_abc(bekk.theta_final, nstocks,
-                                               restriction, var_target)
-    restriction = 'diagonal'
-    theta_start = convert_abc_to_theta(a_mat, b_mat, c_mat,
-                                       restriction, var_target)
-    bekk.estimate(theta_start=theta_start, theta_true=theta,
-                  restriction=restriction, var_target=var_target,
-                  method='Powell', log_file=log_file)
     
-def regenerate_data(u_file):
+def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     """Download and save data to disk.
     
     Parameters
     ----------
-        u_file: str, name of the file to save to
+    innov_file : str
+        Name of the file to save to
+    nstocks : int
+        Number of stocks to analyze
+    nobs : int
+        Number of observations in the time series
+        
     """
     import Quandl
     import pandas as pd
     
     token = open('Quandl.token', 'r').read()
-    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL"]
-    tickers2 = ["GOOG/NYSE_XOM", "GOOG/NYSE_OXY"]
-    tickers3 = ["GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
-    tickers.extend(tickers2)
-    tickers.extend(tickers3)
+    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL",
+               "GOOG/NYSE_XOM", "GOOG/NYSE_OXY",
+               "GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
     prices = []
-    for tic in tickers:
+    for tic in tickers[:nstocks]:
         df = Quandl.get(tic, authtoken=token,
-                        trim_start="2000-01-01",
-                        trim_end="2007-12-31")[['Close']]
+                        trim_start="2001-01-01",
+                        trim_end="2012-12-31")[['Close']]
         df.rename(columns={'Close' : tic}, inplace=True)
         prices.append(df)
     prices = pd.concat(prices, axis=1)
     
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace = True)
+    ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
     ret.plot()
     plt.show()
     
     # Create array of innovations    
-    u = np.array(ret.apply(lambda x: x - x.mean()))
-    np.save(u_file, u)
-    np.savetxt(u_file[:-4] + '.csv', u, delimiter=",")
+    innov = np.array(ret)
+    np.save(innov_file, innov)
+    np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
 def test_real(method, theta_start, restriction, stage):
     # Load data    
-    u_file = 'innovations.npy'
+    innov_file = 'innovations.npy'
     # Load data from the drive
-    u = np.load(u_file)
+    innov = np.load(innov_file)
     
     #import numpy as np
     log_file = 'bekk_log_' + method + '_' + str(stage) + '.txt'
@@ -99,7 +107,7 @@ def test_real(method, theta_start, restriction, stage):
     with open(log_file, 'w') as texfile:
         texfile.write('')
     # Initialize the object
-    bekk = BEKK(u)
+    bekk = BEKK(innov)
     # Restriction of the model, 'scalar', 'diagonal', 'full'
     bekk.restriction = restriction
     # Print results for each iteration?
@@ -107,7 +115,7 @@ def test_real(method, theta_start, restriction, stage):
     # Set log file name
     bekk.log_file = log_file
     # Do we want to download data and overwrite it on the drive?
-    #regenerate_data(u_file)
+    #regenerate_data(innov_file)
     
     # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
     #    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
@@ -123,14 +131,14 @@ def simple_test():
     """Estimate BEKK.
     """
     # Load data    
-    u_file = 'innovations.npy'
+    innov_file = 'innovations.npy'
     # Load data from the drive
-    u = np.load(u_file)
-    n = u.shape[1]
+    innov = np.load(innov_file)
+    nstocks = innov.shape[1]
     # Choose the model restriction: scalar, diagonal, full
     restriction = 'scalar'
     # Initialize parameters
-    theta_start = init_parameters(restriction, n)
+    theta_start = init_parameters(restriction, nstocks)
     
     # Run first stage estimation
     test_real('L-BFGS-B', theta_start, restriction, 1)
