@@ -32,22 +32,162 @@ __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
 
-class BEKKParameters(object):
+class BEKKParams(object):
     """Class to hold parameters of the BEKK model in different representations.
 
     Attributes
     ----------
     a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
         Matrix representations of BEKK parameters
+    theta : 1-dimensional array
+        Vector of model parameters
+    nstocks: int
+        Number of innovations in the model
+    restriction : str
+        Can be 'full', 'diagonal', 'scalar'
+    var_target : bool
+        Variance targeting flag. If True, then c_mat is not returned.
 
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, restriction=None, var_target=None, **kwargs):
         """Class constructor.
 
+        Parameters
+        ----------
+        restriction : str
+            Can be 'full', 'diagonal', 'scalar'
+        var_target : bool
+            Variance targeting flag. If True, then c_mat is not returned.
+        kwargs : keyword arguments, optional
+
         """
+        # Defaults:
         self.a_mat, self.b_mat, self.c_mat = None, None, None
+        self.theta = None
+        self.nstocks = None
+        self.restriction = restriction
+        self.var_target = var_target
+        # Update attributes from kwargs
         self.__dict__.update(kwargs)
+        if 'theta' in kwargs:
+            self.__convert_theta_to_abc()
+        elif 'a_mat' and 'b_mat' in kwargs:
+            self.__convert_abc_to_theta()
+
+    def init_parameters(self, innov):
+        """Initialize parameter class given innovations only.
+
+        Parameters
+        ----------
+        innov: (nobs, ntocks) array
+            Return innovations
+
+        """
+        self.nstocks = innov.shape[1]
+        self.a_mat = np.eye(self.nstocks) * .15
+        self.b_mat = np.eye(self.nstocks) * .95
+        # Estimate stationary variance
+        stationary_var = estimate_h0(innov)
+        # Compute the constant term
+        self.__find_c_mat(stationary_var)
+        self.__convert_abc_to_theta()
+
+    def __find_c_mat(self, stationary_var):
+        """Solve for C in H = CC' + AHA' + BHB'.
+
+        Parameters
+        ----------
+        stationary_var: (nstocks, nstocks) arrays
+            Stationary variance matrix, H
+
+        """
+        c_mat_sq = stationary_var \
+            - self.a_mat.dot(stationary_var).dot(self.a_mat.T) \
+            - self.b_mat.dot(stationary_var).dot(self.b_mat.T)
+        # Extract C parameter
+        self.c_mat = sl.cholesky(c_mat_sq, 1)
+
+    def __convert_theta_to_abc(self):
+        """Convert 1-dimensional array of parameters to matrices.
+
+        Notes
+        -----
+        a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+            Parameter matrices
+        theta: 1d array of parameters
+            Length depends on the model restrictions and variance targeting
+            If var_targeting:
+            'full' - 2*n**2
+            'diagonal' - 2*n
+            'scalar' - 2
+            If not var_targeting:
+            + (n-1)*n/2 for parameter C
+
+        """
+        if self.restriction == 'full':
+            chunk = self.nstocks**2
+            sqsize = [self.nstocks, self.nstocks]
+            self.a_mat = self.theta[:chunk].reshape(sqsize)
+            self.b_mat = self.theta[chunk:2*chunk].reshape(sqsize)
+        elif self.restriction == 'diagonal':
+            chunk = self.nstocks
+            self.a_mat = np.diag(self.theta[:chunk])
+            self.b_mat = np.diag(self.theta[chunk:2*chunk])
+        elif self.restriction == 'scalar':
+            chunk = 1
+            self.a_mat = np.eye(self.nstocks) * self.theta[:chunk]
+            self.b_mat = np.eye(self.nstocks) * self.theta[chunk:2*chunk]
+        else:
+            raise ValueError('This restriction is not supported!')
+
+        if self.var_target:
+            self.c_mat = None
+        else:
+            self.c_mat = np.zeros((self.nstocks, self.nstocks))
+            self.c_mat[np.tril_indices(self.nstocks)] = self.theta[2*chunk:]
+
+    def __convert_abc_to_theta(self):
+        """Convert parameter matrices to 1-dimensional array.
+
+        Notes
+        -----
+        a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+            Parameter matrices
+        theta : 1-dimensional array of parameters
+            Length depends on the model restrictions and variance targeting
+            If var_targeting:
+            'full' - 2*n**2
+            'diagonal' - 2*n
+            'scalar' - 2
+            If not var_targeting:
+            + (n-1)*n/2 for parameter c_mat
+
+        """
+        if self.restriction == 'full':
+            self.theta = [self.a_mat.flatten(), self.b_mat.flatten()]
+        elif self.restriction == 'diagonal':
+            self.theta = [np.diag(self.a_mat), np.diag(self.b_mat)]
+        elif self.restriction == 'scalar':
+            self.theta = [[self.a_mat[0, 0]], [self.b_mat[0, 0]]]
+        else:
+            raise ValueError('This restriction is not supported!')
+        if not self.var_target:
+            self.theta.append(self.c_mat[np.tril_indices(self.c_mat.shape[0])])
+        self.theta = np.concatenate(self.theta)
+
+    def constraint(self):
+        """Compute the largest eigenvalue of BEKK model.
+
+        Returns
+        -------
+        float
+            Largest eigenvalue
+
+        """
+        kron_a = np.kron(self.a_mat, self.a_mat)
+        kron_b = np.kron(self.b_mat, self.b_mat)
+        return np.abs(sl.eigvals(kron_a + kron_b)).max()
 
 
 class BEKK(object):
@@ -88,13 +228,12 @@ class BEKK(object):
         self.log_file = 'log.txt'
         self.restriction = 'scalar'
         self.var_target = False
-        self.theta_start = None
         self.param_start = None
+        self.param_final = None
         # TODO : the following attributes seem excessive:
         self.method = 'L-BFGS-B'
         self.time_start = None
         self.time_final = None
-        self.theta_final = None
         self.success = None
         self.nit = None
         self.message = None
@@ -119,17 +258,18 @@ class BEKK(object):
 
         """
         nobs, nstocks = self.innov.shape
-        a_mat, b_mat, c_mat = convert_theta_to_abc(theta, nstocks,
-                                                   self.restriction,
-                                                   self.var_target)
-        if _constraint(a_mat, b_mat) >= 1:
+        param = BEKKParams(theta=theta, nstocks=nstocks,
+                           restriction=self.restriction,
+                           var_target=self.var_target)
+
+        if param.constraint() >= 1:
             return 1e10
 
-        hvar = _filter_var(self.innov, a_mat, b_mat, c_mat, self.var_target)
+        hvar = _filter_var(self.innov, param, self.var_target)
 
         sumf = 0
-        for tobs in range(nobs):
-            fvalue, bad = _contribution(self.innov[tobs], hvar[tobs])
+        for i in range(nobs):
+            fvalue, bad = _contribution(self.innov[i], hvar[i])
             sumf += fvalue
             if bad:
                 return 1e10
@@ -147,22 +287,17 @@ class BEKK(object):
         """Print stuff after estimation.
 
         """
-        nstocks = self.innov.shape[1]
         time_delta = (self.time_final - self.time_start) / 60
-        # Convert parameter vector to matrices
-        a_mat, b_mat, c_mat = convert_theta_to_abc(self.theta_final, nstocks,
-                                                   self.restriction,
-                                                   self.var_target)
-        if 'theta_true' in kwargs:
-            like_true = self.__likelihood(kwargs['theta_true'])
-        like_start = self.__likelihood(self.theta_start)
-        like_final = self.__likelihood(self.theta_final)
+        if 'param_true' in kwargs:
+            like_true = self.__likelihood(kwargs['param_true'].theta)
+        like_start = self.__likelihood(self.param_start.theta)
+        like_final = self.__likelihood(self.param_final.theta)
         # Form the string
         string = ['\n'*2]
         string.append('Varinace targeting = ' + str(self.var_target))
         string.append('Model restriction = ' + str(self.restriction))
         string.append('Method = ' + self.method)
-        string.append('Max eigenvalue = %.4f' % _constraint(a_mat, b_mat))
+        string.append('Max eigenvalue = %.4f' % self.param_final.constraint())
         string.append('Total time (minutes) = %.2f' % time_delta)
         if 'theta_true' in kwargs:
             string.append('True likelihood = %.2f' % like_true)
@@ -173,12 +308,12 @@ class BEKK(object):
         string.append('Success = ' + str(self.success))
         string.append('Message = ' + self.message)
         string.append('Iterations = ' + str(self.nit))
-        param_str = ['\nA = ', np.array_str(a_mat),
-                     '\nB = ', np.array_str(b_mat)]
+        param_str = ['\nA = ', np.array_str(self.param_final.a_mat),
+                     '\nB = ', np.array_str(self.param_final.b_mat)]
         string.extend(param_str)
         if not self.var_target:
-            string.extend(['\nC = ', np.array_str(c_mat)])
-            stationary_var = find_stationary_var(a_mat, b_mat, c_mat)
+            string.extend(['\nC = ', np.array_str(self.param_final.c_mat)])
+            stationary_var = find_stationary_var(self.param_final)
             string.extend(['\nH0 estim = ', np.array_str(stationary_var)])
         string.extend(['\nH0 target = ',
                        np.array_str(estimate_h0(self.innov))])
@@ -205,21 +340,26 @@ class BEKK(object):
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-        if not 'theta_start' in kwargs:
-            self.theta_start = init_parameters(self.innov, self.restriction,
-                                               self.var_target)
+        if not 'param_start' in kwargs:
+            # TODO : What if A, B, C are included in kwargs?
+            self.param_start = BEKKParams(restriction=self.restriction,
+                                          var_target=self.var_target)
+            self.param_start.init_parameters(self.innov)
 
         # Start timer for the whole optimization
         self.time_start = time.time()
         # Run optimization
-        output = minimize(self.__likelihood, self.theta_start,
+        output = minimize(self.__likelihood, self.param_start.theta,
                           method=self.method,
                           callback=self.callback,
                           options=options)
         # Stop timer
         self.time_final = time.time()
 
-        self.theta_final = output.x
+        self.param_final = BEKKParams(theta=output.x,
+                                      nstocks=self.innov.shape[1],
+                                      restriction=self.restriction,
+                                      var_target=self.var_target)
         self.success = output.success
         self.nit = output.nit
         self.message = output.message
@@ -232,7 +372,7 @@ def simulate_bekk(param, nobs=1000):
 
     Parameters
     ----------
-    param : instance of BEKKParameters class
+    param : instance of BEKKParams class
         Attributes of this class hold parameter matrices
     nobs : int
         Number of observations to generate. Time series length
@@ -248,7 +388,7 @@ def simulate_bekk(param, nobs=1000):
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
-    hvar[0] = find_stationary_var(param.a_mat, param.b_mat, param.c_mat)
+    hvar[0] = find_stationary_var(param)
 
     for tobs in range(1, nobs):
         hvar[tobs] = param.c_mat.dot(param.c_mat.T)
@@ -261,19 +401,15 @@ def simulate_bekk(param, nobs=1000):
     return innov
 
 
-def _filter_var(innov, a_mat, b_mat, c_mat, var_target):
+def _filter_var(innov, param, var_target):
     """Filter out variances and covariances of innovations.
 
     Parameters
     ----------
     innov : (nobs, nstocks) array
         Return innovations
-    a_mat : (nstocks, nstocks) array
-        Parameter matrix
-    b_mat : (nstocks, nstocks) array
-        Parameter matrix
-    c_mat : (nstocks, nstocks) array or None
-        Parameter matrix (lower triangular)
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
     var_target : bool
         Variance targeting flag
 
@@ -290,7 +426,7 @@ def _filter_var(innov, a_mat, b_mat, c_mat, var_target):
         # Estimate unconditional realized covariance matrix
         stationary_var = estimate_h0(innov)
     else:
-        stationary_var = find_stationary_var(a_mat, b_mat, c_mat)
+        stationary_var = find_stationary_var(param)
 
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = stationary_var.copy()
@@ -298,8 +434,8 @@ def _filter_var(innov, a_mat, b_mat, c_mat, var_target):
     for tobs in range(1, nobs):
         hvar[tobs] = hvar[0]
         innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
-        hvar[tobs] += a_mat.dot(innov2 - hvar[0]).dot(a_mat.T)
-        hvar[tobs] += b_mat.dot(hvar[tobs-1] - hvar[0]).dot(b_mat.T)
+        hvar[tobs] += param.a_mat.dot(innov2 - hvar[0]).dot(param.a_mat.T)
+        hvar[tobs] += param.b_mat.dot(hvar[tobs-1] - hvar[0]).dot(param.b_mat.T)
 
     return hvar
 
@@ -356,190 +492,28 @@ def estimate_h0(innov):
     return innov.T.dot(innov) / innov.shape[0]
 
 
-def convert_theta_to_abc(theta, nstocks,
-                         restriction='scalar', var_target=True):
-    """Convert 1-dimensional array of parameters to matrices.
-
-    Parameters
-    ----------
-    theta: 1d array of parameters
-        Length depends on the model restrictions and variance targeting
-        If var_targeting:
-        'full' - 2*n**2
-        'diagonal' - 2*n
-        'scalar' - 2
-        If not var_targeting:
-        + (n-1)*n/2 for parameter C
-    nstocks: int
-        number of innovations in the model
-
-    Returns
-    -------
-    a_mat : (nstocks, nstocks) array
-        Parameter matrix
-    b_mat : (nstocks, nstocks) array
-        Parameter matrix
-    c_mat : (nstocks, nstocks) array or None
-        Parameter matrix (lower triangular)
-    restriction : str
-        Can be 'full', 'diagonal', 'scalar'
-    var_target : bool
-        Variance targeting flag. If True, then c_mat is not returned.
-
-    """
-    if restriction == 'full':
-        chunk = nstocks**2
-        a_mat = theta[:chunk].reshape([nstocks, nstocks])
-        b_mat = theta[chunk:2*chunk].reshape([nstocks, nstocks])
-    elif restriction == 'diagonal':
-        chunk = nstocks
-        a_mat = np.diag(theta[:chunk])
-        b_mat = np.diag(theta[chunk:2*chunk])
-    elif restriction == 'scalar':
-        chunk = 1
-        a_mat = np.eye(nstocks) * theta[:chunk]
-        b_mat = np.eye(nstocks) * theta[chunk:2*chunk]
-    else:
-        raise ValueError('This restriction is not supported!')
-
-    if var_target:
-        c_mat = None
-    else:
-        c_mat = np.zeros((nstocks, nstocks))
-        c_mat[np.tril_indices(nstocks)] = theta[2*chunk:]
-    return a_mat, b_mat, c_mat
-
-
-def convert_abc_to_theta(a_mat, b_mat, c_mat,
-                         restriction='scalar', var_target=True):
-    """Convert parameter matrices to 1-dimensional array.
-
-    Parameters
-    ----------
-    a_mat : (nstocks, nstocks) array
-        Parameter matrix
-    b_mat : (nstocks, nstocks) array
-        Parameter matrix
-    c_mat : (nstocks, nstocks) array
-        Parameter matrix (lower triangular)
-    restriction : str
-        Model type. Can be 'full', 'diagonal', 'scalar'
-    var_target : bool
-        Variance targeting flag. If True, then c_mat is not returned.
-
-    Returns
-    -------
-    1-dimensional array of parameters
-        Length depends on the model restrictions and variance targeting
-        If var_targeting:
-        'full' - 2*n**2
-        'diagonal' - 2*n
-        'scalar' - 2
-        If not var_targeting:
-        + (n-1)*n/2 for parameter c_mat
-
-    """
-
-    if restriction == 'full':
-        theta = [a_mat.flatten(), b_mat.flatten()]
-    elif restriction == 'diagonal':
-        theta = [np.diag(a_mat), np.diag(b_mat)]
-    elif restriction == 'scalar':
-        theta = [[a_mat[0, 0]], [b_mat[0, 0]]]
-    else:
-        raise ValueError('This restriction is not supported!')
-    if not var_target:
-        theta.append(c_mat[np.tril_indices(c_mat.shape[0])])
-    return np.concatenate(theta)
-
-
-def find_stationary_var(a_mat, b_mat, c_mat):
+def find_stationary_var(param):
     """Find fixed point of H = CC' + AHA' + BHB'.
 
     Parameters
     ----------
-    a_mat, b_mat, c_mat: (n, n) arrays
-        Parameter matrices
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
 
     Returns
     -------
         (n, n) array
     """
     i, norm = 0, 1e3
-    hvarold = np.eye(a_mat.shape[0])
+    hvarold = np.eye(param.a_mat.shape[0])
     while (norm > 1e-3) or (i < 1000):
-        hvarnew = c_mat.dot(c_mat.T) + \
-            a_mat.dot(hvarold).dot(a_mat.T) + b_mat.dot(hvarold).dot(b_mat.T)
+        hvarnew = param.c_mat.dot(param.c_mat.T) \
+            + param.a_mat.dot(hvarold).dot(param.a_mat.T) \
+            + param.b_mat.dot(hvarold).dot(param.b_mat.T)
         norm = np.linalg.norm(hvarnew - hvarold)
         hvarold = hvarnew[:]
         i += 1
     return hvarnew
-
-
-def find_c_mat(a_mat, b_mat, stationary_var):
-    """Solve for C in H = CC' + AHA' + BHB'.
-
-    Parameters
-    ----------
-    a_mat, b_mat, stationary_var: (n, n) arrays
-        Parameter matrices
-
-    Returns
-    -------
-    c_mat : (n, n) array
-        Lower triangular matrix
-    """
-    c_mat_sq = stationary_var - a_mat.dot(stationary_var).dot(a_mat.T) \
-        - b_mat.dot(stationary_var).dot(b_mat.T)
-    # Extract C parameter
-    return sl.cholesky(c_mat_sq, 1)
-
-
-def init_parameters(innov, restriction, var_target):
-    """Initialize parameters for further estimation.
-
-    Parameters
-    ----------
-    innov: (T, n) array
-        Return innovations
-    restriction : str
-        Model type. Can be 'full', 'diagonal', 'scalar'
-    var_target : bool
-        Variance targeting flag. If True, then c_mat is not returned.
-
-    Returns
-    -------
-    theta : 1-dimensional array
-        The initial guess for parameters.
-        Length depends on restriction and var_target.
-
-    """
-    nstocks = innov.shape[1]
-    a_mat = np.eye(nstocks) * .15
-    b_mat = np.eye(nstocks) * .95
-    # Estimate stationary variance
-    stationary_var = estimate_h0(innov)
-    # Compute the constant term
-    c_mat = find_c_mat(a_mat, b_mat, stationary_var)
-    return convert_abc_to_theta(a_mat, b_mat, c_mat, restriction, var_target)
-
-
-def _constraint(a_mat, b_mat):
-    """Compute the largest eigenvalue of BEKK model.
-
-    Parameters
-    ----------
-    a_mat : (n, n) array
-    b_mat : (n, n) array
-
-    Returns
-    -------
-    float
-
-    """
-    kron_a = np.kron(a_mat, a_mat)
-    kron_b = np.kron(b_mat, b_mat)
-    return np.abs(sl.eigvals(kron_a + kron_b)).max()
 
 
 def plot_data(innov, hvar):

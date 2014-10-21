@@ -6,9 +6,8 @@ import numpy as np
 import scipy.linalg as sl
 import matplotlib.pylab as plt
 
-from MGARCH.bekk import BEKK, simulate_bekk, init_parameters
-from MGARCH.bekk import convert_abc_to_theta
-from MGARCH.bekk import BEKKParameters
+from MGARCH.bekk import BEKK, simulate_bekk
+from MGARCH.bekk import BEKKParams
 
 def test_simulate(nstocks=2, nobs=500):
     """Simulate and estimate BEKK model.
@@ -34,12 +33,12 @@ def test_simulate(nstocks=2, nobs=500):
     B = np.eye(nstocks) * .95
     Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     C = sl.cholesky(Craw, 1)
-    theta_true = convert_abc_to_theta(A, B, C, restriction, False)
 
-    true_param = BEKKParameters(a_mat=A, b_mat=B, c_mat=C)
+    param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
+                            restriction=restriction, var_target=var_target)
 
     # Simulate data
-    innov = simulate_bekk(true_param, nobs=nobs)
+    innov = simulate_bekk(param_true, nobs=nobs)
     # Plot data
     plt.plot(innov)
     plt.show()
@@ -47,7 +46,7 @@ def test_simulate(nstocks=2, nobs=500):
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
-    bekk.estimate(theta_start=theta_true, theta_true=theta_true,
+    bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
                   method='Powell', log_file=log_file)
 
