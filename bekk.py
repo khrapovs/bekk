@@ -234,7 +234,7 @@ class BEKKParams(object):
 
 
 class BEKK(object):
-    """BEKK model. Estimation class.
+    r"""BEKK model. Estimation class.
 
     .. math::
         u_t|H_t &\sim N(0,H_t) \\
@@ -279,7 +279,6 @@ class BEKK(object):
         self.log_file = 'log.txt'
         self.param_start = None
         self.param_final = None
-        # TODO : the following attributes seem excessive:
         self.method = 'L-BFGS-B'
         self.time_delta = None
         self.opt_out = None
