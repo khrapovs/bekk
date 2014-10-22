@@ -44,7 +44,12 @@ class BEKKParams(object):
     nstocks : int
         Number of innovations in the model
     restriction : str
-        Can be 'full', 'diagonal', 'scalar'
+        Can be
+
+            - 'full'
+            - 'diagonal'
+            - 'scalar'
+
     var_target : bool
         Variance targeting flag. If True, then c_mat is not returned.
 
@@ -257,7 +262,7 @@ class BEKK(object):
         Final values of model parameters
     opt_out : scipy.minimize.OptimizeResult instance
         Optimization results
-        
+
     """
 
     def __init__(self, innov):
@@ -374,7 +379,12 @@ class BEKK(object):
         Parameters
         ----------
         restriction : str
-            Can be 'full', 'diagonal', 'scalar'
+            Can be
+
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+
         var_target : bool
             Variance targeting flag. If True, then c_mat is not returned.
         kwargs : keyword arguments, optional
