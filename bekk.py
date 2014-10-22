@@ -45,11 +45,9 @@ class BEKKParams(object):
         Number of innovations in the model
     restriction : str
         Can be
-
             - 'full'
             - 'diagonal'
             - 'scalar'
-
     var_target : bool
         Variance targeting flag. If True, then c_mat is not returned.
 
@@ -61,7 +59,10 @@ class BEKKParams(object):
         Parameters
         ----------
         restriction : str
-            Can be 'full', 'diagonal', 'scalar'
+            Can be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
         var_target : bool
             Variance targeting flag. If True, then c_mat is not returned.
         kwargs : keyword arguments, optional
@@ -128,11 +129,11 @@ class BEKKParams(object):
         theta: 1d array of parameters
             Length depends on the model restrictions and variance targeting
             If var_targeting:
-            'full' - 2*n**2
-            'diagonal' - 2*n
-            'scalar' - 2
+                - 'full' - 2*n**2
+                - 'diagonal' - 2*n
+                - 'scalar' - 2
             If not var_targeting:
-            + (n-1)*n/2 for parameter C
+                - + (n-1)*n/2 for parameter C
 
         """
         if self.restriction == 'full':
@@ -167,11 +168,11 @@ class BEKKParams(object):
         theta : 1-dimensional array of parameters
             Length depends on the model restrictions and variance targeting
             If var_targeting:
-            'full' - 2*n**2
-            'diagonal' - 2*n
-            'scalar' - 2
+                - 'full' - 2*n**2
+                - 'diagonal' - 2*n
+                - 'scalar' - 2
             If not var_targeting:
-            + (n-1)*n/2 for parameter c_mat
+                - + (n-1)*n/2 for parameter c_mat
 
         """
         if self.restriction == 'full':
@@ -380,11 +381,9 @@ class BEKK(object):
         ----------
         restriction : str
             Can be
-
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
-
         var_target : bool
             Variance targeting flag. If True, then c_mat is not returned.
         kwargs : keyword arguments, optional
@@ -443,13 +442,13 @@ def simulate_bekk(param, nobs=1000):
 
     hvar[0] = param.find_stationary_var()
 
-    for tobs in range(1, nobs):
-        hvar[tobs] = param.c_mat.dot(param.c_mat.T)
-        innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
-        hvar[tobs] += param.a_mat.dot(innov2).dot(param.a_mat.T)
-        hvar[tobs] += param.b_mat.dot(hvar[tobs-1]).dot(param.b_mat.T)
-        hvar12 = sl.cholesky(hvar[tobs], 1)
-        innov[tobs] = hvar12.dot(np.atleast_2d(error[tobs]).T).flatten()
+    for i in range(1, nobs):
+        hvar[i] = param.c_mat.dot(param.c_mat.T)
+        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
+        hvar[i] += param.a_mat.dot(innov2).dot(param.a_mat.T)
+        hvar[i] += param.b_mat.dot(hvar[i-1]).dot(param.b_mat.T)
+        hvar12 = sl.cholesky(hvar[i], 1)
+        innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
     return innov
 
@@ -498,9 +497,9 @@ def _contribution(innov, hvar):
 
     Parameters
     ----------
-    innov: (n,) array
+    innov: (nstocks,) array
         inovations
-    hvar: (n, n) array
+    hvar: (nstocks, nstocks) array
         variance/covariances
 
     Returns
@@ -533,12 +532,12 @@ def estimate_h0(innov):
 
     Parameters
     ----------
-    innov: (T, n) array
+    innov: (nobs, nstocks) array
         inovations
 
     Returns
     -------
-    (n, n) array
+    (nstocks, nstocks) array
         E[innov' * innov]
 
     """
@@ -550,9 +549,9 @@ def plot_data(innov, hvar):
 
     Parameters
     ----------
-    innov: (T, n) array
+    innov: (nobs, nstocks) array
         innovations
-    hvar: (T, n, n) array
+    hvar: (nobs, nstocks, nstocks) array
         variance/covariances
     """
     nobs, nstocks = innov.shape
