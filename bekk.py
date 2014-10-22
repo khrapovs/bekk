@@ -115,8 +115,8 @@ class BEKKParams(object):
 
         """
         c_mat_sq = stationary_var \
-            - self.a_mat.dot(stationary_var).dot(self.a_mat.T) \
-            - self.b_mat.dot(stationary_var).dot(self.b_mat.T)
+            - reduce(np.dot, [self.a_mat, stationary_var, self.a_mat.T]) \
+            - reduce(np.dot, [self.b_mat, stationary_var, self.b_mat.T])
         # Extract C parameter
         self.c_mat = sl.cholesky(c_mat_sq, 1)
 
@@ -201,8 +201,8 @@ class BEKKParams(object):
         hvarold = np.eye(self.a_mat.shape[0])
         while (norm > 1e-3) or (i < 100):
             hvarnew = self.c_mat.dot(self.c_mat.T) \
-                + self.a_mat.dot(hvarold).dot(self.a_mat.T) \
-                + self.b_mat.dot(hvarold).dot(self.b_mat.T)
+                + reduce(np.dot, [self.a_mat, hvarold, self.a_mat.T]) \
+                + reduce(np.dot, [self.b_mat, hvarold, self.b_mat.T])
             norm = np.linalg.norm(hvarnew - hvarold)
             hvarold = hvarnew[:]
             i += 1
