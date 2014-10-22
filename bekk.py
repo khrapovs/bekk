@@ -26,9 +26,10 @@ import numpy as np
 import scipy.linalg as sl
 from scipy.optimize import minimize
 from functools import reduce
+from multiprocessing import Pool, cpu_count
 
 
-__author__ = "Stanislav Khrapov, Stanislav Anatolyev"
+__author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
@@ -319,14 +320,25 @@ class BEKK(object):
 
         hvar = _filter_var(self.innov, param, self.param_start.var_target)
 
-        sumf = 0
-        for i in range(nobs):
-            fvalue, bad = _contribution(self.innov[i], hvar[i])
-            sumf += fvalue
-            if bad:
-                return 1e10
+        parallel = True
 
-        if np.isinf(sumf):
+        if not parallel:
+            # Serial version
+            sumf = 0
+            for i in range(nobs):
+                fvalue, bad = _contribution(self.innov[i], hvar[i])
+                if bad:
+                    break
+                sumf += fvalue
+        else:
+            # Parallel version
+            tasks = zip(self.innov, hvar)
+            with Pool(processes=cpu_count()) as pool:
+                results = pool.starmap(_contribution, tasks)
+            sumf = np.sum([x[0] for x in results])
+            bad = np.array([x[1] for x in results]).any()
+
+        if np.isinf(sumf) or bad:
             return 1e10
         else:
             return sumf
@@ -411,9 +423,9 @@ class BEKK(object):
                                 method=self.method,
                                 callback=self.callback,
                                 options=options)
-        # How much time did it take?
+        # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
-
+        # Store optimal parameters in the corresponding class
         self.param_final = BEKKParams(theta=self.opt_out.x,
                                       nstocks=self.innov.shape[1],
                                       restriction=restriction,
@@ -601,4 +613,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(nstocks=2, nobs=500)
+    test_simulate(nstocks=6, nobs=2000)
