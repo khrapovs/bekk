@@ -25,6 +25,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import scipy.linalg as sl
 from scipy.optimize import minimize
+from functools import reduce
 
 
 __author__ = "Stanislav Khrapov, Stanislav Anatolyev"
@@ -198,7 +199,7 @@ class BEKKParams(object):
         """
         i, norm = 0, 1e3
         hvarold = np.eye(self.a_mat.shape[0])
-        while (norm > 1e-3) or (i < 1000):
+        while (norm > 1e-3) or (i < 100):
             hvarnew = self.c_mat.dot(self.c_mat.T) \
                 + self.a_mat.dot(hvarold).dot(self.a_mat.T) \
                 + self.b_mat.dot(hvarold).dot(self.b_mat.T)
@@ -223,13 +224,22 @@ class BEKKParams(object):
     def log_string(self):
         """Create string for log file.
 
+        Returns
+        -------
+        string : list
+            List of strings
+
         """
-        string = ['\nA = ', np.array_str(self.a_mat),
-                  '\nB = ', np.array_str(self.b_mat)]
+        string = []
+        string.append('Varinace targeting = ' + str(self.var_target))
+        string.append('Model restriction = ' + str(self.restriction))
+        string.append('Max eigenvalue = %.4f' % self.constraint())
+        string.append('\nA =\n' + np.array_str(self.a_mat))
+        string.append('\nB =\n' + np.array_str(self.b_mat))
         if self.c_mat is not None:
-            string.extend(['\nC = ', np.array_str(self.c_mat)])
-            string.extend(['\nH0 estim = ',
-                           np.array_str(self.find_stationary_var())])
+            string.append('\nC =\n' + np.array_str(self.c_mat))
+            string.append('\nH0 estim =\n'
+                          + np.array_str(self.find_stationary_var()))
         return string
 
 
@@ -346,13 +356,8 @@ class BEKK(object):
         like_start = self.__likelihood(self.param_start.theta)
         like_final = self.__likelihood(self.param_final.theta)
         # Form the string
-        string = ['\n'*2]
-        string.append('Varinace targeting = '
-                      + str(self.param_final.var_target))
-        string.append('Model restriction = '
-                      + str(self.param_final.restriction))
+        string = ['\n']
         string.append('Method = ' + self.method)
-        string.append('Max eigenvalue = %.4f' % self.param_final.constraint())
         string.append('Total time (minutes) = %.2f' % self.time_delta)
         if 'theta_true' in kwargs:
             string.append('True likelihood = %.2f' % like_true)
@@ -361,11 +366,11 @@ class BEKK(object):
         string.append('Likelihood difference = %.2f' %
                       (like_start - like_final))
         string.append('Success = ' + str(self.opt_out.success))
-        string.append('Message = ' + self.opt_out.message)
+        string.append('Message = ' + str(self.opt_out.message))
         string.append('Iterations = ' + str(self.opt_out.nit))
         string.extend(self.param_final.log_string())
-        string.extend(['\nH0 target = ',
-                       np.array_str(estimate_h0(self.innov))])
+        string.append('\nH0 target =\n'
+                      + np.array_str(estimate_h0(self.innov)))
         # Save results to the log file
         with open(self.log_file, 'a') as texfile:
             for istring in string:
@@ -444,8 +449,8 @@ def simulate_bekk(param, nobs=1000):
     for i in range(1, nobs):
         hvar[i] = param.c_mat.dot(param.c_mat.T)
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] += param.a_mat.dot(innov2).dot(param.a_mat.T)
-        hvar[i] += param.b_mat.dot(hvar[i-1]).dot(param.b_mat.T)
+        hvar[i] += reduce(np.dot, [param.a_mat, innov2, param.a_mat.T])
+        hvar[i] += reduce(np.dot, [param.b_mat, hvar[i-1], param.b_mat.T])
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
@@ -482,11 +487,12 @@ def _filter_var(innov, param, var_target):
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = stationary_var.copy()
 
-    for tobs in range(1, nobs):
-        hvar[tobs] = hvar[0]
-        innov2 = innov[tobs-1, np.newaxis].T * innov[tobs-1]
-        hvar[tobs] += param.a_mat.dot(innov2 - hvar[0]).dot(param.a_mat.T)
-        hvar[tobs] += param.b_mat.dot(hvar[tobs-1] - hvar[0]).dot(param.b_mat.T)
+    for i in range(1, nobs):
+        hvar[i] = hvar[0]
+        innov2 = innov[i-1, np.newaxis].T * innov[i-1] - hvar[0]
+        hvar[i] += reduce(np.dot, [param.a_mat, innov2, param.a_mat.T])
+        hvar[i] += reduce(np.dot,
+                          [param.b_mat, hvar[i-1]-hvar[0], param.b_mat.T])
 
     return hvar
 
