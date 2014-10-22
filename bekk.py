@@ -115,8 +115,8 @@ class BEKKParams(object):
 
         """
         c_mat_sq = stationary_var \
-            - reduce(np.dot, [self.a_mat, stationary_var, self.a_mat.T]) \
-            - reduce(np.dot, [self.b_mat, stationary_var, self.b_mat.T])
+            - _product_aba(self.a_mat, stationary_var) \
+            - _product_aba(self.b_mat, stationary_var)
         # Extract C parameter
         self.c_mat = sl.cholesky(c_mat_sq, 1)
 
@@ -200,9 +200,9 @@ class BEKKParams(object):
         i, norm = 0, 1e3
         hvarold = np.eye(self.a_mat.shape[0])
         while (norm > 1e-3) or (i < 100):
-            hvarnew = self.c_mat.dot(self.c_mat.T) \
-                + reduce(np.dot, [self.a_mat, hvarold, self.a_mat.T]) \
-                + reduce(np.dot, [self.b_mat, hvarold, self.b_mat.T])
+            hvarnew = _product_cc(self.c_mat) \
+                + _product_aba(self.a_mat, hvarold) \
+                + _product_aba(self.b_mat, hvarold)
             norm = np.linalg.norm(hvarnew - hvarold)
             hvarold = hvarnew[:]
             i += 1
@@ -447,14 +447,44 @@ def simulate_bekk(param, nobs=1000):
     hvar[0] = param.find_stationary_var()
 
     for i in range(1, nobs):
-        hvar[i] = param.c_mat.dot(param.c_mat.T)
+        hvar[i] = _product_cc(param.c_mat)
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] += reduce(np.dot, [param.a_mat, innov2, param.a_mat.T])
-        hvar[i] += reduce(np.dot, [param.b_mat, hvar[i-1], param.b_mat.T])
+        hvar[i] += _product_aba(param.a_mat, innov2)
+        hvar[i] += _product_aba(param.b_mat, hvar[i-1])
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
     return innov
+
+
+def _product_cc(mat):
+    """Compute CC'.
+
+    Parameters
+    ----------
+    mat : 2dim square array
+
+    Returns
+    -------
+    mat : 2dim square array
+
+    """
+    return mat.dot(mat.T)
+
+
+def _product_aba(a_mat, b_mat):
+    """Compute ABA'.
+
+    Parameters
+    ----------
+    a_mat, b_mat : 2dim arrays
+
+    Returns
+    -------
+    mat : 2dim square array
+
+    """
+    return reduce(np.dot, [a_mat, b_mat, a_mat.T])
 
 
 def _filter_var(innov, param, var_target):
@@ -490,9 +520,8 @@ def _filter_var(innov, param, var_target):
     for i in range(1, nobs):
         hvar[i] = hvar[0]
         innov2 = innov[i-1, np.newaxis].T * innov[i-1] - hvar[0]
-        hvar[i] += reduce(np.dot, [param.a_mat, innov2, param.a_mat.T])
-        hvar[i] += reduce(np.dot,
-                          [param.b_mat, hvar[i-1]-hvar[0], param.b_mat.T])
+        hvar[i] += _product_aba(param.a_mat, innov2)
+        hvar[i] += _product_aba(param.b_mat, hvar[i-1]-hvar[0])
 
     return hvar
 
