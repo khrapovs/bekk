@@ -24,9 +24,9 @@ import time
 import matplotlib.pylab as plt
 import numpy as np
 import scipy.linalg as sl
+import multiprocessing as mp
 from scipy.optimize import minimize
 from functools import reduce
-from multiprocessing import Pool, cpu_count
 
 
 __author__ = "Stanislav Khrapov"
@@ -332,11 +332,11 @@ class BEKK(object):
                 sumf += fvalue
         else:
             # Parallel version
-            tasks = zip(self.innov, hvar)
-            with Pool(processes=cpu_count()) as pool:
-                results = pool.starmap(_contribution, tasks)
-            sumf = np.sum([x[0] for x in results])
-            bad = np.array([x[1] for x in results]).any()
+            with mp.Pool(processes=mp.cpu_count()) as pool:
+                results = pool.starmap(_contribution, zip(self.innov, hvar))
+            values, bad = zip(*results)
+            sumf = np.array(values).sum()
+            bad = np.array(bad).any()
 
         if np.isinf(sumf) or bad:
             return 1e10

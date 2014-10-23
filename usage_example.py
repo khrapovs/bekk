@@ -40,8 +40,8 @@ def test_simulate(nstocks=2, nobs=500):
     # Simulate data
     innov = simulate_bekk(param_true, nobs=nobs)
     # Plot data
-    plt.plot(innov)
-    plt.show()
+    #plt.plot(innov)
+    #plt.show()
 
     # Initialize the object
     bekk = BEKK(innov)
