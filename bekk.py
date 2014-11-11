@@ -294,7 +294,7 @@ class BEKK(object):
         self.time_delta = None
         self.opt_out = None
 
-    def __likelihood(self, theta):
+    def __likelihood(self, theta, kwargs):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -320,9 +320,10 @@ class BEKK(object):
 
         hvar = _filter_var(self.innov, param, self.param_start.var_target)
 
-        parallel = True
+        if not 'parallel' in kwargs:
+            kwargs['parallel'] = False
 
-        if not parallel:
+        if not kwargs['parallel']:
             # Serial version
             sumf = 0
             for i in range(nobs):
@@ -364,9 +365,9 @@ class BEKK(object):
 
         """
         if 'param_true' in kwargs:
-            like_true = self.__likelihood(kwargs['param_true'].theta)
-        like_start = self.__likelihood(self.param_start.theta)
-        like_final = self.__likelihood(self.param_final.theta)
+            like_true = self.__likelihood(kwargs['param_true'].theta, kwargs)
+        like_start = self.__likelihood(self.param_start.theta, kwargs)
+        like_final = self.__likelihood(self.param_final.theta, kwargs)
         # Form the string
         string = ['\n']
         string.append('Method = ' + self.method)
@@ -420,6 +421,7 @@ class BEKK(object):
         # Run optimization
         self.opt_out = minimize(self.__likelihood,
                                 self.param_start.theta,
+                                args=(kwargs,),
                                 method=self.method,
                                 callback=self.callback,
                                 options=options)
@@ -561,12 +563,16 @@ def _contribution(innov, hvar):
     except (sl.LinAlgError, ValueError):
         return 1e10, True
 
-    hvardet = np.abs(np.prod(np.diag(lu_decomp)))
+    hvardet = sl.det(hvar) # np.prod(np.diag(lu_decomp))
     if hvardet > 1e20 or hvardet < 1e-5:
         return 1e10, True
 
     norm_innov = sl.lu_solve((lu_decomp, piv), innov)
     fvalue = np.log(hvardet) + norm_innov.dot(np.atleast_2d(innov).T)
+
+    if fvalue < 0:
+        raise ValueError("Contribution is negative")
+
     if np.isinf(fvalue):
         return 1e10, True
     else:
@@ -613,4 +619,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(nstocks=6, nobs=2000)
+    test_simulate(nstocks=2, nobs=500)

@@ -48,7 +48,7 @@ def test_simulate(nstocks=2, nobs=500):
     # Estimate parameters
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
-                  method='Powell', log_file=log_file)
+                  method='Powell', log_file=log_file, parallel=False)
 
 def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     """Download and save data to disk.
