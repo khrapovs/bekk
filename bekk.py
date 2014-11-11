@@ -568,10 +568,7 @@ def _contribution(innov, hvar):
         return 1e10, True
 
     norm_innov = sl.lu_solve((lu_decomp, piv), innov)
-    fvalue = np.log(hvardet) + norm_innov.dot(np.atleast_2d(innov).T)
-
-    if fvalue < 0:
-        raise ValueError("Contribution is negative")
+    fvalue = np.log(hvardet) + (norm_innov * innov).sum()
 
     if np.isinf(fvalue):
         return 1e10, True
