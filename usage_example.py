@@ -82,8 +82,8 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace = True)
     ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
-    ret.plot()
-    plt.show()
+    #ret.plot()
+    #plt.show()
 
     # Create array of innovations
     innov = np.array(ret)

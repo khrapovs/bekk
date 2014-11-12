@@ -558,16 +558,14 @@ def _contribution(innov, hvar):
         True if something is wrong
     """
 
+    lower = True
     try:
-        lu_decomp, piv = sl.lu_factor(hvar)
+        cho_c = sl.cholesky(hvar, lower=lower)
     except (sl.LinAlgError, ValueError):
         return 1e10, True
 
-    hvardet = sl.det(hvar) # np.prod(np.diag(lu_decomp))
-    if hvardet > 1e20 or hvardet < 1e-5:
-        return 1e10, True
-
-    norm_innov = sl.lu_solve((lu_decomp, piv), innov)
+    hvardet = sl.det(cho_c)**2
+    norm_innov = sl.cho_solve((cho_c, lower), innov)
     fvalue = np.log(hvardet) + (norm_innov * innov).sum()
 
     if np.isinf(fvalue):
@@ -613,6 +611,7 @@ def plot_data(innov, hvar):
     for axi, i in zip(axes, range(nstocks)):
         axi.plot(range(nobs), innov[:, i])
     plt.plot()
+
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
