@@ -9,6 +9,7 @@ import matplotlib.pylab as plt
 from MGARCH.bekk import BEKK, simulate_bekk
 from MGARCH.bekk import BEKKParams
 
+
 def test_simulate(nstocks=2, nobs=500):
     """Simulate and estimate BEKK model.
 
@@ -50,6 +51,7 @@ def test_simulate(nstocks=2, nobs=500):
                   restriction=restriction, var_target=var_target,
                   method='Powell', log_file=log_file, parallel=False)
 
+
 def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     """Download and save data to disk.
 
@@ -90,53 +92,36 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     np.save(innov_file, innov)
     np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
-def test_real(method, theta_start, restriction, stage):
-    # Load data
-    innov_file = 'innovations.npy'
-    # Load data from the drive
-    innov = np.load(innov_file)
 
-    #import numpy as np
-    log_file = 'bekk_log_' + method + '_' + str(stage) + '.txt'
+def test_real():
+    """Estimate BEKK using real stock returns data.
+    """
+    # Dimensions
+    nstocks, nobs = 2, 500
+    # scalar, diagonal, full
+    restriction = 'scalar'
+    # Variance targetign flag
+    var_target = True
+    # Optimization method
+    method = 'Powell'
+    # Log file name
+    log_file = 'bekk_log.txt'
+
     # Clean log file
     with open(log_file, 'w') as texfile:
         texfile.write('')
-    # Initialize the object
-    bekk = BEKK(innov)
-    # Restriction of the model, 'scalar', 'diagonal', 'full'
-    bekk.restriction = restriction
-    # Print results for each iteration?
-    bekk.use_callback = False
-    # Set log file name
-    bekk.log_file = log_file
-    # Do we want to download data and overwrite it on the drive?
-    #regenerate_data(innov_file)
-
-    # 'Newton-CG', 'dogleg', 'trust-ncg' require gradient
-    #    methods = ['Nelder-Mead','Powell','CG','BFGS','L-BFGS-B',
-    #               'TNC','COBYLA','SLSQP']
-    # Optimization method
-    bekk.method = method
-    # Estimate parameters
-    bekk.estimate(theta_start)
-    # bekk.estimate(bekk.theta_final)
-    return bekk
-
-def simple_test():
-    """Estimate BEKK.
-    """
-    # Load data
+    # Data file
     innov_file = 'innovations.npy'
+    # Regenerate real data
+    regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
     # Load data from the drive
     innov = np.load(innov_file)
-    nstocks = innov.shape[1]
-    # Choose the model restriction: scalar, diagonal, full
-    restriction = 'scalar'
-    # Initialize parameters
-    theta_start = init_parameters(restriction, nstocks)
+    # Initialize the object
+    bekk = BEKK(innov)
+    # Estimate parameters
+    bekk.estimate(restriction=restriction, var_target=var_target,
+                  method=method, log_file=log_file, parallel=False)
 
-    # Run first stage estimation
-    test_real('L-BFGS-B', theta_start, restriction, 1)
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
