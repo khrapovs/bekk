@@ -301,6 +301,8 @@ class BEKK(object):
         ----------
         theta : 1dim array
             Dimension depends on the model restriction
+        kwargs : dict
+            Any additional parameters
 
         Returns
         -------
