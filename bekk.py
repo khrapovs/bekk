@@ -524,20 +524,19 @@ def _filter_var(innov, param, var_target):
 
     nobs, nstocks = innov.shape
 
+    hvar = np.empty((nobs, nstocks, nstocks))
+
     if var_target:
         # Estimate unconditional realized covariance matrix
-        stationary_var = estimate_h0(innov)
+        hvar[0] = estimate_h0(innov)
     else:
-        stationary_var = param.find_stationary_var()
-
-    hvar = np.empty((nobs, nstocks, nstocks))
-    hvar[0] = stationary_var.copy()
+        hvar[0] = param.find_stationary_var()
 
     for i in range(1, nobs):
         hvar[i] = hvar[0]
-        innov2 = innov[i-1, np.newaxis].T * innov[i-1] - hvar[0]
-        hvar[i] += _product_aba(param.a_mat, innov2)
-        hvar[i] += _product_aba(param.b_mat, hvar[i-1]-hvar[0])
+        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
+        hvar[i] += _product_aba(param.a_mat, innov2 - hvar[0])
+        hvar[i] += _product_aba(param.b_mat, hvar[i-1] - hvar[0])
 
     return hvar
 
