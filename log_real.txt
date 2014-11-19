@@ -1,7 +1,7 @@
 
 
 Method = Powell
-Total time (minutes) = 0.40
+Total time (minutes) = 0.43
 Initial likelihood = 1508.50
 Final likelihood = 1469.56
 Likelihood difference = 38.94
