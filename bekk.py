@@ -200,7 +200,7 @@ class BEKKParams(object):
         """
         i, norm = 0, 1e3
         hvarold = np.eye(self.a_mat.shape[0])
-        while (norm > 1e-3) or (i < 100):
+        while (norm > 1e-3) or (i < 1e3):
             hvarnew = _product_cc(self.c_mat) \
                 + _product_aba(self.a_mat, hvarold) \
                 + _product_aba(self.b_mat, hvarold)
@@ -616,4 +616,4 @@ def plot_data(innov, hvar):
 
 if __name__ == '__main__':
     from MGARCH.usage_example import test_simulate
-    test_simulate(nstocks=2, nobs=500)
+    test_simulate()

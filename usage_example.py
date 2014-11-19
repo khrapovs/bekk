@@ -4,13 +4,14 @@ from __future__ import print_function, division
 
 import numpy as np
 import scipy.linalg as sl
-import matplotlib.pylab as plt
 
 from MGARCH.bekk import BEKK, simulate_bekk
 from MGARCH.bekk import BEKKParams
 
 
-def test_simulate(nstocks=2, nobs=500):
+def test_simulate(nstocks=2, nobs=500,
+                  restriction='scalar', var_target=True,
+                  simulate=True, log_file='bekk_log.txt'):
     """Simulate and estimate BEKK model.
 
     Parameters
@@ -19,30 +20,44 @@ def test_simulate(nstocks=2, nobs=500):
         Number of stocks in the model
     nobs : int
         The length of time series
+    restriction : str
+        Restriction on model parameters. Can be
+            - 'full'
+            - 'diagonal'
+            - 'scalar'
+    var_target : bool
+        Variance targeting flag.
+        If True, then unconditonal variance is estimated on the first step.
+        The rest of parameters are estimated on the second step.
+    simulate : bool
+        Whether to simulate the data (True) or load actual returns (False).
+    log_file : str
+        Name of the log file to output results.
 
     """
-    log_file = 'bekk_log.txt'
     with open(log_file, 'w') as texfile:
         texfile.write('')
 
-    # scalar, diagonal, full
-    restriction = 'scalar'
-    # Variance targetign flag
-    var_target = False
     # A, B, C - n x n matrices
-    A = np.eye(nstocks) * .15
-    B = np.eye(nstocks) * .95
+    A = np.eye(nstocks) * .3
+    B = np.eye(nstocks) * .92
     Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     C = sl.cholesky(Craw, 1)
 
     param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
                             restriction=restriction, var_target=var_target)
 
-    # Simulate data
-    innov = simulate_bekk(param_true, nobs=nobs)
-    # Plot data
-    #plt.plot(innov)
-    #plt.show()
+    if simulate:
+        # Simulate data
+        innov = simulate_bekk(param_true, nobs=nobs)
+
+    else:
+        # Data file
+        innov_file = 'innovations.npy'
+        # Regenerate real data
+        regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
+        # Load data from the drive
+        innov = np.load(innov_file)
 
     # Initialize the object
     bekk = BEKK(innov)
@@ -84,8 +99,6 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace = True)
     ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
-    #ret.plot()
-    #plt.show()
 
     # Create array of innovations
     innov = np.array(ret)
@@ -93,11 +106,9 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
 
-def test_real():
+def test_real(nstocks=2, nobs=500):
     """Estimate BEKK using real stock returns data.
     """
-    # Dimensions
-    nstocks, nobs = 2, 500
     # scalar, diagonal, full
     restriction = 'scalar'
     # Variance targetign flag
@@ -125,4 +136,9 @@ def test_real():
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    test_simulate()
+    nstocks = 1
+    var_target = False
+    test_simulate(nstocks=nstocks, simulate=True, var_target=var_target,
+                  log_file='log_sim.txt')
+    test_simulate(nstocks=nstocks, simulate=False, var_target=var_target,
+                  log_file='log_real.txt')
