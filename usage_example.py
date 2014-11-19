@@ -106,34 +106,6 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
 
-def test_real(nstocks=2, nobs=500):
-    """Estimate BEKK using real stock returns data.
-    """
-    # scalar, diagonal, full
-    restriction = 'scalar'
-    # Variance targetign flag
-    var_target = True
-    # Optimization method
-    method = 'Powell'
-    # Log file name
-    log_file = 'bekk_log.txt'
-
-    # Clean log file
-    with open(log_file, 'w') as texfile:
-        texfile.write('')
-    # Data file
-    innov_file = 'innovations.npy'
-    # Regenerate real data
-    regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
-    # Load data from the drive
-    innov = np.load(innov_file)
-    # Initialize the object
-    bekk = BEKK(innov)
-    # Estimate parameters
-    bekk.estimate(restriction=restriction, var_target=var_target,
-                  method=method, log_file=log_file, parallel=False)
-
-
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
