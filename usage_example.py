@@ -9,9 +9,8 @@ from MGARCH.bekk import BEKK, simulate_bekk
 from MGARCH.bekk import BEKKParams
 
 
-def test_simulate(nstocks=2, nobs=500,
-                  restriction='scalar', var_target=True,
-                  simulate=True, log_file='bekk_log.txt'):
+def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
+              simulate=True, log_file='bekk_log.txt'):
     """Simulate and estimate BEKK model.
 
     Parameters
@@ -110,7 +109,7 @@ if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
     var_target = False
-    test_simulate(nstocks=nstocks, simulate=True, var_target=var_target,
-                  log_file='log_sim.txt')
-    test_simulate(nstocks=nstocks, simulate=False, var_target=var_target,
-                  log_file='log_real.txt')
+    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+              log_file='log_sim.txt')
+    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+              log_file='log_real.txt')
