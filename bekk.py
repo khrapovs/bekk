@@ -563,12 +563,11 @@ def _filter_var(innov, param):
     nobs, nstocks = innov.shape
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = param.unconditional_var()
+    cc_mat = _product_cc(param.c_mat)
 
     for i in range(1, nobs):
-        hvar[i] = hvar[0]
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] += _product_aba(param.a_mat, innov2 - hvar[0])
-        hvar[i] += _product_aba(param.b_mat, hvar[i-1] - hvar[0])
+        hvar[i] = _bekk_recursion(param, cc_mat, innov2, hvar[i-1])
 
     return hvar
 

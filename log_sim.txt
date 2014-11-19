@@ -1,28 +1,28 @@
 
 
 Method = Powell
-Total time (minutes) = 0.14
-Initial likelihood = 1956.50
-Final likelihood = 1954.40
-Likelihood difference = 2.10
+Total time (minutes) = 0.09
+Initial likelihood = 2004.44
+Final likelihood = 2003.75
+Likelihood difference = 0.69
 Success = True
 Message = Optimization terminated successfully.
 Iterations = 2
-Varinace targeting = False
+Varinace targeting = True
 Model restriction = scalar
-Max eigenvalue = 0.9491
+Max eigenvalue = 0.9031
 
 A =
-[[-0.3215]]
+[[ 0.2883]]
 
 B =
-[[ 0.9196]]
+[[ 0.9055]]
 
 C =
-[[ 1.0205]]
+[[ 1.4215]]
 
 H0 estim =
-[[ 20.4424]]
+[[ 20.844]]
 
 H0 target =
-[[ 19.6096]]
+[[ 20.844]]
