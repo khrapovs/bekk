@@ -109,7 +109,7 @@ if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
     var_target = False
-#    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-#              log_file='log_sim.txt')
+    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+              log_file='log_sim.txt')
     test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
               log_file='log_real.txt')

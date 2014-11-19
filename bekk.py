@@ -186,9 +186,9 @@ class BEKKParams(object):
 
         """
         stationary_var = self.unconditional_var()
-        c_mat_sq = stationary_var \
-            - _product_aba(self.a_mat, stationary_var) \
-            - _product_aba(self.b_mat, stationary_var)
+        c_mat_sq = 2*stationary_var - _bekk_recursion(self, stationary_var,
+                                                      stationary_var,
+                                                      stationary_var)
         # Extract C parameter
         try:
             return sl.cholesky(c_mat_sq, 1)
@@ -206,10 +206,10 @@ class BEKKParams(object):
         """
         i, norm = 0, 1e3
         hvarold = np.eye(self.a_mat.shape[0])
+        cc_mat = _product_cc(self.c_mat)
         while (norm > 1e-3) or (i < 1e3):
-            hvarnew = _product_cc(self.c_mat) \
-                + _product_aba(self.a_mat, hvarold) \
-                + _product_aba(self.b_mat, hvarold)
+
+            hvarnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
             norm = np.linalg.norm(hvarnew - hvarold)
             hvarold = hvarnew[:]
             i += 1
@@ -480,18 +480,38 @@ def simulate_bekk(param, nobs=1000):
     innov = np.zeros((nobs, nstocks))
 
     hvar[0] = param.find_stationary_var()
+    cc_mat = _product_cc(param.c_mat)
 
     for i in range(1, nobs):
-        # TODO : the loop can be reoplaced by filter_var function
-        hvar[i] = _product_cc(param.c_mat)
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] += _product_aba(param.a_mat, innov2)
-        hvar[i] += _product_aba(param.b_mat, hvar[i-1])
+        hvar[i] = _bekk_recursion(param, cc_mat, innov2, hvar[i-1])
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
     return innov
 
+def _bekk_recursion(param, hzero, hone, htwo):
+    """BEKK recursion.
+
+    Parameters
+    ----------
+    param : BEKKParams instance
+        Model parameters
+    hzero : (nstocks, nstocks) array
+        Initial matrix
+    hone : (nstocks, nstocks) array
+        Squared innovations matrix
+    htwo : (nstocks, nstocks) array
+        Old matrix
+
+    Returns
+    -------
+    hnew : (nstocks, nstocks) array
+        Updated variance matrix
+
+    """
+    return hzero + _product_aba(param.a_mat, hone) \
+        + _product_aba(param.b_mat, htwo)
 
 def _product_cc(mat):
     """Compute CC'.
