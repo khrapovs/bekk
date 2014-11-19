@@ -53,6 +53,12 @@ class BEKKParams(object):
     var_target : bool
         Variance targeting flag. If True, then c_mat is not returned.
 
+    Public members
+    --------------
+    unconditional_var
+    constraint
+    log_string
+
     """
 
     def __init__(self, restriction=None, var_target=None,
@@ -195,7 +201,7 @@ class BEKKParams(object):
         except sl.LinAlgError:
             return None
 
-    def find_stationary_var(self):
+    def __find_stationary_var(self):
         """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
 
         Returns
@@ -224,10 +230,10 @@ class BEKKParams(object):
             Unconditional variance amtrix
 
         """
-        if self.var_target:
-            return estimate_h0(self.innov)
+        if (self.innov is None) or (not self.var_target):
+            return self.__find_stationary_var()
         else:
-            return self.find_stationary_var()
+            return estimate_h0(self.innov)
 
     def constraint(self):
         """Compute the largest eigenvalue of BEKK model.
@@ -479,7 +485,7 @@ def simulate_bekk(param, nobs=1000):
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
-    hvar[0] = param.find_stationary_var()
+    hvar[0] = param.unconditional_var()
     cc_mat = _product_cc(param.c_mat)
 
     for i in range(1, nobs):
