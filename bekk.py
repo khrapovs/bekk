@@ -615,5 +615,5 @@ def plot_data(innov, hvar):
 
 
 if __name__ == '__main__':
-    from MGARCH.usage_example import test_simulate
-    test_simulate()
+    from MGARCH.usage_example import test_bekk
+    test_bekk()
