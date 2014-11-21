@@ -58,57 +58,18 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         innov = np.load(innov_file)
 
     #innov = innov[np.abs(innov) < 2*innov.std(), np.newaxis]
-
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
                   method='Powell', log_file=log_file, parallel=False)
-
-
-def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
-    """Download and save data to disk.
-
-    Parameters
-    ----------
-    innov_file : str
-        Name of the file to save to
-    nstocks : int
-        Number of stocks to analyze
-    nobs : int
-        Number of observations in the time series
-
-    """
-    import Quandl
-    import pandas as pd
-
-    token = open('Quandl.token', 'r').read()
-    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL",
-               "GOOG/NYSE_XOM", "GOOG/NYSE_OXY",
-               "GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
-    prices = []
-    for tic in tickers[:nstocks]:
-        df = Quandl.get(tic, authtoken=token,
-                        trim_start="2001-01-01",
-                        trim_end="2012-12-31")[['Close']]
-        df.rename(columns={'Close' : tic}, inplace=True)
-        prices.append(df)
-    prices = pd.concat(prices, axis=1)
-
-    ret = (np.log(prices) - np.log(prices.shift(1))) * 100
-    ret.dropna(inplace = True)
-    ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
-
-    # Create array of innovations
-    innov = np.array(ret)
-    np.save(innov_file, innov)
-    np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
+    bekk.print_error()
 
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 1
+    nstocks = 6
     var_target = False
     nobs = 500
 #    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
