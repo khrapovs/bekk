@@ -5,8 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH.bekk import BEKK, simulate_bekk
-from MGARCH.bekk import BEKKParams
+from MGARCH import BEKK, BEKKParams, simulate_bekk
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -57,6 +56,8 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
         # Load data from the drive
         innov = np.load(innov_file)
+
+    #innov = innov[np.abs(innov) < 2*innov.std(), np.newaxis]
 
     # Initialize the object
     bekk = BEKK(innov)
@@ -109,7 +110,8 @@ if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
     var_target = False
-    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-              log_file='log_sim.txt')
+    nobs = 500
+#    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+#              log_file='log_sim.txt')
     test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
-              log_file='log_real.txt')
+              nobs=nobs, log_file='log_real.txt')

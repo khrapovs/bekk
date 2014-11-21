@@ -53,11 +53,14 @@ class BEKKParams(object):
     var_target : bool
         Variance targeting flag. If True, then c_mat is not returned.
 
-    Public members
-    --------------
+    Methods
+    -------
     unconditional_var
+        Return unconditional variance given parameters
     constraint
+        Constraint on parameters for stationarity
     log_string
+        Forms the nice string for output
 
     """
 
@@ -214,7 +217,6 @@ class BEKKParams(object):
         hvarold = np.eye(self.a_mat.shape[0])
         cc_mat = _product_cc(self.c_mat)
         while (norm > 1e-3) or (i < 1e3):
-
             hvarnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
             norm = np.linalg.norm(hvarnew - hvarold)
             hvarold = hvarnew[:]
@@ -299,6 +301,13 @@ class BEKK(object):
         Final values of model parameters
     opt_out : scipy.minimize.OptimizeResult instance
         Optimization results
+
+    Methods
+    -------
+    print_results
+        Print results after estimation was completed
+    estimate
+        Estimate model parameters
 
     """
 
@@ -481,7 +490,10 @@ def simulate_bekk(param, nobs=1000):
     """
     nstocks = param.a_mat.shape[0]
     mean, cov = np.zeros(nstocks), np.eye(nstocks)
-    error = np.random.multivariate_normal(mean, cov, nobs)
+    #error = np.random.multivariate_normal(mean, cov, nobs)
+    error = np.random.standard_t(1, size=(nobs, nstocks))
+    # Standardize innovations
+    error = (error - error.mean(0)) / error.std(0)
     hvar = np.empty((nobs, nstocks, nstocks))
     innov = np.zeros((nobs, nstocks))
 
@@ -494,6 +506,8 @@ def simulate_bekk(param, nobs=1000):
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
+    from scipy.stats import kurtosis
+    print(kurtosis(error))
     return innov
 
 def _bekk_recursion(param, hzero, hone, htwo):
@@ -652,5 +666,5 @@ def plot_data(innov, hvar):
 
 
 if __name__ == '__main__':
-    from MGARCH.usage_example import test_bekk
-    test_bekk(nstocks=1, nobs=500)
+    from usage_example import test_bekk
+    test_bekk(nstocks=1, nobs=500, var_target=False)
