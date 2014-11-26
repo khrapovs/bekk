@@ -32,11 +32,15 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
 
     """
     nstocks = param.a_mat.shape[0]
-    # Normal innovations
-    mean, cov = np.zeros(nstocks), np.eye(nstocks)
-    error = np.random.multivariate_normal(mean, cov, nobs)
-    # Student innovations
-    #error = np.random.standard_t(5, size=(nobs, nstocks))
+    if distr == 'normal':
+        # Normal innovations
+        mean, cov = np.zeros(nstocks), np.eye(nstocks)
+        error = np.random.multivariate_normal(mean, cov, nobs)
+    elif distr == 'student':
+        # Student innovations
+        error = np.random.standard_t(degf, size=(nobs, nstocks))
+    else:
+        raise ValueError('Unknown distribution!')
     # Standardize innovations
     error = (error - error.mean(0)) / error.std(0)
     hvar = np.empty((nobs, nstocks, nstocks))

@@ -49,7 +49,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
     if simulate:
         # Simulate data
-        innov = simulate_bekk(param_true, nobs=nobs)
+        innov = simulate_bekk(param_true, nobs=nobs, distr='student')
         np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
     else:
