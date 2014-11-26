@@ -5,7 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH import BEKK, BEKKParams, simulate_bekk
+from MGARCH import BEKK, BEKKParams, simulate_bekk, regenerate_data
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -44,14 +44,15 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
     param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
                             restriction=restriction, var_target=var_target)
+    # Data file
+    innov_file = 'innovations.npy'
 
     if simulate:
         # Simulate data
         innov = simulate_bekk(param_true, nobs=nobs)
+        np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
     else:
-        # Data file
-        innov_file = 'innovations.npy'
         # Regenerate real data
         regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
         # Load data from the drive
@@ -69,10 +70,10 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 6
+    nstocks = 1
     var_target = False
     nobs = 500
-#    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-#              log_file='log_sim.txt')
-    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
-              nobs=nobs, log_file='log_real.txt')
+    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+              nobs=nobs, log_file='log_sim.txt')
+#    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+#              nobs=nobs, log_file='log_real.txt')

@@ -28,8 +28,8 @@ import multiprocessing as mp
 from scipy.optimize import minimize
 
 from MGARCH.bekkparams import BEKKParams
-from MGARCH.helper_functions import (_bekk_recursion, _product_cc,
-	_product_aba, _filter_var, _contribution, estimate_h0, plot_data)
+from MGARCH.utils import (_product_cc, _product_aba,
+                          _filter_var, _contribution, estimate_h0)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"

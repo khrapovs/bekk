@@ -9,15 +9,21 @@ import scipy.linalg as sl
 
 from MGARCH import _bekk_recursion, _product_cc
 
-def simulate_bekk(param, nobs=1000):
+
+def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
     """Simulate data.
 
     Parameters
     ----------
     param : instance of BEKKParams class
         Attributes of this class hold parameter matrices
-    nobs : int, optional
+    nobs : int
         Number of observations to generate. Time series length
+    distr : str
+        Name of the distribution from which to generate innovations.
+        Must be
+            - normal
+            - student
 
     Returns
     -------
@@ -27,10 +33,10 @@ def simulate_bekk(param, nobs=1000):
     """
     nstocks = param.a_mat.shape[0]
     # Normal innovations
-    #mean, cov = np.zeros(nstocks), np.eye(nstocks)
-    #error = np.random.multivariate_normal(mean, cov, nobs)
+    mean, cov = np.zeros(nstocks), np.eye(nstocks)
+    error = np.random.multivariate_normal(mean, cov, nobs)
     # Student innovations
-    error = np.random.standard_t(5, size=(nobs, nstocks))
+    #error = np.random.standard_t(5, size=(nobs, nstocks))
     # Standardize innovations
     error = (error - error.mean(0)) / error.std(0)
     hvar = np.empty((nobs, nstocks, nstocks))

@@ -12,7 +12,7 @@ from __future__ import print_function, division
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH.helper_functions import estimate_h0, _bekk_recursion, _product_cc
+from MGARCH.utils import estimate_h0, _bekk_recursion, _product_cc
 
 
 class BEKKParams(object):
@@ -88,6 +88,8 @@ class BEKKParams(object):
         ----------
         innov : (nobs, ntocks) array
             Return innovations
+
+        # TODO : Do I really need this method?
 
         """
         nstocks = self.innov.shape[1]
