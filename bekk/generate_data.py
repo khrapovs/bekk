@@ -7,7 +7,7 @@
 import numpy as np
 import scipy.linalg as sl
 
-from bekk import _bekk_recursion, _product_cc
+from .utils import _bekk_recursion, _product_cc
 
 __all__ = ['simulate_bekk', 'regenerate_data']
 
