@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 21 15:20:09 2014
+Helper functions
 
-@author: skhrapov
 """
 
 from __future__ import print_function, division
@@ -12,6 +11,10 @@ import seaborn as sns
 import numpy as np
 import scipy.linalg as sl
 from functools import reduce
+
+__all__ = ['_bekk_recursion', '_product_cc',
+           '_product_aba', '_filter_var', '_contribution',
+           'estimate_h0', 'plot_data']
 
 
 def _bekk_recursion(param, hzero, hone, htwo):
@@ -36,6 +39,7 @@ def _bekk_recursion(param, hzero, hone, htwo):
     """
     return hzero + _product_aba(param.a_mat, hone) \
         + _product_aba(param.b_mat, htwo)
+
 
 def _product_cc(mat):
     """Compute CC'.

@@ -7,7 +7,9 @@
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH import _bekk_recursion, _product_cc
+from bekk import _bekk_recursion, _product_cc
+
+__all__ = ['simulate_bekk', 'regenerate_data']
 
 
 def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
@@ -55,10 +57,8 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
-    from scipy.stats import kurtosis
-    print('Kurtosis of the data: ', kurtosis(error))
-
     return innov
+
 
 def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     """Download and save data to disk.
@@ -85,12 +85,12 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
         df = Quandl.get(tic, authtoken=token,
                         trim_start="2001-01-01",
                         trim_end="2012-12-31")[['Close']]
-        df.rename(columns={'Close' : tic}, inplace=True)
+        df.rename(columns={'Close': tic}, inplace=True)
         prices.append(df)
     prices = pd.concat(prices, axis=1)
 
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
-    ret.dropna(inplace = True)
+    ret.dropna(inplace=True)
     ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
 
     # Create array of innovations

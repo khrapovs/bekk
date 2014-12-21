@@ -27,13 +27,15 @@ import numpy as np
 import multiprocessing as mp
 from scipy.optimize import minimize
 
-from MGARCH.bekkparams import BEKKParams
-from MGARCH.utils import (_product_cc, _product_aba,
-                          _filter_var, _contribution, estimate_h0)
+from .bekkparams import BEKKParams
+from .utils import (_product_cc, _product_aba,
+                    _filter_var, _contribution, estimate_h0)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
+
+__all__ = ['BEKK']
 
 
 class BEKK(object):
@@ -264,5 +266,6 @@ class BEKK(object):
 
 
 if __name__ == '__main__':
-    from usage_example import test_bekk
-    test_bekk(nstocks=1, nobs=500, var_target=False)
+    pass
+    #from usage_example import test_bekk
+    #test_bekk(nstocks=1, nobs=500, var_target=False)

@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Usage example.
+
+"""
 from __future__ import print_function, division
 
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH import BEKK, BEKKParams, simulate_bekk, regenerate_data
+from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -71,7 +74,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
-    var_target = False
+    var_target = True
     nobs = 500
     test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
               nobs=nobs, log_file='log_sim.txt')

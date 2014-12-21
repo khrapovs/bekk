@@ -12,10 +12,13 @@ from __future__ import print_function, division
 import numpy as np
 import scipy.linalg as sl
 
-from MGARCH.utils import estimate_h0, _bekk_recursion, _product_cc
+from .utils import estimate_h0, _bekk_recursion, _product_cc
+
+__all__ = ['BEKKParams']
 
 
 class BEKKParams(object):
+
     """Class to hold parameters of the BEKK model in different representations.
 
     Attributes
