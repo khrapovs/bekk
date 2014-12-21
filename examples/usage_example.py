@@ -48,7 +48,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
                             restriction=restriction, var_target=var_target)
     # Data file
-    innov_file = 'innovations.npy'
+    innov_file = '../data/innovations.npy'
 
     if simulate:
         # Simulate data
@@ -77,6 +77,6 @@ if __name__ == '__main__':
     var_target = True
     nobs = 500
     test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-              nobs=nobs, log_file='log_sim.txt')
+              nobs=nobs, log_file='../logs/log_sim.txt')
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')

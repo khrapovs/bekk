@@ -13,7 +13,7 @@ __all__ = ['simulate_bekk', 'regenerate_data']
 
 
 def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
-    """Simulate data.
+    r"""Simulate data.
 
     Parameters
     ----------
@@ -24,8 +24,9 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
     distr : str
         Name of the distribution from which to generate innovations.
         Must be
-            - normal
-            - student
+
+        - normal
+        - student
 
     Returns
     -------

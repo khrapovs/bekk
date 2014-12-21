@@ -88,7 +88,7 @@ class BEKK(object):
 
         """
         self.innov = innov
-        self.log_file = 'log.txt'
+        self.log_file = '../logs/log.txt'
         self.param_start = None
         self.param_final = None
         self.method = 'L-BFGS-B'
