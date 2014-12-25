@@ -7,12 +7,13 @@
 import numpy as np
 import scipy.linalg as sl
 
+from skewstudent import SkewStudent
 from .utils import _bekk_recursion, _product_cc
 
 __all__ = ['simulate_bekk', 'regenerate_data']
 
 
-def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
+def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     r"""Simulate data.
 
     Parameters
@@ -27,6 +28,12 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
 
         - normal
         - student
+        - skewt
+    degf : int
+        Degrees of freedom for Student or SkewStudent distributions
+    lam : float
+        Skewness parameter for Student or SkewStudent distributions
+        Must be between (-1, 1)
 
     Returns
     -------
@@ -42,6 +49,9 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10):
     elif distr == 'student':
         # Student innovations
         error = np.random.standard_t(degf, size=(nobs, nstocks))
+    elif distr == 'skewt':
+        # Skewed Student innovations
+        error = SkewStudent(eta=degf, lam=lam).rvs(size=(nobs, nstocks))
     else:
         raise ValueError('Unknown distribution!')
     # Standardize innovations
@@ -77,7 +87,7 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     import Quandl
     import pandas as pd
 
-    token = open('Quandl.token', 'r').read()
+    token = open('../data/Quandl.token', 'r').read()
     tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL",
                "GOOG/NYSE_XOM", "GOOG/NYSE_OXY",
                "GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
