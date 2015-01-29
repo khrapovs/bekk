@@ -29,7 +29,7 @@ import mock
 MOCK_MODULES = ['numpy', 'seaborn', 'matplotlib', 'matplotlib.pylab',
                 'seaborn', 'functools',
                 'multiprocessing',
-                'scipy', 'scipy.stats', 'scipy.optimize', 'scipy.linalg']
+                'scipy', 'scipy.stats', 'scipy.optimize', 'scipy.linalg', 'scipy.special']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 

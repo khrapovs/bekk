@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""BEKK(1,1) parameter class.
-
-See also
---------
-bekk
+"""
+BEKK(1,1) parameter class
+=========================
 
 """
 from __future__ import print_function, division

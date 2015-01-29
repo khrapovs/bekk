@@ -3,18 +3,32 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to bekk's documentation!
-================================
+====================================
+BEKK model simulation and estimation
+====================================
 
-Contents:
+This module allows to simulate and estimate the BEKK(1,1) model proposed in [1]_.
+
+References
+----------
+.. [1] Robert F. Engle and Kenneth F. Kroner
+    "Multivariate Simultaneous Generalized Arch",
+    Econometric Theory, Vol. 11, No. 1 (Mar., 1995), pp. 122-150,
+    <http://www.jstor.org/stable/3532933>
+
+Notes
+-----
+
+Check this repo for related R library: https://github.com/vst/mgarch/
+
+Alternative optimization library: http://www.pyopt.org/
+
+Contents
+--------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-.. automodule:: bekk.bekk
-
-.. autoclass:: bekk.bekk.BEKK
-	:members:
-
-.. automodule:: bekk.generate_data
-	:members:
+   parameters
+   bekk
+   data

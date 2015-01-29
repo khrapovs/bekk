@@ -1,20 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""This module allows to simulate and estimate the BEKK(1,1) model.
-
-References
-----------
-.. [1] Robert F. Engle and Kenneth F. Kroner
-    "Multivariate Simultaneous Generalized Arch",
-    Econometric Theory, Vol. 11, No. 1 (Mar., 1995), pp. 122-150,
-    <http://www.jstor.org/stable/3532933>
-
-Notes
------
-
-Check this repo for related R library: https://github.com/vst/mgarch/
-
-Alternative optimization library: http://www.pyopt.org/
+"""
+BEKK simulation and estimation class
+====================================
 
 """
 from __future__ import print_function, division
