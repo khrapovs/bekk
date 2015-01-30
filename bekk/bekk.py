@@ -111,7 +111,7 @@ class BEKK(object):
 
         hvar = _filter_var(self.innov, param)
 
-        if not 'parallel' in kwargs:
+        if 'parallel' not in kwargs:
             kwargs['parallel'] = False
 
         if not kwargs['parallel']:
@@ -203,7 +203,7 @@ class BEKK(object):
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-        if not 'param_start' in kwargs:
+        if 'param_start' not in kwargs:
             self.param_start = BEKKParams(restriction=restriction,
                                           var_target=var_target,
                                           innov=self.innov)
@@ -228,6 +228,16 @@ class BEKK(object):
 
     def estimate_error(self, param):
         """Filter out the error given parameters.
+
+        Parameters
+        ----------
+        param : BEKKParams instance
+            Model parameters
+
+        Returns
+        -------
+        error : (nobs, nstocks, nstocks) array
+            Estimation errors
 
         """
         nobs = self.innov.shape[0]
