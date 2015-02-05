@@ -40,9 +40,11 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         texfile.write('')
 
     # A, B, C - n x n matrices
-    A = np.eye(nstocks) * .3
-    B = np.eye(nstocks) * .92
-    Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
+    A = np.eye(nstocks) * .09**.5
+    B = np.eye(nstocks) * .9**.5
+    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
+    # Choose intercept to normalize unconditional variance to one
+    Craw = np.eye(nstocks) - A.dot(A) - B.dot(B)
     C = sl.cholesky(Craw, 1)
 
     param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
@@ -52,7 +54,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
     if simulate:
         # Simulate data
-        innov = simulate_bekk(param_true, nobs=nobs, distr='student')
+        innov = simulate_bekk(param_true, nobs=nobs, distr='skewt', degf=5)
         np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
     else:
@@ -70,13 +72,15 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
                   method='Powell', log_file=log_file, parallel=False)
     bekk.print_error()
 
+    return bekk
+
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
     var_target = True
     nobs = 500
-    test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-              nobs=nobs, log_file='../logs/log_sim.txt')
+    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+                     nobs=nobs, log_file='../logs/log_sim.txt')
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
