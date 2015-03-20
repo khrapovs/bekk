@@ -12,12 +12,11 @@ import time
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
-import multiprocessing as mp
 from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import (_product_cc, _product_aba,
-                    _filter_var, _contribution, estimate_h0)
+                    _filter_var, _contribution, estimate_h0, likelihood)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -83,7 +82,7 @@ class BEKK(object):
         self.time_delta = None
         self.opt_out = None
 
-    def __likelihood(self, theta, kwargs):
+    def likelihood(self, theta, kwargs):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -101,7 +100,9 @@ class BEKK(object):
             some obscene number.
 
         """
-        nobs = self.innov.shape[0]
+        if 'parallel' not in kwargs:
+            kwargs['parallel'] = False
+
         param = BEKKParams(theta=theta, innov=self.innov,
                            restriction=self.param_start.restriction,
                            var_target=self.param_start.var_target)
@@ -111,24 +112,7 @@ class BEKK(object):
 
         hvar = _filter_var(self.innov, param)
 
-        if 'parallel' not in kwargs:
-            kwargs['parallel'] = False
-
-        if not kwargs['parallel']:
-            # Serial version
-            sumf = 0
-            for i in range(nobs):
-                fvalue, bad = _contribution(self.innov[i], hvar[i])
-                if bad:
-                    break
-                sumf += fvalue
-        else:
-            # Parallel version
-            with mp.Pool(processes=mp.cpu_count()) as pool:
-                results = pool.starmap(_contribution, zip(self.innov, hvar))
-            values, bad = zip(*results)
-            sumf = np.array(values).sum()
-            bad = np.array(bad).any()
+        sumf, bad = likelihood(hvar, self.innov, kwargs['parallel'])
 
         if np.isinf(sumf) or bad:
             return 1e10
@@ -156,9 +140,9 @@ class BEKK(object):
 
         """
         if 'param_true' in kwargs:
-            like_true = self.__likelihood(kwargs['param_true'].theta, kwargs)
-        like_start = self.__likelihood(self.param_start.theta, kwargs)
-        like_final = self.__likelihood(self.param_final.theta, kwargs)
+            like_true = self.likelihood(kwargs['param_true'].theta, kwargs)
+        like_start = self.likelihood(self.param_start.theta, kwargs)
+        like_final = self.likelihood(self.param_final.theta, kwargs)
         # Form the string
         string = ['\n']
         string.append('Method = ' + self.method)
@@ -210,7 +194,7 @@ class BEKK(object):
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        self.opt_out = minimize(self.__likelihood,
+        self.opt_out = minimize(self.likelihood,
                                 self.param_start.theta,
                                 args=(kwargs,),
                                 method=self.method,
@@ -255,9 +239,9 @@ class BEKK(object):
     def print_error(self):
 
         error = self.estimate_error(self.param_final).squeeze()
-        plt.plot(error)
-        plt.axhline(error.mean())
-        plt.show()
+#        plt.plot(error)
+#        plt.axhline(error.mean())
+#        plt.show()
         print('Mean error: %.4f' % error.mean())
         print('Estimated H0:', self.param_final.unconditional_var())
         print('Target H0:', estimate_h0(self.innov))

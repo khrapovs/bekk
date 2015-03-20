@@ -5,6 +5,8 @@
 """
 from __future__ import print_function, division
 
+import time
+
 import numpy as np
 import scipy.linalg as sl
 
@@ -54,7 +56,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
     if simulate:
         # Simulate data
-        innov = simulate_bekk(param_true, nobs=nobs, distr='skewt', degf=5)
+        innov = simulate_bekk(param_true, nobs=nobs, distr='skewt', degf=30)
         np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
     else:
@@ -67,9 +69,11 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
+    time_start = time.time()
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
-                  method='Powell', log_file=log_file, parallel=False)
+                  method='SLSQP', log_file=log_file, parallel=False)
+    print('Time elapsed %.2f, seconds' % (time.time() - time_start))
     bekk.print_error()
 
     return bekk
@@ -78,9 +82,12 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 1
-    var_target = True
+    var_target = False
     nobs = 500
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
                      nobs=nobs, log_file='../logs/log_sim.txt')
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
+
+    print(bekk.param_true.theta)
+    print(bekk.param_final.theta)

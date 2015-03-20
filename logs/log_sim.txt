@@ -1,28 +1,28 @@
 
 
-Method = Powell
-Total time (minutes) = 0.21
-Initial likelihood = 148.45
-Final likelihood = 129.88
-Likelihood difference = 18.57
+Method = SLSQP
+Total time (minutes) = 0.09
+Initial likelihood = 333.37
+Final likelihood = 332.76
+Likelihood difference = 0.61
 Success = True
 Message = Optimization terminated successfully.
-Iterations = 5
-Varinace targeting = True
+Iterations = 10
+Varinace targeting = False
 Model restriction = scalar
-Max eigenvalue = 0.9246
+Max eigenvalue = 0.9843
 
 A =
-[[ 0.2964]]
+[[ 0.2808]]
 
 B =
-[[ 0.9147]]
+[[ 0.9515]]
 
 C =
-[[ 0.1985]]
+[[ 0.1172]]
 
 H0 estim =
-[[ 0.5226]]
+[[ 1.]]
 
 H0 target =
-[[ 0.5226]]
+[[ 0.8023]]

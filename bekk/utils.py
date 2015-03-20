@@ -9,8 +9,9 @@ from __future__ import print_function, division
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
-import scipy.linalg as sl
+import scipy.linalg as scl
 from functools import reduce
+import multiprocessing as mp
 
 __all__ = ['_bekk_recursion', '_product_cc',
            '_product_aba', '_filter_var', '_contribution',
@@ -87,7 +88,6 @@ def _filter_var(innov, param):
         Variances and covariances of innovations
 
     """
-
     nobs, nstocks = innov.shape
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = param.unconditional_var()
@@ -98,6 +98,42 @@ def _filter_var(innov, param):
         hvar[i] = _bekk_recursion(param, cc_mat, innov2, hvar[i-1])
 
     return hvar
+
+
+def likelihood(hvar, innov, parallel):
+    """Likelihood function.
+
+    Parameters
+    ----------
+    innov : (nstocks,) array
+        inovations
+    hvar : (nstocks, nstocks) array
+        variance/covariances
+    parallel : bool
+        Whether to use multiprocessing
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood contribution
+    bad : bool
+        True if something is wrong
+
+    """
+    if parallel:
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            results = pool.starmap(_contribution, zip(innov, hvar))
+        values, bad = zip(*results)
+        sumf = np.array(values).sum()
+        bad = np.array(bad).any()
+    else:
+        sumf = 0
+        for innovi, hvari in zip(innov, hvar):
+            fvalue, bad = _contribution(innovi, hvari)
+            if bad:
+                break
+            sumf += fvalue
+    return sumf, bad
 
 
 def _contribution(innov, hvar):
@@ -116,22 +152,22 @@ def _contribution(innov, hvar):
         log-likelihood contribution
     bad : bool
         True if something is wrong
+
     """
 
     lower = True
     try:
-        cho_c = sl.cholesky(hvar, lower=lower)
-    except (sl.LinAlgError, ValueError):
+        scl.cho_factor(hvar, lower=lower, overwrite_a=True, check_finite=False)
+    except (scl.LinAlgError, ValueError):
         return 1e10, True
 
-    hvardet = sl.det(cho_c)**2
-    norm_innov = sl.cho_solve((cho_c, lower), innov)
-    fvalue = np.log(hvardet) + (norm_innov * innov).sum()
+    norm_innov = scl.cho_solve((hvar, lower), innov, check_finite=False)
+    fvalue = (2 * np.log(np.diag(hvar)) + norm_innov * innov).sum()
 
     if np.isinf(fvalue):
         return 1e10, True
     else:
-        return float(fvalue), False
+        return fvalue, False
 
 
 def estimate_h0(innov):
@@ -160,7 +196,9 @@ def plot_data(innov, hvar):
         innovations
     hvar: (nobs, nstocks, nstocks) array
         variance/covariances
+
     """
+    sns.set_context('paper')
     nobs, nstocks = innov.shape
     axes = plt.subplots(nrows=nstocks**2, ncols=1)[1]
     for axi, i in zip(axes, range(nstocks**2)):
@@ -171,3 +209,21 @@ def plot_data(innov, hvar):
     for axi, i in zip(axes, range(nstocks)):
         axi.plot(range(nobs), innov[:, i])
     plt.plot()
+
+def find_stationary_var(hvar, param):
+    """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
+
+    Parameters
+    ----------
+    innov: (nobs, nstocks) array
+        innovations
+    hvar: (nstocks, nstocks) array
+        variance/covariances
+
+    Returns
+    -------
+    hvarnew : (nstocks, nstocks) array
+        Stationary variance amtrix
+
+    """
+    return _bekk_recursion(param, _product_cc(param.c_mat), hvar, hvar)

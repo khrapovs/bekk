@@ -9,6 +9,7 @@ from __future__ import print_function, division
 
 import numpy as np
 import scipy.linalg as sl
+import scipy.optimize as sco
 
 from .utils import estimate_h0, _bekk_recursion, _product_cc
 
@@ -194,18 +195,17 @@ class BEKKParams(object):
         Returns
         -------
         hvarnew : (nstocks, nstocks) array
-            Stationary variance amtrix
+            Stationary variance matrix
 
         """
-        i, norm = 0, 1e3
         hvarold = np.eye(self.a_mat.shape[0])
         cc_mat = _product_cc(self.c_mat)
-        while (norm > 1e-3) or (i < 1e3):
-            hvarnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
-            norm = np.linalg.norm(hvarnew - hvarold)
-            hvarold = hvarnew[:]
-            i += 1
-        return hvarnew
+        hnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
+        if np.allclose(hvarold, hnew, rtol=1e-03, atol=1e-03):
+            return hvarold
+        else:
+            fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
+            return sco.fixed_point(fun, hvarold)
 
     def unconditional_var(self):
         """Unconditional variance matrix regardless of the model.
