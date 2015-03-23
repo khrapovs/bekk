@@ -9,14 +9,12 @@ from __future__ import print_function, division
 
 import time
 
-import matplotlib.pylab as plt
-import seaborn as sns
 import numpy as np
 from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import (_product_cc, _product_aba,
-                    _filter_var, _contribution, estimate_h0, likelihood)
+                    _filter_var, estimate_h0, likelihood)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -110,9 +108,10 @@ class BEKK(object):
         if param.constraint() >= 1:
             return 1e10
 
-        hvar = _filter_var(self.innov, param)
+        uvar = param.unconditional_var()
+        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
 
-        sumf, bad = likelihood(hvar, self.innov, kwargs['parallel'])
+        sumf, bad = likelihood(hvar, self.innov)
 
         if np.isinf(sumf) or bad:
             return 1e10
@@ -225,7 +224,8 @@ class BEKK(object):
 
         """
         nobs = self.innov.shape[0]
-        hvar = _filter_var(self.innov, param)
+        hvar = _filter_var(self.innov, param.c_mat,
+                           param.a_mat, param.b_mat, param.unconditional_var())
         error = np.empty_like(hvar)
         uvar = param.unconditional_var()
         error[0] = _product_cc(self.innov[0]) - uvar

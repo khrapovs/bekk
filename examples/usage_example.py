@@ -72,7 +72,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     time_start = time.time()
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
-                  method='SLSQP', log_file=log_file, parallel=False)
+                  method='Powell', log_file=log_file, parallel=False)
     print('Time elapsed %.2f, seconds' % (time.time() - time_start))
     bekk.print_error()
 
