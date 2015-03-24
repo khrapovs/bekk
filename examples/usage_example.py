@@ -81,7 +81,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 1
+    nstocks = 2
     var_target = False
     nobs = 500
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,

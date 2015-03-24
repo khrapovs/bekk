@@ -13,6 +13,7 @@ import scipy.linalg as scl
 from functools import reduce
 import multiprocessing as mp
 import numba as nb
+import scipy.sparse as scs
 
 __all__ = ['_bekk_recursion', '_product_cc',
            '_product_aba', '_filter_var', '_contribution',
@@ -103,6 +104,34 @@ def _filter_var(innov, c_mat, a_mat, b_mat, uvar):
     return hvar
 
 @nb.autojit
+def _filter_var2(hvar, innov, c_mat, a_mat, b_mat):
+    """Filter out variances and covariances of innovations.
+
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
+
+    Returns
+    -------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+
+    """
+    nobs, nstocks = innov.shape
+    cc_mat = c_mat.dot(c_mat.T)
+
+    for i in range(1, nobs):
+        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
+        hvar[i*nstocks:(i+1)*nstocks, i*nstocks:(i+1)*nstocks] \
+            = cc_mat + a_mat.dot(innov2).dot(a_mat.T) \
+            + b_mat.dot(hvar[(i-1)*nstocks:i*nstocks, (i-1)*nstocks:i*nstocks].dot(b_mat.T))
+
+    return hvar
+
+@nb.autojit
 def likelihood(hvar, innov):
     """Likelihood function.
 
@@ -123,20 +152,42 @@ def likelihood(hvar, innov):
         True if something is wrong
 
     """
-#    if parallel:
-#        with mp.Pool(processes=mp.cpu_count()) as pool:
-#            results = pool.starmap(_contribution, zip(innov, hvar))
-#        values, bad = zip(*results)
-#        sumf = np.array(values).sum()
-#        bad = np.array(bad).any()
-#    else:
     sumf = 0
     for innovi, hvari in zip(innov, hvar):
-        fvalue, bad = _contribution(innovi, hvari)
-        if bad:
-            break
-        sumf += fvalue
-    return sumf, bad
+        lower = True
+        scl.cho_factor(hvari, lower=lower, overwrite_a=True, check_finite=False)
+        norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
+        sumf += (2 * np.log(np.diag(hvari)) + norm_innov * innovi).sum()
+    return sumf
+
+
+def likelihood2(hvar, innov):
+    """Likelihood function.
+
+    Parameters
+    ----------
+    innov : (nstocks,) array
+        inovations
+    hvar : (nstocks, nstocks) array
+        variance/covariances
+    parallel : bool
+        Whether to use multiprocessing
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood contribution
+    bad : bool
+        True if something is wrong
+
+    """
+    factor = scs.linalg.splu(hvar)
+    diag_factor = np.diag(factor.U.toarray())
+    innov = innov.flatten()
+    norm_innov = factor.solve(innov)
+    sumf = np.log(diag_factor[~np.isnan(diag_factor)]**2).sum() \
+        + (norm_innov * innov).sum()
+    return sumf
 
 @nb.autojit
 def _contribution(innov, hvar):
@@ -163,7 +214,7 @@ def _contribution(innov, hvar):
     norm_innov = scl.cho_solve((hvar, lower), innov, check_finite=False)
     fvalue = (2 * np.log(np.diag(hvar)) + norm_innov * innov).sum()
 
-    return fvalue, False
+    return fvalue
 
 def _contribution_good(innov, hvar):
     """Contribution to the log-likelihood function for each observation.

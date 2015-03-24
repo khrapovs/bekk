@@ -11,10 +11,12 @@ import time
 
 import numpy as np
 from scipy.optimize import minimize
+import scipy.sparse as scs
 
 from .bekkparams import BEKKParams
 from .utils import (_product_cc, _product_aba,
-                    _filter_var, estimate_h0, likelihood)
+                    _filter_var, _filter_var2, estimate_h0,
+                    likelihood, likelihood2)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -79,6 +81,8 @@ class BEKK(object):
         self.method = 'L-BFGS-B'
         self.time_delta = None
         self.opt_out = None
+        nobs, nstocks = self.innov.shape
+        self.hvar = scs.csc_matrix((nobs*nstocks, nobs*nstocks))
 
     def likelihood(self, theta, kwargs):
         """Compute the conditional log-likelihood function.
@@ -107,11 +111,17 @@ class BEKK(object):
 
         if param.constraint() >= 1:
             return 1e10
+        nobs, nstocks = self.innov.shape
+#        uvar = param.unconditional_var()
+        self.hvar[:nstocks, :nstocks] = param.unconditional_var()
 
-        uvar = param.unconditional_var()
-        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
+#        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
+        self.hvar = scs.csc_matrix(_filter_var2(self.hvar.toarray(), self.innov,
+                                 param.c_mat, param.a_mat, param.b_mat))
 
-        sumf, bad = likelihood(hvar, self.innov)
+        bad = False
+        sumf = likelihood2(self.hvar, self.innov)
+#        sumf = likelihood(hvar, self.innov)
 
         if np.isinf(sumf) or bad:
             return 1e10
