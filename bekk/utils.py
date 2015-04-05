@@ -131,7 +131,7 @@ def _filter_var2(hvar, innov, c_mat, a_mat, b_mat):
 
     return hvar
 
-@nb.autojit
+#@nb.autojit
 def likelihood(hvar, innov):
     """Likelihood function.
 
@@ -152,12 +152,23 @@ def likelihood(hvar, innov):
         True if something is wrong
 
     """
+    lower = True
     sumf = 0
+    det = 0
     for innovi, hvari in zip(innov, hvar):
-        lower = True
-        scl.cho_factor(hvari, lower=lower, overwrite_a=True, check_finite=False)
-        norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
-        sumf += (2 * np.log(np.diag(hvari)) + norm_innov * innovi).sum()
+        factor, lower = scl.cho_factor(hvari, lower=lower, check_finite=False)
+        norm_innov = scl.cho_solve((factor, lower), innovi, check_finite=False)
+        det += np.log(np.diag(factor)**2).sum()
+        sumf += (np.log(np.diag(factor)**2) + norm_innov * innovi).sum()
+
+    factor = scs.linalg.splu(scs.block_diag(hvar, format='csc'))
+    diag_factor = np.diag(factor.U.toarray())
+    innov = innov.flatten()
+    norm_innov = factor.solve(innov)
+    det0 = np.log(diag_factor[~np.isnan(diag_factor)]).sum()
+    det0 = np.linalg.slogdet(factor.U.toarray())[1]
+    sumf0 = det0 + (norm_innov * innov).sum()
+
     return sumf
 
 

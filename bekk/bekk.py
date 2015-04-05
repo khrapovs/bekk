@@ -112,16 +112,18 @@ class BEKK(object):
         if param.constraint() >= 1:
             return 1e10
         nobs, nstocks = self.innov.shape
-#        uvar = param.unconditional_var()
+        uvar = param.unconditional_var()
         self.hvar[:nstocks, :nstocks] = param.unconditional_var()
 
-#        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
+        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
         self.hvar = scs.csc_matrix(_filter_var2(self.hvar.toarray(), self.innov,
                                  param.c_mat, param.a_mat, param.b_mat))
 
         bad = False
-        sumf = likelihood2(self.hvar, self.innov)
-#        sumf = likelihood(hvar, self.innov)
+        sumf0 = likelihood2(self.hvar, self.innov)
+        sumf = likelihood(hvar, self.innov)
+        print(sumf0, sumf)
+#        print(np.allclose(hvar[-1], self.hvar[-nstocks:, -nstocks:].toarray()))
 
         if np.isinf(sumf) or bad:
             return 1e10
