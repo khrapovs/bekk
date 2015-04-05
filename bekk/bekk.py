@@ -16,7 +16,7 @@ from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import (_product_cc, _product_aba,
-                    _filter_var, _contribution, estimate_h0, likelihood)
+                    filter_var, _contribution, estimate_h0, likelihood)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -110,7 +110,7 @@ class BEKK(object):
         if param.constraint() >= 1:
             return 1e10
 
-        hvar = _filter_var(self.innov, param)
+        hvar = filter_var(self.innov, param)
 
         sumf, bad = likelihood(hvar, self.innov, kwargs['parallel'])
 
@@ -225,7 +225,7 @@ class BEKK(object):
 
         """
         nobs = self.innov.shape[0]
-        hvar = _filter_var(self.innov, param)
+        hvar = filter_var(self.innov, param)
         error = np.empty_like(hvar)
         uvar = param.unconditional_var()
         error[0] = _product_cc(self.innov[0]) - uvar

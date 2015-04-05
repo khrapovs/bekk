@@ -14,7 +14,7 @@ from functools import reduce
 import multiprocessing as mp
 
 __all__ = ['_bekk_recursion', '_product_cc',
-           '_product_aba', '_filter_var', '_contribution',
+           '_product_aba', 'filter_var', '_contribution',
            'estimate_h0', 'plot_data']
 
 
@@ -72,7 +72,7 @@ def _product_aba(a_mat, b_mat):
     return reduce(np.dot, [a_mat, b_mat, a_mat.T])
 
 
-def _filter_var(innov, param):
+def filter_var(innov, param):
     """Filter out variances and covariances of innovations.
 
     Parameters
