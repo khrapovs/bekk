@@ -10,13 +10,10 @@ import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
 import scipy.linalg as scl
-from functools import reduce
 import numba as nb
 import scipy.sparse as scs
 
-__all__ = ['_bekk_recursion', '_product_cc',
-           '_product_aba', 'filter_var', '_contribution',
-           'estimate_h0', 'plot_data']
+__all__ = ['_bekk_recursion', 'filter_var', 'estimate_h0', 'plot_data']
 
 
 def _bekk_recursion(param, hzero, hone, htwo):
@@ -39,73 +36,13 @@ def _bekk_recursion(param, hzero, hone, htwo):
         Updated variance matrix
 
     """
-    return hzero + _product_aba(param.a_mat, hone) \
-        + _product_aba(param.b_mat, htwo)
-
-
-def _product_cc(mat):
-    """Compute CC'.
-
-    Parameters
-    ----------
-    mat : 2dim square array
-
-    Returns
-    -------
-    mat : 2dim square array
-
-    """
-    return mat.dot(mat.T)
-
-
-def _product_aba(a_mat, b_mat):
-    """Compute ABA'.
-
-    Parameters
-    ----------
-    a_mat, b_mat : 2dim arrays
-
-    Returns
-    -------
-    mat : 2dim square array
-
-    """
-    return reduce(np.dot, [a_mat, b_mat, a_mat.T])
+    return hzero + param.a_mat.dot(hone).dot(param.a_mat.T) \
+        + param.b_mat.dot(htwo).dot(param.b_mat.T)
 
 
 @nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
         float32[:,:], float32[:,:], float32[:,:])", nogil=True)
-def filter_var(innov, c_mat, a_mat, b_mat, uvar):
-    """Filter out variances and covariances of innovations.
-
-    Parameters
-    ----------
-    innov : (nobs, nstocks) array
-        Return innovations
-    param : instance of BEKKParams class
-        Attributes of this class hold parameter matrices
-
-    Returns
-    -------
-    hvar : (nobs, nstocks, nstocks) array
-        Variances and covariances of innovations
-
-    """
-    nobs, nstocks = innov.shape
-    hvar = np.empty((nobs, nstocks, nstocks))
-    hvar[0] = uvar
-    cc_mat = c_mat.dot(c_mat.T)
-    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
-    for i in range(1, nobs):
-        hvar[i] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
-            + b_mat.dot(hvar[i-1]).dot(b_mat.T)
-
-    return hvar
-
-
-@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
-        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
-def filter_var2(hvar, innov, c_mat, a_mat, b_mat):
+def filter_var(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -156,101 +93,9 @@ def likelihood(hvar, innov):
     factor = scs.linalg.splu(hvar)
     diag_factor = np.diag(factor.U.toarray())
     innov = innov.flatten()
-    norm_innov = factor.solve(innov)
-    det = np.log(np.abs(diag_factor[(~np.isnan(diag_factor))])).sum()
-    sumf = det + (norm_innov * innov).sum()
-    return sumf
+    det = np.log(np.abs(diag_factor[~np.isnan(diag_factor)])).sum()
+    return det + (factor.solve(innov) * innov).sum()
 
-
-def likelihood_serial(hvar, innov):
-    """Likelihood function.
-
-    Parameters
-    ----------
-    innov : (nstocks,) array
-        inovations
-    hvar : (nstocks, nstocks) array
-        variance/covariances
-    parallel : bool
-        Whether to use multiprocessing
-
-    Returns
-    -------
-    fvalue : float
-        log-likelihood contribution
-    bad : bool
-        True if something is wrong
-
-    """
-    lower = True
-    sumf = 0
-    det = 0
-    for innovi, hvari in zip(innov, hvar):
-        factor, lower = scl.cho_factor(hvari, lower=lower, check_finite=False)
-        norm_innov = scl.cho_solve((factor, lower), innovi, check_finite=False)
-        det += np.log(np.diag(factor)**2).sum()
-        sumf += (np.log(np.diag(factor)**2) + norm_innov * innovi).sum()
-    return sumf
-
-@nb.autojit
-def _contribution(innov, hvar):
-    """Contribution to the log-likelihood function for each observation.
-
-    Parameters
-    ----------
-    innov: (nstocks,) array
-        inovations
-    hvar: (nstocks, nstocks) array
-        variance/covariances
-
-    Returns
-    -------
-    fvalue : float
-        log-likelihood contribution
-    bad : bool
-        True if something is wrong
-
-    """
-
-    lower = True
-    scl.cho_factor(hvar, lower=lower, overwrite_a=True, check_finite=False)
-    norm_innov = scl.cho_solve((hvar, lower), innov, check_finite=False)
-    fvalue = (2 * np.log(np.diag(hvar)) + norm_innov * innov).sum()
-
-    return fvalue
-
-def _contribution_good(innov, hvar):
-    """Contribution to the log-likelihood function for each observation.
-
-    Parameters
-    ----------
-    innov: (nstocks,) array
-        inovations
-    hvar: (nstocks, nstocks) array
-        variance/covariances
-
-    Returns
-    -------
-    fvalue : float
-        log-likelihood contribution
-    bad : bool
-        True if something is wrong
-
-    """
-
-    lower = True
-    try:
-        scl.cho_factor(hvar, lower=lower, overwrite_a=True, check_finite=False)
-    except (scl.LinAlgError, ValueError):
-        return 1e10, True
-
-    norm_innov = scl.cho_solve((hvar, lower), innov, check_finite=False)
-    fvalue = (2 * np.log(np.diag(hvar)) + norm_innov * innov).sum()
-
-    if np.isinf(fvalue):
-        return 1e10, True
-    else:
-        return fvalue, False
 
 def estimate_h0(innov):
     """Estimate unconditional realized covariance matrix.
@@ -291,22 +136,3 @@ def plot_data(innov, hvar):
     for axi, i in zip(axes, range(nstocks)):
         axi.plot(range(nobs), innov[:, i])
     plt.plot()
-
-
-def find_stationary_var(hvar, param):
-    """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
-
-    Parameters
-    ----------
-    innov: (nobs, nstocks) array
-        innovations
-    hvar: (nstocks, nstocks) array
-        variance/covariances
-
-    Returns
-    -------
-    hvarnew : (nstocks, nstocks) array
-        Stationary variance amtrix
-
-    """
-    return _bekk_recursion(param, _product_cc(param.c_mat), hvar, hvar)

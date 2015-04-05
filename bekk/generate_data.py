@@ -10,7 +10,7 @@ import numpy as np
 import scipy.linalg as sl
 
 from skewstudent import SkewStudent
-from .utils import _bekk_recursion, _product_cc
+from .utils import _bekk_recursion
 
 __all__ = ['simulate_bekk', 'regenerate_data']
 
@@ -62,7 +62,7 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     innov = np.zeros((nobs, nstocks))
 
     hvar[0] = param.unconditional_var()
-    cc_mat = _product_cc(param.c_mat)
+    cc_mat = param.c_mat.dot(param.c_mat.T)
 
     for i in range(1, nobs):
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]

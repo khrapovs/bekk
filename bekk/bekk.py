@@ -14,8 +14,7 @@ from scipy.optimize import minimize
 import scipy.sparse as scs
 
 from .bekkparams import BEKKParams
-from .utils import (_product_cc, _product_aba,
-                    filter_var, filter_var2, estimate_h0, likelihood)
+from .utils import (filter_var, estimate_h0, likelihood)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -114,9 +113,9 @@ class BEKK(object):
         row = col.reshape((nstocks, nstocks)).T.flatten()
         shape = (nobs*nstocks, nobs*nstocks)
         self.hvar = scs.csc_matrix((data, (row, col)), shape=shape)
-        self.hvar = scs.csc_matrix(filter_var2(self.hvar.toarray(), self.innov,
-                                               param.c_mat, param.a_mat,
-                                               param.b_mat))
+        args = [self.hvar.toarray(), self.innov,
+                param.c_mat, param.a_mat, param.b_mat]
+        self.hvar = scs.csc_matrix(filter_var(*args))
 
         return likelihood(self.hvar, self.innov)
 
@@ -195,17 +194,13 @@ class BEKK(object):
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        self.opt_out = minimize(self.likelihood,
-                                self.param_start.theta,
-                                args=(kwargs,),
-                                method=self.method,
-                                callback=self.callback,
+        self.opt_out = minimize(self.likelihood, self.param_start.theta,
+                                args=(kwargs,), method=self.method,
                                 options=options)
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = BEKKParams(theta=self.opt_out.x,
-                                      innov=self.innov,
+        self.param_final = BEKKParams(theta=self.opt_out.x, innov=self.innov,
                                       restriction=restriction,
                                       var_target=var_target)
         if 'log_file' in kwargs:
@@ -225,17 +220,20 @@ class BEKK(object):
             Estimation errors
 
         """
-        nobs = self.innov.shape[0]
-        hvar = filter_var(self.innov, param.c_mat,
-                          param.a_mat, param.b_mat, param.unconditional_var())
+        nobs, nstocks = self.innov.shape
+        hvar = np.empty((nobs, nstocks, nstocks))
+        for i in range(nobs):
+            idx = slice(i*nstocks, (i+1)*nstocks)
+            hvar[i] = self.hvar[idx, idx].toarray()
+
         error = np.empty_like(hvar)
         uvar = param.unconditional_var()
-        error[0] = _product_cc(self.innov[0]) - uvar
+        error[0] = self.innov[0].dot(self.innov[0].T) - uvar
         for i in range(1, nobs):
-            error[i] = _product_cc(self.innov[i]) - uvar
-            temp = _product_cc(self.innov[i-1]) - uvar
-            error[i] -= _product_aba(param.a_mat, temp)
-            error[i] -= _product_aba(param.b_mat, hvar[i-1] - uvar)
+            error[i] = self.innov[i].dot(self.innov[i].T) - uvar
+            temp = self.innov[i-1].dot(self.innov[i-1].T) - uvar
+            error[i] -= param.a_mat.dot(temp).dot(param.a_mat.T)
+            error[i] -= param.b_mat.dot(hvar[i-1] - uvar).dot(param.b_mat.T)
         return error
 
     def print_error(self):

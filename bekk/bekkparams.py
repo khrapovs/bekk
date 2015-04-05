@@ -11,7 +11,7 @@ import numpy as np
 import scipy.linalg as sl
 import scipy.optimize as sco
 
-from .utils import estimate_h0, _bekk_recursion, _product_cc
+from .utils import estimate_h0, _bekk_recursion
 
 __all__ = ['BEKKParams']
 
@@ -199,7 +199,7 @@ class BEKKParams(object):
 
         """
         hvarold = np.eye(self.a_mat.shape[0])
-        cc_mat = _product_cc(self.c_mat)
+        cc_mat = self.c_mat.dot(self.c_mat.T)
 #        hnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
 #        if np.allclose(hvarold, hnew, rtol=1e-03, atol=1e-03):
 #            return hvarold
