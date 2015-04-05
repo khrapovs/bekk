@@ -15,8 +15,7 @@ import scipy.sparse as scs
 
 from .bekkparams import BEKKParams
 from .utils import (_product_cc, _product_aba,
-                    _filter_var, _filter_var2, estimate_h0,
-                    likelihood, likelihood2)
+                    filter_var, filter_var2, estimate_h0, likelihood)
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -102,33 +101,24 @@ class BEKK(object):
             some obscene number.
 
         """
-        if 'parallel' not in kwargs:
-            kwargs['parallel'] = False
-
         param = BEKKParams(theta=theta, innov=self.innov,
                            restriction=self.param_start.restriction,
                            var_target=self.param_start.var_target)
 
         if param.constraint() >= 1:
             return 1e10
+
         nobs, nstocks = self.innov.shape
-        uvar = param.unconditional_var()
-        self.hvar[:nstocks, :nstocks] = param.unconditional_var()
+        data = param.unconditional_var().flatten()
+        col = np.tile(np.arange(nstocks), nstocks)
+        row = col.reshape((nstocks, nstocks)).T.flatten()
+        shape = (nobs*nstocks, nobs*nstocks)
+        self.hvar = scs.csc_matrix((data, (row, col)), shape=shape)
+        self.hvar = scs.csc_matrix(filter_var2(self.hvar.toarray(), self.innov,
+                                               param.c_mat, param.a_mat,
+                                               param.b_mat))
 
-        hvar = _filter_var(self.innov, param.c_mat, param.a_mat, param.b_mat, uvar)
-        self.hvar = scs.csc_matrix(_filter_var2(self.hvar.toarray(), self.innov,
-                                 param.c_mat, param.a_mat, param.b_mat))
-
-        bad = False
-        sumf0 = likelihood2(self.hvar, self.innov)
-        sumf = likelihood(hvar, self.innov)
-        print(sumf0, sumf)
-#        print(np.allclose(hvar[-1], self.hvar[-nstocks:, -nstocks:].toarray()))
-
-        if np.isinf(sumf) or bad:
-            return 1e10
-        else:
-            return sumf
+        return likelihood(self.hvar, self.innov)
 
     def callback(self, theta):
         """Empty callback function.
@@ -236,8 +226,8 @@ class BEKK(object):
 
         """
         nobs = self.innov.shape[0]
-        hvar = _filter_var(self.innov, param.c_mat,
-                           param.a_mat, param.b_mat, param.unconditional_var())
+        hvar = filter_var(self.innov, param.c_mat,
+                          param.a_mat, param.b_mat, param.unconditional_var())
         error = np.empty_like(hvar)
         uvar = param.unconditional_var()
         error[0] = _product_cc(self.innov[0]) - uvar

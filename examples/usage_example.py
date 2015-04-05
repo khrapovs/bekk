@@ -65,14 +65,13 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         # Load data from the drive
         innov = np.load(innov_file)
 
-    #innov = innov[np.abs(innov) < 2*innov.std(), np.newaxis]
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
     time_start = time.time()
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
-                  method='Powell', log_file=log_file, parallel=False)
+                  method='Powell', parallel=False)
     print('Time elapsed %.2f, seconds' % (time.time() - time_start))
     bekk.print_error()
 
@@ -81,7 +80,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
 if __name__ == '__main__':
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 2
+    nstocks = 1
     var_target = False
     nobs = 500
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,

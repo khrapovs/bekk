@@ -200,11 +200,12 @@ class BEKKParams(object):
         """
         hvarold = np.eye(self.a_mat.shape[0])
         cc_mat = _product_cc(self.c_mat)
-        hnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
-        if np.allclose(hvarold, hnew, rtol=1e-03, atol=1e-03):
-            return hvarold
-        else:
-            fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
+#        hnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
+#        if np.allclose(hvarold, hnew, rtol=1e-03, atol=1e-03):
+#            return hvarold
+#        else:
+        fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
+        with np.errstate(divide='ignore', invalid='ignore'):
             return sco.fixed_point(fun, hvarold)
 
     def unconditional_var(self):

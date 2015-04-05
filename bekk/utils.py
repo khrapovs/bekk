@@ -11,12 +11,11 @@ import seaborn as sns
 import numpy as np
 import scipy.linalg as scl
 from functools import reduce
-import multiprocessing as mp
 import numba as nb
 import scipy.sparse as scs
 
 __all__ = ['_bekk_recursion', '_product_cc',
-           '_product_aba', '_filter_var', '_contribution',
+           '_product_aba', 'filter_var', '_contribution',
            'estimate_h0', 'plot_data']
 
 
@@ -73,9 +72,10 @@ def _product_aba(a_mat, b_mat):
     """
     return reduce(np.dot, [a_mat, b_mat, a_mat.T])
 
-#@nb.jit("float32[:,:,:](float32[:,:], float32[:,:], float32[:,:], float32[:,:], float32[:,:])")
-@nb.autojit
-def _filter_var(innov, c_mat, a_mat, b_mat, uvar):
+
+@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+def filter_var(innov, c_mat, a_mat, b_mat, uvar):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -95,16 +95,17 @@ def _filter_var(innov, c_mat, a_mat, b_mat, uvar):
     hvar = np.empty((nobs, nstocks, nstocks))
     hvar[0] = uvar
     cc_mat = c_mat.dot(c_mat.T)
-
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
     for i in range(1, nobs):
-        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] = cc_mat + a_mat.dot(innov2).dot(a_mat.T) \
+        hvar[i] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
             + b_mat.dot(hvar[i-1]).dot(b_mat.T)
 
     return hvar
 
-@nb.autojit
-def _filter_var2(hvar, innov, c_mat, a_mat, b_mat):
+
+@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+def filter_var2(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -122,17 +123,46 @@ def _filter_var2(hvar, innov, c_mat, a_mat, b_mat):
     """
     nobs, nstocks = innov.shape
     cc_mat = c_mat.dot(c_mat.T)
-
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
     for i in range(1, nobs):
-        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i*nstocks:(i+1)*nstocks, i*nstocks:(i+1)*nstocks] \
-            = cc_mat + a_mat.dot(innov2).dot(a_mat.T) \
-            + b_mat.dot(hvar[(i-1)*nstocks:i*nstocks, (i-1)*nstocks:i*nstocks].dot(b_mat.T))
+        idx1 = slice((i-1)*nstocks, i*nstocks)
+        idx2 = slice(i*nstocks, (i+1)*nstocks)
+        hvar[idx2, idx2] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
+            + b_mat.dot(hvar[idx1, idx1]).dot(b_mat.T)
 
     return hvar
 
-#@nb.autojit
+
 def likelihood(hvar, innov):
+    """Likelihood function.
+
+    Parameters
+    ----------
+    innov : (nstocks,) array
+        inovations
+    hvar : (nstocks, nstocks) array
+        variance/covariances
+    parallel : bool
+        Whether to use multiprocessing
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood contribution
+    bad : bool
+        True if something is wrong
+
+    """
+    factor = scs.linalg.splu(hvar)
+    diag_factor = np.diag(factor.U.toarray())
+    innov = innov.flatten()
+    norm_innov = factor.solve(innov)
+    det = np.log(np.abs(diag_factor[(~np.isnan(diag_factor))])).sum()
+    sumf = det + (norm_innov * innov).sum()
+    return sumf
+
+
+def likelihood_serial(hvar, innov):
     """Likelihood function.
 
     Parameters
@@ -160,44 +190,6 @@ def likelihood(hvar, innov):
         norm_innov = scl.cho_solve((factor, lower), innovi, check_finite=False)
         det += np.log(np.diag(factor)**2).sum()
         sumf += (np.log(np.diag(factor)**2) + norm_innov * innovi).sum()
-
-    factor = scs.linalg.splu(scs.block_diag(hvar, format='csc'))
-    diag_factor = np.diag(factor.U.toarray())
-    innov = innov.flatten()
-    norm_innov = factor.solve(innov)
-    det0 = np.log(diag_factor[~np.isnan(diag_factor)]).sum()
-    det0 = np.linalg.slogdet(factor.U.toarray())[1]
-    sumf0 = det0 + (norm_innov * innov).sum()
-
-    return sumf
-
-
-def likelihood2(hvar, innov):
-    """Likelihood function.
-
-    Parameters
-    ----------
-    innov : (nstocks,) array
-        inovations
-    hvar : (nstocks, nstocks) array
-        variance/covariances
-    parallel : bool
-        Whether to use multiprocessing
-
-    Returns
-    -------
-    fvalue : float
-        log-likelihood contribution
-    bad : bool
-        True if something is wrong
-
-    """
-    factor = scs.linalg.splu(hvar)
-    diag_factor = np.diag(factor.U.toarray())
-    innov = innov.flatten()
-    norm_innov = factor.solve(innov)
-    sumf = np.log(diag_factor[~np.isnan(diag_factor)]**2).sum() \
-        + (norm_innov * innov).sum()
     return sumf
 
 @nb.autojit
@@ -299,6 +291,7 @@ def plot_data(innov, hvar):
     for axi, i in zip(axes, range(nstocks)):
         axi.plot(range(nobs), innov[:, i])
     plt.plot()
+
 
 def find_stationary_var(hvar, param):
     """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
