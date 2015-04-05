@@ -8,6 +8,8 @@ BEKK simulation and estimation class
 from __future__ import print_function, division
 
 import time
+import matplotlib.pylab as plt
+import seaborn as sns
 
 import numpy as np
 from scipy.optimize import minimize
@@ -108,12 +110,13 @@ class BEKK(object):
             return 1e10
 
         nobs, nstocks = self.innov.shape
-
-        data = param.unconditional_var().flatten()
+        data = param.unconditional_var()
+        if data is None:
+            return 1e10
         col = np.tile(np.arange(nstocks), nstocks)
         row = col.reshape((nstocks, nstocks)).T.flatten()
         shape = (nobs*nstocks, nobs*nstocks)
-        self.hvar = scs.csc_matrix((data, (row, col)), shape=shape)
+        self.hvar = scs.csc_matrix((data.flatten(), (row, col)), shape=shape)
 
         args = [self.hvar.toarray(), self.innov,
                 param.c_mat, param.a_mat, param.b_mat]
@@ -208,6 +211,13 @@ class BEKK(object):
         if 'log_file' in kwargs:
             self.print_results(**kwargs)
 
+        nobs, nstocks = self.innov.shape
+        hvar = np.empty((nobs, nstocks, nstocks))
+        for i in range(nobs):
+            idx = slice(i*nstocks, (i+1)*nstocks)
+            hvar[i] = self.hvar[idx, idx].toarray()
+        self.hvar = hvar
+
     def estimate_error(self, param):
         """Filter out the error given parameters.
 
@@ -223,19 +233,15 @@ class BEKK(object):
 
         """
         nobs, nstocks = self.innov.shape
-        hvar = np.empty((nobs, nstocks, nstocks))
-        for i in range(nobs):
-            idx = slice(i*nstocks, (i+1)*nstocks)
-            hvar[i] = self.hvar[idx, idx].toarray()
 
-        error = np.empty_like(hvar)
+        error = np.empty_like(self.hvar)
         uvar = param.unconditional_var()
         error[0] = self.innov[0].dot(self.innov[0].T) - uvar
         for i in range(1, nobs):
             error[i] = self.innov[i].dot(self.innov[i].T) - uvar
             temp = self.innov[i-1].dot(self.innov[i-1].T) - uvar
             error[i] -= param.a_mat.dot(temp).dot(param.a_mat.T)
-            error[i] -= param.b_mat.dot(hvar[i-1] - uvar).dot(param.b_mat.T)
+            error[i] -= param.b_mat.dot(self.hvar[i-1] - uvar).dot(param.b_mat.T)
         return error
 
     def print_error(self):

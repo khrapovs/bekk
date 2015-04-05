@@ -10,7 +10,7 @@ import time
 import numpy as np
 import scipy.linalg as sl
 
-from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data
+from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -81,10 +81,10 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 2
+    nstocks = 1
     var_target = True
     nobs = 500
-    restriction = 'full'
+    restriction = 'scalar'
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
                      restriction=restriction,
                      nobs=nobs, log_file='../logs/log_sim.txt')
