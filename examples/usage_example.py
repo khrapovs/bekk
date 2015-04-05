@@ -79,11 +79,14 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
 
 if __name__ == '__main__':
+
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 2
-    var_target = False
+    var_target = True
     nobs = 500
+    restriction = 'full'
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+                     restriction=restriction,
                      nobs=nobs, log_file='../logs/log_sim.txt')
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')

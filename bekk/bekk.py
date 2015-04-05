@@ -104,15 +104,17 @@ class BEKK(object):
                            restriction=self.param_start.restriction,
                            var_target=self.param_start.var_target)
 
-        if param.constraint() >= 1:
+        if param.constraint() >= 1 or param.c_mat is None:
             return 1e10
 
         nobs, nstocks = self.innov.shape
+
         data = param.unconditional_var().flatten()
         col = np.tile(np.arange(nstocks), nstocks)
         row = col.reshape((nstocks, nstocks)).T.flatten()
         shape = (nobs*nstocks, nobs*nstocks)
         self.hvar = scs.csc_matrix((data, (row, col)), shape=shape)
+
         args = [self.hvar.toarray(), self.innov,
                 param.c_mat, param.a_mat, param.b_mat]
         self.hvar = scs.csc_matrix(filter_var(*args))

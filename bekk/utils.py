@@ -3,13 +3,11 @@
 Helper functions
 
 """
-
 from __future__ import print_function, division
 
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
-import scipy.linalg as scl
 import numba as nb
 import scipy.sparse as scs
 
@@ -40,8 +38,8 @@ def _bekk_recursion(param, hzero, hone, htwo):
         + param.b_mat.dot(htwo).dot(param.b_mat.T)
 
 
-@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
-        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+#@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+#        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
 def filter_var(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
