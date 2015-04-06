@@ -71,7 +71,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     time_start = time.time()
     bekk.estimate(param_start=param_true, param_true=param_true,
                   restriction=restriction, var_target=var_target,
-                  method='SLSQP', parallel=False)
+                  method='SLSQP', sparse=True)
     print('Time elapsed %.2f, seconds' % (time.time() - time_start))
     bekk.print_error()
 
@@ -81,10 +81,10 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 1
-    var_target = True
+    nstocks = 2
+    var_target = False
     nobs = 500
-    restriction = 'scalar'
+    restriction = 'diagonal'
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
                      restriction=restriction,
                      nobs=nobs, log_file='../logs/log_sim.txt')

@@ -10,8 +10,10 @@ import seaborn as sns
 import numpy as np
 import numba as nb
 import scipy.sparse as scs
+import scipy.linalg as scl
 
-__all__ = ['_bekk_recursion', 'filter_var', 'estimate_h0', 'plot_data']
+__all__ = ['_bekk_recursion', 'filter_var_sparse', 'filter_var_numba',
+           'estimate_h0', 'plot_data']
 
 
 def _bekk_recursion(param, hzero, hone, htwo):
@@ -40,7 +42,7 @@ def _bekk_recursion(param, hzero, hone, htwo):
 
 @nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
         float32[:,:], float32[:,:], float32[:,:])", nogil=True)
-def filter_var(hvar, innov, c_mat, a_mat, b_mat):
+def filter_var_sparse(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -68,17 +70,42 @@ def filter_var(hvar, innov, c_mat, a_mat, b_mat):
     return hvar
 
 
-def likelihood(hvar, innov):
+@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+def filter_var_numba(innov, c_mat, a_mat, b_mat, uvar):
+    """Filter out variances and covariances of innovations.
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
+    Returns
+    -------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+    """
+    nobs, nstocks = innov.shape
+    hvar = np.empty((nobs, nstocks, nstocks))
+    hvar[0] = uvar
+    cc_mat = c_mat.dot(c_mat.T)
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
+    for i in range(1, nobs):
+        hvar[i] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
+            + b_mat.dot(hvar[i-1]).dot(b_mat.T)
+
+    return hvar
+
+
+def likelihood_sparse(hvar, innov):
     """Likelihood function.
 
     Parameters
     ----------
-    innov : (nstocks,) array
+    innov : (nobs, nstocks) array
         inovations
-    hvar : (nstocks, nstocks) array
+    hvar : (nobs, nstocks, nstocks) array
         variance/covariances
-    parallel : bool
-        Whether to use multiprocessing
 
     Returns
     -------
@@ -93,6 +120,33 @@ def likelihood(hvar, innov):
     innov = innov.flatten()
     det = np.log(np.abs(diag_factor[~np.isnan(diag_factor)])).sum()
     return det + (factor.solve(innov) * innov).sum()
+
+
+@nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
+def likelihood_numba(hvar, innov):
+    """Likelihood function.
+
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        inovations
+    hvar : (nobs, nstocks, nstocks) array
+        variance/covariances
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood contribution
+
+    """
+    lower = True
+    fvalue = 0
+    for innovi, hvari in zip(innov, hvar):
+        hvari, lower = scl.cho_factor(hvari, lower=lower, check_finite=False)
+        norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
+        fvalue += (np.log(np.diag(hvari)**2) + norm_innov * innovi).sum()
+
+    return fvalue
 
 
 def estimate_h0(innov):
