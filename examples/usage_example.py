@@ -68,11 +68,14 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
-    time_start = time.time()
-    bekk.estimate(param_start=param_true, param_true=param_true,
-                  restriction=restriction, var_target=var_target,
-                  method='SLSQP', sparse=True)
-    print('Time elapsed %.2f, seconds' % (time.time() - time_start))
+    for sparse in [True, False]:
+        time_start = time.time()
+        bekk.estimate(param_start=param_true, param_true=param_true,
+                      restriction=restriction, var_target=var_target,
+                      method='SLSQP', sparse=sparse)
+        print('Sparse: ', sparse)
+        print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
+
     bekk.print_error()
 
     return bekk

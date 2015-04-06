@@ -97,6 +97,7 @@ def filter_var_numba(innov, c_mat, a_mat, b_mat, uvar):
     return hvar
 
 
+@nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
 def likelihood_sparse(hvar, innov):
     """Likelihood function.
 
