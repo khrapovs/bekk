@@ -112,8 +112,6 @@ def likelihood_sparse(hvar, innov):
     -------
     fvalue : float
         log-likelihood contribution
-    bad : bool
-        True if something is wrong
 
     """
     factor = scs.linalg.splu(hvar)
