@@ -10,7 +10,7 @@ import time
 import numpy as np
 import scipy.linalg as sl
 
-from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data
+from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -65,29 +65,34 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         # Load data from the drive
         innov = np.load(innov_file)
 
-    #innov = innov[np.abs(innov) < 2*innov.std(), np.newaxis]
     # Initialize the object
     bekk = BEKK(innov)
     # Estimate parameters
-    time_start = time.time()
-    bekk.estimate(param_start=param_true, param_true=param_true,
-                  restriction=restriction, var_target=var_target,
-                  method='Powell', parallel=False)
-    print('Time elapsed %.2f, seconds' % (time.time() - time_start))
+    for sparse in [True, False]:
+        time_start = time.time()
+        bekk.estimate(param_start=param_true, param_true=param_true,
+                      restriction=restriction, var_target=var_target,
+                      method='SLSQP', sparse=sparse)
+        print('Sparse: ', sparse)
+        print(bekk.param_final.theta)
+        print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
+
     bekk.print_error()
 
     return bekk
 
 
 if __name__ == '__main__':
+
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 2
     var_target = False
-    nobs = 500
+    nobs = 2000
+    restriction = 'diagonal'
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+                     restriction=restriction,
                      nobs=nobs, log_file='../logs/log_sim.txt')
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
 
     print(bekk.param_true.theta)
-    print(bekk.param_final.theta)

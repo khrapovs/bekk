@@ -3,18 +3,16 @@
 Helper functions
 
 """
-
 from __future__ import print_function, division
 
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
+import numba as nb
+import scipy.sparse as scs
 import scipy.linalg as scl
-from functools import reduce
-import multiprocessing as mp
 
-__all__ = ['_bekk_recursion', '_product_cc',
-           '_product_aba', 'filter_var', '_contribution',
+__all__ = ['_bekk_recursion', 'filter_var_sparse', 'filter_var_numba',
            'estimate_h0', 'plot_data']
 
 
@@ -38,41 +36,13 @@ def _bekk_recursion(param, hzero, hone, htwo):
         Updated variance matrix
 
     """
-    return hzero + _product_aba(param.a_mat, hone) \
-        + _product_aba(param.b_mat, htwo)
+    return hzero + param.a_mat.dot(hone).dot(param.a_mat.T) \
+        + param.b_mat.dot(htwo).dot(param.b_mat.T)
 
 
-def _product_cc(mat):
-    """Compute CC'.
-
-    Parameters
-    ----------
-    mat : 2dim square array
-
-    Returns
-    -------
-    mat : 2dim square array
-
-    """
-    return mat.dot(mat.T)
-
-
-def _product_aba(a_mat, b_mat):
-    """Compute ABA'.
-
-    Parameters
-    ----------
-    a_mat, b_mat : 2dim arrays
-
-    Returns
-    -------
-    mat : 2dim square array
-
-    """
-    return reduce(np.dot, [a_mat, b_mat, a_mat.T])
-
-
-def filter_var(innov, param):
+@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+def filter_var_sparse(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
     Parameters
@@ -89,85 +59,93 @@ def filter_var(innov, param):
 
     """
     nobs, nstocks = innov.shape
-    hvar = np.empty((nobs, nstocks, nstocks))
-    hvar[0] = param.unconditional_var()
-    cc_mat = _product_cc(param.c_mat)
-
+    cc_mat = c_mat.dot(c_mat.T)
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
     for i in range(1, nobs):
-        innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] = _bekk_recursion(param, cc_mat, innov2, hvar[i-1])
+        idx1 = slice((i-1)*nstocks, i*nstocks)
+        idx2 = slice(i*nstocks, (i+1)*nstocks)
+        hvar[idx2, idx2] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
+            + b_mat.dot(hvar[idx1, idx1]).dot(b_mat.T)
 
     return hvar
 
 
-def likelihood(hvar, innov, parallel):
+@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
+        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
+def filter_var_numba(innov, c_mat, a_mat, b_mat, uvar):
+    """Filter out variances and covariances of innovations.
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
+    Returns
+    -------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+    """
+    nobs, nstocks = innov.shape
+    hvar = np.empty((nobs, nstocks, nstocks))
+    hvar[0] = uvar
+    cc_mat = c_mat.dot(c_mat.T)
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
+    for i in range(1, nobs):
+        hvar[i] = cc_mat + a_mat.dot(innov2[i-1]).dot(a_mat.T) \
+            + b_mat.dot(hvar[i-1]).dot(b_mat.T)
+
+    return hvar
+
+
+@nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
+def likelihood_sparse(hvar, innov):
     """Likelihood function.
 
     Parameters
     ----------
-    innov : (nstocks,) array
+    innov : (nobs, nstocks) array
         inovations
-    hvar : (nstocks, nstocks) array
+    hvar : (nobs, nstocks, nstocks) array
         variance/covariances
-    parallel : bool
-        Whether to use multiprocessing
 
     Returns
     -------
     fvalue : float
         log-likelihood contribution
-    bad : bool
-        True if something is wrong
 
     """
-    if parallel:
-        with mp.Pool(processes=mp.cpu_count()) as pool:
-            results = pool.starmap(_contribution, zip(innov, hvar))
-        values, bad = zip(*results)
-        sumf = np.array(values).sum()
-        bad = np.array(bad).any()
-    else:
-        sumf = 0
-        for innovi, hvari in zip(innov, hvar):
-            fvalue, bad = _contribution(innovi, hvari)
-            if bad:
-                break
-            sumf += fvalue
-    return sumf, bad
+    factor = scs.linalg.splu(hvar)
+    diag_factor = np.diag(factor.U.toarray())
+    innov = innov.flatten()
+    det = np.log(np.abs(diag_factor[~np.isnan(diag_factor)])).sum()
+    return det + (factor.solve(innov) * innov).sum()
 
 
-def _contribution(innov, hvar):
-    """Contribution to the log-likelihood function for each observation.
+@nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
+def likelihood_numba(hvar, innov):
+    """Likelihood function.
 
     Parameters
     ----------
-    innov: (nstocks,) array
+    innov : (nobs, nstocks) array
         inovations
-    hvar: (nstocks, nstocks) array
+    hvar : (nobs, nstocks, nstocks) array
         variance/covariances
 
     Returns
     -------
     fvalue : float
         log-likelihood contribution
-    bad : bool
-        True if something is wrong
 
     """
-
     lower = True
-    try:
-        scl.cho_factor(hvar, lower=lower, overwrite_a=True, check_finite=False)
-    except (scl.LinAlgError, ValueError):
-        return 1e10, True
+    fvalue = 0
+    for innovi, hvari in zip(innov, hvar):
+        hvari, lower = scl.cho_factor(hvari, lower=lower, check_finite=False)
+        norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
+        fvalue += (np.log(np.diag(hvari)**2) + norm_innov * innovi).sum()
 
-    norm_innov = scl.cho_solve((hvar, lower), innov, check_finite=False)
-    fvalue = (2 * np.log(np.diag(hvar)) + norm_innov * innov).sum()
-
-    if np.isinf(fvalue):
-        return 1e10, True
-    else:
-        return fvalue, False
+    return fvalue
 
 
 def estimate_h0(innov):
@@ -209,21 +187,3 @@ def plot_data(innov, hvar):
     for axi, i in zip(axes, range(nstocks)):
         axi.plot(range(nobs), innov[:, i])
     plt.plot()
-
-def find_stationary_var(hvar, param):
-    """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
-
-    Parameters
-    ----------
-    innov: (nobs, nstocks) array
-        innovations
-    hvar: (nstocks, nstocks) array
-        variance/covariances
-
-    Returns
-    -------
-    hvarnew : (nstocks, nstocks) array
-        Stationary variance amtrix
-
-    """
-    return _bekk_recursion(param, _product_cc(param.c_mat), hvar, hvar)

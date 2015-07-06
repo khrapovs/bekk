@@ -11,7 +11,7 @@ import numpy as np
 import scipy.linalg as sl
 import scipy.optimize as sco
 
-from .utils import estimate_h0, _bekk_recursion, _product_cc
+from .utils import estimate_h0, _bekk_recursion
 
 __all__ = ['BEKKParams']
 
@@ -82,23 +82,6 @@ class BEKKParams(object):
             self.__convert_abc_to_theta()
         else:
             raise TypeError('Not enough arguments to initialize BEKKParams!')
-
-    def __init_parameters(self):
-        """Initialize parameter class given innovations only.
-
-        Parameters
-        ----------
-        innov : (nobs, ntocks) array
-            Return innovations
-
-        # TODO : Do I really need this method?
-
-        """
-        nstocks = self.innov.shape[1]
-        self.a_mat = np.eye(nstocks) * .15
-        self.b_mat = np.eye(nstocks) * .95
-        self.c_mat = self.__find_c_mat()
-        self.__convert_abc_to_theta()
 
     def __convert_theta_to_abc(self):
         """Convert 1-dimensional array of parameters to matrices.
@@ -199,13 +182,13 @@ class BEKKParams(object):
 
         """
         hvarold = np.eye(self.a_mat.shape[0])
-        cc_mat = _product_cc(self.c_mat)
-        hnew = _bekk_recursion(self, cc_mat, hvarold, hvarold)
-        if np.allclose(hvarold, hnew, rtol=1e-03, atol=1e-03):
-            return hvarold
-        else:
-            fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
-            return sco.fixed_point(fun, hvarold)
+        cc_mat = self.c_mat.dot(self.c_mat.T)
+        fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
+        try:
+            with np.errstate(divide='ignore', invalid='ignore'):
+                return sco.fixed_point(fun, hvarold)
+        except RuntimeError:
+            return None
 
     def unconditional_var(self):
         """Unconditional variance matrix regardless of the model.
