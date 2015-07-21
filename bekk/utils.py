@@ -118,7 +118,8 @@ def likelihood_sparse(hvar, innov):
     diag_factor = np.diag(factor.U.toarray())
     innov = innov.flatten()
     det = np.log(np.abs(diag_factor[~np.isnan(diag_factor)])).sum()
-    return det + (factor.solve(innov) * innov).sum()
+    fvalue = det + (factor.solve(innov) * innov).sum()
+    return .5 * (favalue + np.log(2 * np.pi) * innov.shape[0])
 
 
 @nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
@@ -145,7 +146,7 @@ def likelihood_numba(hvar, innov):
         norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
         fvalue += (np.log(np.diag(hvari)**2) + norm_innov * innovi).sum()
 
-    return fvalue
+    return .5 * (fvalue + np.log(2 * np.pi) * innov.shape[0])
 
 
 def estimate_h0(innov):
