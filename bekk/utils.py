@@ -96,7 +96,7 @@ def filter_var_numba(innov, c_mat, a_mat, b_mat, uvar):
     return hvar
 
 
-def filter_var_python(hvar, innov2, cmat, amat, bmat):
+def filter_var_python(hvar, innov, cmat, amat, bmat):
     """Filter out variances and covariances of innovations.
     Parameters
     ----------
@@ -109,7 +109,8 @@ def filter_var_python(hvar, innov2, cmat, amat, bmat):
     hvar : (nobs, nstocks, nstocks) array
         Variances and covariances of innovations
     """
-    nobs, nstocks = innov2.shape[:2]
+    nobs, nstocks = innov.shape
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
     intercept = cmat.dot(cmat.T)
     for i in range(1, nobs):
         hvar[i] = intercept + amat.dot(innov2[i-1]).dot(amat.T) \

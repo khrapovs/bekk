@@ -138,13 +138,11 @@ if __name__ == '__main__':
                             restriction=restriction, var_target=False)
     innov = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
-
-    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
     hvar[0] = param_true.unconditional_var()
 
-    out1 = recursion(hvar, innov2, amat, bmat, cmat)
-    out2 = filter_var_python(hvar, innov2, amat, bmat, cmat)
+    out1 = recursion(hvar, innov, amat, bmat, cmat)
+    out2 = filter_var_python(hvar, innov, amat, bmat, cmat)
 
     print(np.allclose(out1, out2))
 
