@@ -7,6 +7,7 @@ from __future__ import print_function, division
 
 import unittest as ut
 import numpy as np
+import numpy.testing as npt
 import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
@@ -18,51 +19,64 @@ class BEKKTestCase(ut.TestCase):
 
     """Test BEKK."""
 
+    def test_simulation(self):
+        """Test simulation."""
+
+        nstocks = 6
+        nobs = 10
+        # A, B, C - n x n matrices
+        amat = np.eye(nstocks) * .09**.5
+        bmat = np.eye(nstocks) * .9**.5
+        target = np.eye(nstocks)
+
+        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+
+        for distr in ['normal', 'student', 'skewt']:
+            innov, hvar = simulate_bekk(param, nobs=nobs, distr=distr)
+
+            self.assertEqual(innov.shape, (nobs, nstocks))
+            self.assertEqual(hvar.shape, (nobs, nstocks, nstocks))
+
     def test_recursion(self):
         """Test recursions."""
 
         nstocks = 6
         nobs = 2000
-        restriction = 'full'
         # A, B, C - n x n matrices
         amat = np.eye(nstocks) * .09**.5
         bmat = np.eye(nstocks) * .9**.5
-        # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
-        # Choose intercept to normalize unconditional variance to one
-        craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-        cmat = scl.cholesky(craw, 1)
-
-        param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
-                                restriction=restriction)
-        innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+        target = np.eye(nstocks)
+        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+        cmat = param.cmat
+        innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param_true.unconditional_var()
+        hvar[0] = param.get_uvar()
 
         out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param_true.unconditional_var()
+        hvar[0] = param.get_uvar()
 
         out2 = recursion(hvar, innov, amat, bmat, cmat)
 
-        np.testing.assert_array_almost_equal(hvar_true, out1)
-        np.testing.assert_array_almost_equal(hvar_true, out2)
+        npt.assert_array_almost_equal(hvar_true, out1)
+        npt.assert_array_almost_equal(hvar_true, out2)
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param_true.unconditional_var()
+        hvar[0] = param.get_uvar()
 
         filter_var_python(hvar, innov, amat, bmat, cmat)
         out1 = hvar.copy()
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param_true.unconditional_var()
+        hvar[0] = param.get_uvar()
 
         recursion(hvar, innov, amat, bmat, cmat)
         out2 = hvar.copy()
 
-        np.testing.assert_array_almost_equal(hvar_true, out1)
-        np.testing.assert_array_almost_equal(hvar_true, out2)
+        npt.assert_array_almost_equal(hvar_true, out1)
+        npt.assert_array_almost_equal(hvar_true, out2)
 
         self.assertIsInstance(out1, np.ndarray)
         self.assertIsInstance(out2, np.ndarray)
@@ -72,21 +86,17 @@ class BEKKTestCase(ut.TestCase):
 
         nstocks = 6
         nobs = 2000
-        restriction = 'full'
         # A, B, C - n x n matrices
         amat = np.eye(nstocks) * .09**.5
         bmat = np.eye(nstocks) * .9**.5
-        # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
-        # Choose intercept to normalize unconditional variance to one
-        craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-        cmat = scl.cholesky(craw, 1)
+        target = np.eye(nstocks)
+        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+        cmat = param.cmat
 
-        param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
-                                restriction=restriction)
-        innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+        innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param_true.unconditional_var()
+        hvar[0] = param.get_uvar()
 
         recursion(hvar, innov, amat, bmat, cmat)
 

@@ -81,15 +81,13 @@ class BEKK(object):
         self.cython = True
         self.hvar = None
 
-    def likelihood(self, theta, target):
+    def likelihood(self, theta):
         """Compute the conditional log-likelihood function.
 
         Parameters
         ----------
         theta : 1dim array
             Dimension depends on the model restriction
-        kwargs : dict
-            Any additional parameters
 
         Returns
         -------
@@ -100,15 +98,16 @@ class BEKK(object):
 
         """
         nstocks = self.innov.shape[1]
-        param = BEKKParams(theta=theta, target=target, nstocks=nstocks,
-                           restriction=self.param_start.restriction)
+        param = BEKKParams.from_theta(theta=theta, target=self.target,
+                                      nstocks=nstocks,
+                                      restriction=self.restriction)
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
 
         nobs, nstocks = self.innov.shape
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = param.unconditional_var()
+        self.hvar[0] = param.get_uvar()
 
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
@@ -164,8 +163,8 @@ class BEKK(object):
             for istring in string:
                 texfile.write(istring + '\n')
 
-    def estimate(self, restriction='scalar', var_target=True, param_start=None,
-                 **kwargs):
+    def estimate(self, restriction='scalar', var_target=True,
+                 param_start=None, method='SLSQP', cython=True):
         """Estimate parameters of the BEKK model.
 
         Updates several attributes of the class.
@@ -174,7 +173,7 @@ class BEKK(object):
         ----------
         restriction : str
             Can be
-                - 'full'
+                - 'full'a
                 - 'diagonal'
                 - 'scalar'
         var_target : bool
@@ -183,67 +182,40 @@ class BEKK(object):
 
         """
         # Update default settings
-        self.__dict__.update(kwargs)
         nstocks = self.innov.shape[1]
-        if var_target:
-            target = self.innov.T.dot(self.innov) / nstocks
+        target = estimate_h0(self.innov)
+        self.restriction = restriction
+        self.cython = cython
+
+        if param_start is not None:
+            theta_start = param_start.get_theta(restriction=restriction,
+                                                var_target=var_target)
         else:
-            target = None
+            param_start = BEKKParams.from_target(target=target)
+            theta_start = param_start.get_theta(restriction=restriction,
+                                                var_target=var_target)
+
+        if var_target:
+            self.target = target
+        else:
+            self.target = None
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-        if param_start is not None:
-            self.param_start = param_start
+
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        self.opt_out = minimize(self.likelihood, self.param_start.theta,
-                                args=(target,), method=self.method,
+        self.opt_out = minimize(self.likelihood, theta_start, method=method,
                                 options=options)
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = BEKKParams(theta=self.opt_out.x,
-                                      restriction=restriction,
-                                      target=target, nstocks=nstocks)
-        if self.log_file is not None:
-            self.print_results(**kwargs)
-
-    def estimate_error(self, param):
-        """Filter out the error given parameters.
-
-        Parameters
-        ----------
-        param : BEKKParams instance
-            Model parameters
-
-        Returns
-        -------
-        error : (nobs, nstocks, nstocks) array
-            Estimation errors
-
-        """
-        nobs, nstocks = self.innov.shape
-        error = np.empty_like(self.hvar)
-        uvar = param.unconditional_var()
-        error[0] = self.innov[0].dot(self.innov[0].T) - uvar
-        for i in range(1, nobs):
-            error[i] = self.innov[i].dot(self.innov[i].T) - uvar
-            temp = self.innov[i-1].dot(self.innov[i-1].T) - uvar
-            error[i] -= param.amat.dot(temp).dot(param.amat.T)
-            error[i] -= param.bmat.dot(self.hvar[i-1] - uvar).dot(param.bmat.T)
-        return error
-
-    def print_error(self):
-
-        error = self.estimate_error(self.param_final).squeeze()
-#        plt.plot(error)
-#        plt.axhline(error.mean())
-#        plt.show()
-        print('Mean error: %.4f' % error.mean())
-        print('Estimated H0:\n', self.param_final.unconditional_var())
-        print('Target H0:\n', estimate_h0(self.innov))
+        self.param_final = BEKKParams.from_theta(theta=self.opt_out.x,
+                                                 restriction=restriction,
+                                                 target=target,
+                                                 nstocks=nstocks)
 
 
 if __name__ == '__main__':

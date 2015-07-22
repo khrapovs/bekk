@@ -48,14 +48,12 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     # A, B, C - n x n matrices
     A = np.eye(nstocks) * .09**.5
     B = np.eye(nstocks) * .9**.5
-    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
-    # Choose intercept to normalize unconditional variance to one
-    Craw = np.eye(nstocks) - A.dot(A) - B.dot(B)
-    C = scl.cholesky(Craw, 1)
+    target = np.eye(nstocks)
 
-    param_true = BEKKParams(amat=A, bmat=B, cmat=C,
-                            restriction=restriction)
-    print('True parameter:\n', param_true.theta)
+    param_true = BEKKParams.from_target(amat=A, bmat=B, target=target)
+    theta_true = param_true.get_theta(var_target=var_target,
+                                      restriction=restriction)
+    print('True parameter:\n', theta_true)
     # Data file
     innov_file = '../data/innovations.npy'
 
@@ -79,14 +77,15 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         bekk = BEKK(innov)
         bekk.estimate(param_start=param_true, restriction=restriction,
                       var_target=var_target, method='SLSQP', cython=cython)
+
         print('Cython: ', cython)
-        print(bekk.param_final.theta)
-        params.append(bekk.param_final.theta)
+        theta_final = bekk.param_final.get_theta(restriction=restriction,
+                                                 var_target=var_target)
+        print(theta_final)
+        params.append(theta_final)
         print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
 
-        bekk.print_error()
-
-    print('\nNorm difference between the swtimates: %.4f'
+    print('\nNorm difference between the estimates: %.4f'
         % np.linalg.norm(params[0] - params[1]))
     return bekk
 
@@ -97,21 +96,17 @@ def time_likelihood():
     """
     nstocks = 10
     nobs = 2000
-    restriction = 'full'
     # A, B, C - n x n matrices
     amat = np.eye(nstocks) * .09**.5
     bmat = np.eye(nstocks) * .9**.5
-    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
-    # Choose intercept to normalize unconditional variance to one
-    craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-    cmat = scl.cholesky(craw, 1)
+    target = np.eye(nstocks)
+    param_true = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+    cmat = param_true.cmat
 
-    param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
-                            restriction=restriction)
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-    hvar[0] = param_true.unconditional_var()
+    hvar[0] = param_true.get_uvar()
 
     with take_time('Python recursion'):
         filter_var_python(hvar, innov, amat, bmat, cmat)
@@ -135,11 +130,13 @@ if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 2
-    var_target = False
+    var_target = True
     nobs = 2000
     restriction = 'scalar'
+
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
                      restriction=restriction, nobs=nobs)
+
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
 
