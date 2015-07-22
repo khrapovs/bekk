@@ -16,9 +16,8 @@ from scipy.optimize import minimize
 import scipy.sparse as scs
 
 from .bekkparams import BEKKParams
-from .utils import (estimate_h0,
-                    likelihood_sparse, likelihood_numba,
-                    filter_var_sparse, filter_var_numba)
+from bekk import recursion, likelihood
+from .utils import estimate_h0, likelihood_python, filter_var_python
 
 __all__ = ['BEKK']
 
@@ -76,12 +75,11 @@ class BEKK(object):
         self.log_file = '../logs/log.txt'
         self.param_start = None
         self.param_final = None
-        self.method = 'L-BFGS-B'
+        self.method = 'SLSQP'
         self.time_delta = None
         self.opt_out = None
         self.sparse = True
-        nobs, nstocks = self.innov.shape
-        self.hvar = scs.csc_matrix((nobs*nstocks, nobs*nstocks))
+        self.hvar = None
 
     def likelihood(self, theta, kwargs):
         """Compute the conditional log-likelihood function.
@@ -108,30 +106,22 @@ class BEKK(object):
         if param.constraint() >= 1 or param.c_mat is None:
             return 1e10
 
-        if self.sparse:
-            # Sparse version
-            nobs, nstocks = self.innov.shape
-            data = param.unconditional_var()
-            if data is None:
-                return 1e10
-            col = np.tile(np.arange(nstocks), nstocks)
-            row = col.reshape((nstocks, nstocks)).T.flatten()
-            shape = (nobs*nstocks, nobs*nstocks)
-            self.hvar = scs.csc_matrix((data.flatten(), (row, col)),
-                                       shape=shape)
+        nobs, nstocks = self.innov.shape
+        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        hvar[0] = param.unconditional_var()
 
-            args = [self.hvar.toarray(), self.innov,
-                    param.c_mat, param.a_mat, param.b_mat]
-            self.hvar = scs.csc_matrix(filter_var_sparse(*args))
+        args = [self.hvar, self.innov, param.c_mat, param.a_mat, param.b_mat]
 
-            return likelihood_sparse(self.hvar, self.innov)
+        if self.cython:
+            # Numba optimized loop version
+            self.hvar = recursion(*args)
+            return likelihood(self.hvar, self.innov)
 
         else:
             # Numba optimized loop version
-            args = [self.innov, param.c_mat, param.a_mat, param.b_mat,
-                    param.unconditional_var()]
-            self.hvar = filter_var_numba(*args)
-            return likelihood_numba(self.hvar, self.innov)
+
+            self.hvar = filter_var_python(*args)
+            return likelihood_python(self.hvar, self.innov)
 
     def callback(self, theta):
         """Empty callback function.
@@ -219,14 +209,6 @@ class BEKK(object):
                                       var_target=var_target)
         if 'log_file' in kwargs:
             self.print_results(**kwargs)
-
-        if self.sparse:
-            nobs, nstocks = self.innov.shape
-            hvar = np.empty((nobs, nstocks, nstocks))
-            for i in range(nobs):
-                idx = slice(i*nstocks, (i+1)*nstocks)
-                hvar[i] = self.hvar[idx, idx].toarray()
-            self.hvar = hvar
 
     def estimate_error(self, param):
         """Filter out the error given parameters.

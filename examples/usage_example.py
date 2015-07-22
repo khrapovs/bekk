@@ -13,7 +13,7 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, filter_var_numba
-from bekk import likelihood_python, likelihood_numba
+from bekk import likelihood_python, likelihood_numba, likelihood_sparse
 from bekk import recursion, likelihood
 
 
@@ -51,7 +51,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     # Choose intercept to normalize unconditional variance to one
     Craw = np.eye(nstocks) - A.dot(A) - B.dot(B)
-    C = sl.cholesky(Craw, 1)
+    C = scl.cholesky(Craw, 1)
 
     param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
                             restriction=restriction, var_target=var_target)
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 #    print(bekk.param_true.theta)
 
 
-    nstocks = 6
+    nstocks = 10
     nobs = 2000
     restriction = 'full'
     # A, B, C - n x n matrices
@@ -165,16 +165,24 @@ if __name__ == '__main__':
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
     hvar[0] = param_true.unconditional_var()
 
-    with take_time('Cython recursion'):
-        out1 = recursion(hvar, innov, amat, bmat, cmat)
     with take_time('Python recursion'):
-        out2 = filter_var_python(hvar, innov, amat, bmat, cmat)
+        out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
+    with take_time('Numba recursion'):
+        out2 = filter_var_numba(hvar, innov, amat, bmat, cmat)
+    with take_time('Cython recursion'):
+        out3 = recursion(hvar, innov, amat, bmat, cmat)
 
-    print(np.allclose(out1, out2))
+    hvar = out1.copy()
+    print(np.allclose(hvar, out2))
+    print(np.allclose(hvar, out3))
 
-    with take_time('Cython likelihood'):
-        out1 = likelihood(hvar, innov)
     with take_time('Python likelihood'):
-        out2 = likelihood_python(hvar, innov)
+        out1 = likelihood_python(hvar, innov)
+    with take_time('Numba likelihood'):
+        out2 = likelihood_numba(hvar, innov)
+    with take_time('Cython likelihood'):
+        out3 = likelihood(hvar, innov)
 
     print(np.allclose(out1, out2))
+    print(np.allclose(out1, out3))
+    print(np.allclose(out1, out4))
