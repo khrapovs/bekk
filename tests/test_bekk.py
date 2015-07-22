@@ -11,7 +11,6 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
 from bekk import filter_var_python, likelihood_python
-from bekk import filter_var_numba, likelihood_numba
 from bekk import recursion, likelihood
 
 
@@ -41,11 +40,9 @@ class BEKKTestCase(ut.TestCase):
         hvar[0] = param_true.unconditional_var()
 
         out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
-        out2 = filter_var_numba(hvar, innov, amat, bmat, cmat)
-        out3 = recursion(hvar, innov, amat, bmat, cmat)
+        out2 = recursion(hvar, innov, amat, bmat, cmat)
 
         np.testing.assert_array_almost_equal(out1, out2)
-        np.testing.assert_array_almost_equal(out1, out3)
 
     def test_likelihood(self):
         """Test likelihood."""
