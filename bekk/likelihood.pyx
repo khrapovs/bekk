@@ -15,17 +15,18 @@ cdef extern from 'math.h':
 def likelihood(double[:, :, :] hvar, double[:, :] innov):
 
     cdef:
-        Py_ssize_t nstocks, nobs
+        Py_ssize_t nstocks, nobs, t, i
         double[:] temp
         double[:, :] hvartemp
         double value = 0.0
-        double logf = 0.0
+        double[:] logf
         gsl_matrix_view Hvartemp
         gsl_vector_view Innov, Temp, Diag
 
     nobs, nstocks = hvar.shape[0], hvar.shape[1]
 
     temp = np.zeros(nstocks)
+    logf = np.zeros(nobs)
     Temp = gsl_vector_view_array(&temp[0], nstocks)
 
     for t in range(nobs):
@@ -35,7 +36,8 @@ def likelihood(double[:, :, :] hvar, double[:, :] innov):
         Innov = gsl_vector_view_array(&innov[t, 0], nstocks)
 
         gsl_linalg_cholesky_decomp(&Hvartemp.matrix)
-        gsl_linalg_cholesky_solve(&Hvartemp.matrix, &Innov.vector, &Temp.vector)
+        gsl_linalg_cholesky_solve(&Hvartemp.matrix,
+                                  &Innov.vector, &Temp.vector)
         gsl_blas_ddot(&Innov.vector, &Temp.vector, &value)
 
         Diag = gsl_matrix_diagonal(&Hvartemp.matrix)
@@ -44,6 +46,6 @@ def likelihood(double[:, :, :] hvar, double[:, :] innov):
         for i in range(nstocks):
             value += log(gsl_vector_get(&Diag.vector, i))
 
-        logf += value
+        logf[t] = value
 
-    return logf
+    return np.asarray(logf).sum()

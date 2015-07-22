@@ -6,6 +6,7 @@
 from __future__ import print_function, division
 
 import time
+import contextlib
 
 import numpy as np
 import scipy.linalg as sl
@@ -107,6 +108,29 @@ def time_recursion():
                             param_true.unconditional_var())
 
 
+def format_time(t):
+    if t > 1 or t == 0:
+        units = 's'
+    elif t > 1e-3:
+        units = 'ms'
+        t *= 1e3
+    elif t > 1e-6:
+        units = 'us'
+        t *= 1e6
+    else:
+        units = 'ns'
+        t *= 1e9
+    return '%.1f %s' % (t, units)
+
+
+@contextlib.contextmanager
+def take_time(desc):
+    t0 = time.time()
+    yield
+    dt = time.time() - t0
+    print('%s took %s' % (desc, format_time(dt)))
+
+
 if __name__ == '__main__':
 
 #    np.set_printoptions(precision=4, suppress=True)
@@ -141,12 +165,16 @@ if __name__ == '__main__':
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
     hvar[0] = param_true.unconditional_var()
 
-    out1 = recursion(hvar, innov, amat, bmat, cmat)
-    out2 = filter_var_python(hvar, innov, amat, bmat, cmat)
+    with take_time('Cython recursion'):
+        out1 = recursion(hvar, innov, amat, bmat, cmat)
+    with take_time('Python recursion'):
+        out2 = filter_var_python(hvar, innov, amat, bmat, cmat)
 
     print(np.allclose(out1, out2))
 
-    out1 = likelihood(hvar, innov)
-    out2 = likelihood_python(hvar, innov)
+    with take_time('Cython likelihood'):
+        out1 = likelihood(hvar, innov)
+    with take_time('Python likelihood'):
+        out2 = likelihood_python(hvar, innov)
 
     print(np.allclose(out1, out2))
