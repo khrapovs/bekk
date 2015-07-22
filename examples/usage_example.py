@@ -132,7 +132,7 @@ if __name__ == '__main__':
     nstocks = 2
     var_target = True
     nobs = 2000
-    restriction = 'scalar'
+    restriction = 'full'
 
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
                      restriction=restriction, nobs=nobs)

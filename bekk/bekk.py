@@ -97,17 +97,12 @@ class BEKK(object):
             some obscene number.
 
         """
-        nstocks = self.innov.shape[1]
         param = BEKKParams.from_theta(theta=theta, target=self.target,
-                                      nstocks=nstocks,
+                                      nstocks=self.innov.shape[1],
                                       restriction=self.restriction)
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
-
-        nobs, nstocks = self.innov.shape
-        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = param.get_uvar()
 
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
@@ -182,7 +177,7 @@ class BEKK(object):
 
         """
         # Update default settings
-        nstocks = self.innov.shape[1]
+        nobs, nstocks = self.innov.shape
         target = estimate_h0(self.innov)
         self.restriction = restriction
         self.cython = cython
@@ -199,6 +194,10 @@ class BEKK(object):
             self.target = target
         else:
             self.target = None
+
+        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        self.hvar[0] = target
+
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
