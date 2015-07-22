@@ -9,7 +9,7 @@ import time
 import contextlib
 
 import numpy as np
-import scipy.linalg as sl
+import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, filter_var_numba
@@ -97,7 +97,7 @@ def time_recursion():
     # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     # Choose intercept to normalize unconditional variance to one
     craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-    cmat = sl.cholesky(craw, 1)
+    cmat = scl.cholesky(craw, 1)
 
     param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
                             restriction=restriction, var_target=False)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
     # Choose intercept to normalize unconditional variance to one
     craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-    cmat = sl.cholesky(craw, 1)
+    cmat = scl.cholesky(craw, 1)
 
     param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
                             restriction=restriction, var_target=False)
