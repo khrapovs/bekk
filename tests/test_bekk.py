@@ -64,6 +64,9 @@ class BEKKTestCase(ut.TestCase):
         np.testing.assert_array_almost_equal(hvar_true, out1)
         np.testing.assert_array_almost_equal(hvar_true, out2)
 
+        self.assertIsInstance(out1, np.ndarray)
+        self.assertIsInstance(out2, np.ndarray)
+
     def test_likelihood(self):
         """Test likelihood."""
 
@@ -85,11 +88,13 @@ class BEKKTestCase(ut.TestCase):
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param_true.unconditional_var()
 
-        hvar = recursion(hvar, innov, amat, bmat, cmat)
+        recursion(hvar, innov, amat, bmat, cmat)
 
         out1 = likelihood_python(hvar, innov)
         out2 = likelihood(hvar, innov)
 
+        self.assertIsInstance(out1, float)
+        self.assertIsInstance(out2, float)
         self.assertAlmostEqual(out1, out2)
 
 
