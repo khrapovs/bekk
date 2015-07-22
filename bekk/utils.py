@@ -41,14 +41,16 @@ def _bekk_recursion(param, hzero, hone, htwo):
         + param.b_mat.dot(htwo).dot(param.b_mat.T)
 
 
-def filter_var_python(hvar, innov, cmat, amat, bmat):
+def filter_var_python(hvar, innov, amat, bmat, cmat):
     """Filter out variances and covariances of innovations.
+
     Parameters
     ----------
     innov : (nobs, nstocks) array
         Return innovations
     param : instance of BEKKParams class
         Attributes of this class hold parameter matrices
+
     Returns
     -------
     hvar : (nobs, nstocks, nstocks) array

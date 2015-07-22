@@ -34,15 +34,35 @@ class BEKKTestCase(ut.TestCase):
 
         param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
                                 restriction=restriction, var_target=False)
-        innov = simulate_bekk(param_true, nobs=nobs, distr='normal')
+        innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param_true.unconditional_var()
 
         out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
+
+        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        hvar[0] = param_true.unconditional_var()
+
         out2 = recursion(hvar, innov, amat, bmat, cmat)
 
-        np.testing.assert_array_almost_equal(out1, out2)
+        np.testing.assert_array_almost_equal(hvar_true, out1)
+        np.testing.assert_array_almost_equal(hvar_true, out2)
+
+        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        hvar[0] = param_true.unconditional_var()
+
+        filter_var_python(hvar, innov, amat, bmat, cmat)
+        out1 = hvar.copy()
+
+        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        hvar[0] = param_true.unconditional_var()
+
+        recursion(hvar, innov, amat, bmat, cmat)
+        out2 = hvar.copy()
+
+        np.testing.assert_array_almost_equal(hvar_true, out1)
+        np.testing.assert_array_almost_equal(hvar_true, out2)
 
     def test_likelihood(self):
         """Test likelihood."""
@@ -60,10 +80,11 @@ class BEKKTestCase(ut.TestCase):
 
         param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
                                 restriction=restriction, var_target=False)
-        innov = simulate_bekk(param_true, nobs=nobs, distr='normal')
+        innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param_true.unconditional_var()
+
         hvar = recursion(hvar, innov, amat, bmat, cmat)
 
         out1 = likelihood_python(hvar, innov)

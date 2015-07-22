@@ -13,10 +13,10 @@ import seaborn as sns
 
 import numpy as np
 from scipy.optimize import minimize
-import scipy.sparse as scs
 
 from .bekkparams import BEKKParams
-from bekk import recursion, likelihood
+from .recursion import recursion
+from .likelihood import likelihood
 from .utils import estimate_h0, likelihood_python, filter_var_python
 
 __all__ = ['BEKK']
@@ -72,7 +72,7 @@ class BEKK(object):
 
         """
         self.innov = innov
-        self.log_file = '../logs/log.txt'
+        self.log_file = None
         self.param_start = None
         self.param_final = None
         self.method = 'SLSQP'
@@ -107,8 +107,8 @@ class BEKK(object):
             return 1e10
 
         nobs, nstocks = self.innov.shape
-        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param.unconditional_var()
+        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        self.hvar[0] = param.unconditional_var()
 
         args = [self.hvar, self.innov, param.c_mat, param.a_mat, param.b_mat]
 
@@ -207,7 +207,7 @@ class BEKK(object):
         self.param_final = BEKKParams(theta=self.opt_out.x, innov=self.innov,
                                       restriction=restriction,
                                       var_target=var_target)
-        if 'log_file' in kwargs:
+        if self.log_file is not None:
             self.print_results(**kwargs)
 
     def estimate_error(self, param):

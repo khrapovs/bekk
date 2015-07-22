@@ -62,15 +62,16 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     innov = np.zeros((nobs, nstocks))
 
     hvar[0] = param.unconditional_var()
-    cc_mat = param.c_mat.dot(param.c_mat.T)
+    intercept = param.c_mat.dot(param.c_mat.T)
 
     for i in range(1, nobs):
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] = _bekk_recursion(param, cc_mat, innov2, hvar[i-1])
+        hvar[i] = intercept + param.a_mat.dot(innov2).dot(param.a_mat.T) \
+            + param.b_mat.dot(hvar[i-1]).dot(param.b_mat.T)
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 
-    return innov
+    return innov, hvar
 
 
 def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
