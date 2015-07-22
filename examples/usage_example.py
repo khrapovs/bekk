@@ -60,7 +60,8 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
 
     if simulate:
         # Simulate data
-        innov = simulate_bekk(param_true, nobs=nobs, distr='skewt', degf=30)
+        innov, hvar_true = simulate_bekk(param_true, nobs=nobs,
+                                         distr='skewt', degf=30)
         np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
 
     else:
@@ -81,7 +82,7 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         print(bekk.param_final.theta)
         print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
 
-    bekk.print_error()
+        bekk.print_error()
 
     return bekk
 
@@ -109,11 +110,12 @@ def time_likelihood():
     hvar[0] = param_true.unconditional_var()
 
     with take_time('Python recursion'):
-        out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
+        filter_var_python(hvar, innov, amat, bmat, cmat)
+        out1 = hvar.copy()
     with take_time('Cython recursion'):
-        out2 = recursion(hvar, innov, amat, bmat, cmat)
+        recursion(hvar, innov, amat, bmat, cmat)
+        out2 = hvar.copy()
 
-    hvar = out1.copy()
     print(np.allclose(hvar_true, out1))
     print(np.allclose(hvar_true, out2))
 
@@ -127,46 +129,16 @@ def time_likelihood():
 
 if __name__ == '__main__':
 
-#    np.set_printoptions(precision=4, suppress=True)
-#    nstocks = 2
-#    var_target = False
-#    nobs = 2000
-#    restriction = 'scalar'
-#    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-#                     restriction=restriction, nobs=nobs, log_file=None)
-##    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
-##              nobs=nobs, log_file='log_real.txt')
-#
-#    print(bekk.param_true.theta)
-
-    time_likelihood()
-
+    np.set_printoptions(precision=4, suppress=True)
     nstocks = 2
-    nobs = 500
-    restriction = 'full'
-    # A, B, C - n x n matrices
-    amat = np.eye(nstocks) * .09**.5
-    bmat = np.eye(nstocks) * .9**.5
-    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
-    # Choose intercept to normalize unconditional variance to one
-    craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
-    cmat = scl.cholesky(craw, 1)
+    var_target = False
+    nobs = 2000
+    restriction = 'scalar'
+    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+                     restriction=restriction, nobs=nobs, log_file=None)
+#    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+#              nobs=nobs, log_file='log_real.txt')
 
-    param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
-                            restriction=restriction, var_target=False)
-    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+    print(bekk.param_true.theta)
 
-    hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-    hvar[0] = param_true.unconditional_var()
-
-    with take_time('Python recursion'):
-        out1 = filter_var_python(hvar, innov, amat, bmat, cmat)
-
-    hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-    hvar[0] = param_true.unconditional_var()
-
-    with take_time('Cython recursion'):
-        out2 = recursion(hvar, innov, amat, bmat, cmat)
-
-    print(np.allclose(hvar_true, out1))
-    print(np.allclose(hvar_true, out2))
+#    time_likelihood()

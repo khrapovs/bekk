@@ -78,7 +78,7 @@ class BEKK(object):
         self.method = 'SLSQP'
         self.time_delta = None
         self.opt_out = None
-        self.sparse = True
+        self.cython = True
         self.hvar = None
 
     def likelihood(self, theta, kwargs):
@@ -110,17 +110,17 @@ class BEKK(object):
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         self.hvar[0] = param.unconditional_var()
 
-        args = [self.hvar, self.innov, param.c_mat, param.a_mat, param.b_mat]
+        args = [self.hvar, self.innov, param.a_mat, param.b_mat, param.c_mat]
 
         if self.cython:
             # Numba optimized loop version
-            self.hvar = recursion(*args)
+            recursion(*args)
             return likelihood(self.hvar, self.innov)
 
         else:
             # Numba optimized loop version
 
-            self.hvar = filter_var_python(*args)
+            filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
 
     def callback(self, theta):
@@ -242,8 +242,8 @@ class BEKK(object):
 #        plt.axhline(error.mean())
 #        plt.show()
         print('Mean error: %.4f' % error.mean())
-        print('Estimated H0:', self.param_final.unconditional_var())
-        print('Target H0:', estimate_h0(self.innov))
+        print('Estimated H0:\n', self.param_final.unconditional_var())
+        print('Target H0:\n', estimate_h0(self.innov))
 
 
 if __name__ == '__main__':
