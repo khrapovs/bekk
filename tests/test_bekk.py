@@ -32,8 +32,8 @@ class BEKKTestCase(ut.TestCase):
         craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
         cmat = scl.cholesky(craw, 1)
 
-        param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
-                                restriction=restriction, var_target=False)
+        param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
+                                restriction=restriction)
         innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
@@ -81,8 +81,8 @@ class BEKKTestCase(ut.TestCase):
         craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
         cmat = scl.cholesky(craw, 1)
 
-        param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
-                                restriction=restriction, var_target=False)
+        param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
+                                restriction=restriction)
         innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)

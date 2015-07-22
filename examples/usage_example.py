@@ -53,8 +53,9 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     Craw = np.eye(nstocks) - A.dot(A) - B.dot(B)
     C = scl.cholesky(Craw, 1)
 
-    param_true = BEKKParams(a_mat=A, b_mat=B, c_mat=C,
-                            restriction=restriction, var_target=var_target)
+    param_true = BEKKParams(amat=A, bmat=B, cmat=C,
+                            restriction=restriction)
+    print('True parameter:\n', param_true.theta)
     # Data file
     innov_file = '../data/innovations.npy'
 
@@ -71,19 +72,22 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         innov = np.load(innov_file)
 
     # Estimate parameters
+    params = []
     for cython in [True, False]:
         time_start = time.time()
         # Initialize the object
         bekk = BEKK(innov)
-        bekk.estimate(param_start=param_true, param_true=param_true,
-                      restriction=restriction, var_target=var_target,
-                      method='SLSQP', cython=cython)
+        bekk.estimate(param_start=param_true, restriction=restriction,
+                      var_target=var_target, method='SLSQP', cython=cython)
         print('Cython: ', cython)
         print(bekk.param_final.theta)
+        params.append(bekk.param_final.theta)
         print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
 
         bekk.print_error()
 
+    print('\nNorm difference between the swtimates: %.4f'
+        % np.linalg.norm(params[0] - params[1]))
     return bekk
 
 
@@ -102,8 +106,8 @@ def time_likelihood():
     craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
     cmat = scl.cholesky(craw, 1)
 
-    param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
-                            restriction=restriction, var_target=False)
+    param_true = BEKKParams(amat=amat, bmat=bmat, cmat=cmat,
+                            restriction=restriction)
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
@@ -135,10 +139,8 @@ if __name__ == '__main__':
     nobs = 2000
     restriction = 'scalar'
     bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-                     restriction=restriction, nobs=nobs, log_file=None)
+                     restriction=restriction, nobs=nobs)
 #    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
-
-    print(bekk.param_true.theta)
 
 #    time_likelihood()

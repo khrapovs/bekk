@@ -43,7 +43,7 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
         Multivariate innovation matrix
 
     """
-    nstocks = param.a_mat.shape[0]
+    nstocks = param.amat.shape[0]
     if distr == 'normal':
         # Normal innovations
         mean, cov = np.zeros(nstocks), np.eye(nstocks)
@@ -62,12 +62,12 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     innov = np.zeros((nobs, nstocks))
 
     hvar[0] = param.unconditional_var()
-    intercept = param.c_mat.dot(param.c_mat.T)
+    intercept = param.cmat.dot(param.cmat.T)
 
     for i in range(1, nobs):
         innov2 = innov[i-1, np.newaxis].T * innov[i-1]
-        hvar[i] = intercept + param.a_mat.dot(innov2).dot(param.a_mat.T) \
-            + param.b_mat.dot(hvar[i-1]).dot(param.b_mat.T)
+        hvar[i] = intercept + param.amat.dot(innov2).dot(param.amat.T) \
+            + param.bmat.dot(hvar[i-1]).dot(param.bmat.T)
         hvar12 = sl.cholesky(hvar[i], 1)
         innov[i] = hvar12.dot(np.atleast_2d(error[i]).T).flatten()
 

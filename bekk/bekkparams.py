@@ -22,7 +22,7 @@ class BEKKParams(object):
 
     Attributes
     ----------
-    a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+    amat, bmat, cmat : (nstocks, nstocks) arrays
         Matrix representations of BEKK parameters
     theta : 1-dimensional array
         Vector of model parameters
@@ -33,8 +33,8 @@ class BEKKParams(object):
             - 'full'
             - 'diagonal'
             - 'scalar'
-    var_target : bool
-        Variance targeting flag. If True, then c_mat is not returned.
+    target : (nstocks, nstocks) array
+        Variance targeting flag. If True, then cmat is not returned.
 
     Methods
     -------
@@ -47,8 +47,8 @@ class BEKKParams(object):
 
     """
 
-    def __init__(self, restriction=None, var_target=None,
-                 innov=None, **kwargs):
+    def __init__(self, restriction=None, target=None, nstocks=None,
+                 amat=None, bmat=None, cmat=None, theta=None):
         """Class constructor.
 
         Parameters
@@ -58,27 +58,44 @@ class BEKKParams(object):
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
-        var_target : bool
-            Variance targeting flag. If True, then c_mat is not returned.
+        target : (nstocks, nstocks) arrays
+            Variance targeting flag. If True, then cmat is not returned.
         innov : (nobs, ntocks) array
             Return innovations
         kwargs : keyword arguments, optional
 
         """
         # Defaults:
-        self.a_mat, self.b_mat, self.c_mat = None, None, None
-        self.innov = innov
-        self.theta = None
+        self.amat, self.bmat, self.cmat = amat, bmat, cmat
+        self.theta = theta
         self.restriction = restriction
-        self.var_target = var_target
-#        if not innov is None:
-#            self.__init_parameters()
-        # Update attributes from kwargs
-        self.__dict__.update(kwargs)
+        self.target = target
 
-        if 'theta' in kwargs:
+        if (cmat is not None) and (target is not None):
+            msg = 'C matrix and variance target can not be used together!'
+            raise ValueError(msg)
+        elif target is not None:
+            self.cmat = self.__find_cmat()
+
+        nomat = (amat is not None) or (bmat is not None) or (cmat is not None)
+        if (theta is not None) and nomat:
+            msg = 'No need to specify A and/or B and/or C if theta is given!'
+            raise ValueError(msg)
+
+        if nstocks is not None:
+            self.nstocks = nstocks
+        elif amat is not None:
+            self.nstocks = amat.shape[0]
+        elif bmat is not None:
+            self.nstocks = bmat.shape[0]
+        elif cmat is not None:
+            self.nstocks = cmat.shape[0]
+        elif target is not None:
+            self.nstocks = target.shape[0]
+
+        if self.theta is not None:
             self.__convert_theta_to_abc()
-        elif 'a_mat' and 'b_mat' in kwargs:
+        elif (self.amat is not None) and (self.bmat is not None):
             self.__convert_abc_to_theta()
         else:
             raise TypeError('Not enough arguments to initialize BEKKParams!')
@@ -88,72 +105,72 @@ class BEKKParams(object):
 
         Notes
         -----
-        a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+        amat, bmat, cmat : (nstocks, nstocks) arrays
             Parameter matrices
         theta : 1d array of parameters
             Length depends on the model restrictions and variance targeting
-            If var_targeting:
+            If targeting:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-            If not var_targeting:
+            If not targeting:
                 - + (n-1)*n/2 for parameter C
 
         """
-        nstocks = self.innov.shape[1]
         if self.restriction == 'full':
-            chunk = nstocks**2
-            sqsize = [nstocks, nstocks]
-            self.a_mat = self.theta[:chunk].reshape(sqsize)
-            self.b_mat = self.theta[chunk:2*chunk].reshape(sqsize)
+            chunk = self.nstocks**2
+            sqsize = [self.nstocks, self.nstocks]
+            self.amat = self.theta[:chunk].reshape(sqsize)
+            self.bmat = self.theta[chunk:2*chunk].reshape(sqsize)
         elif self.restriction == 'diagonal':
-            chunk = nstocks
-            self.a_mat = np.diag(self.theta[:chunk])
-            self.b_mat = np.diag(self.theta[chunk:2*chunk])
+            chunk = self.nstocks
+            self.amat = np.diag(self.theta[:chunk])
+            self.bmat = np.diag(self.theta[chunk:2*chunk])
         elif self.restriction == 'scalar':
             chunk = 1
-            self.a_mat = np.eye(nstocks) * self.theta[:chunk]
-            self.b_mat = np.eye(nstocks) * self.theta[chunk:2*chunk]
+            self.amat = np.eye(self.nstocks) * self.theta[:chunk]
+            self.bmat = np.eye(self.nstocks) * self.theta[chunk:2*chunk]
         else:
             raise ValueError('This restriction is not supported!')
 
-        if self.var_target:
-            self.c_mat = self.__find_c_mat()
+        if self.target:
+            self.cmat = self.__find_cmat()
         else:
-            self.c_mat = np.zeros((nstocks, nstocks))
-            self.c_mat[np.tril_indices(nstocks)] = self.theta[2*chunk:]
+            self.cmat = np.zeros((self.nstocks, self.nstocks))
+            self.cmat[np.tril_indices(self.nstocks)] = self.theta[2*chunk:]
 
     def __convert_abc_to_theta(self):
         """Convert parameter matrices to 1-dimensional array.
 
         Notes
         -----
-        a_mat, b_mat, c_mat : (nstocks, nstocks) arrays
+        amat, bmat, cmat : (nstocks, nstocks) arrays
             Parameter matrices
         theta : 1-dimensional array of parameters
             Length depends on the model restrictions and variance targeting
-            If var_targeting:
+            If targeting:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-            If not var_targeting:
-                - + (n-1)*n/2 for parameter c_mat
+            If not targeting:
+                - + (n-1)*n/2 for parameter cmat
 
         """
         if self.restriction == 'full':
-            self.theta = [self.a_mat.flatten(), self.b_mat.flatten()]
+            self.theta = [self.amat.flatten(), self.bmat.flatten()]
         elif self.restriction == 'diagonal':
-            self.theta = [np.diag(self.a_mat), np.diag(self.b_mat)]
+            self.theta = [np.diag(self.amat), np.diag(self.bmat)]
         elif self.restriction == 'scalar':
-            self.theta = [[self.a_mat[0, 0]], [self.b_mat[0, 0]]]
+            self.theta = [[self.amat[0, 0]], [self.bmat[0, 0]]]
         else:
             raise ValueError('This restriction is not supported!')
 
-        if not self.var_target:
-            self.theta.append(self.c_mat[np.tril_indices(self.c_mat.shape[0])])
+        if self.target is None:
+            self.theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
+
         self.theta = np.concatenate(self.theta)
 
-    def __find_c_mat(self):
+    def __find_cmat(self):
         """Solve for C in H = CC' + AHA' + BHB' given A, B, H.
 
         Parameters
@@ -163,12 +180,12 @@ class BEKKParams(object):
 
         """
         stationary_var = self.unconditional_var()
-        c_mat_sq = 2*stationary_var - _bekk_recursion(self, stationary_var,
+        cmat_sq = 2*stationary_var - _bekk_recursion(self, stationary_var,
                                                       stationary_var,
                                                       stationary_var)
         # Extract C parameter
         try:
-            return sl.cholesky(c_mat_sq, 1)
+            return sl.cholesky(cmat_sq, 1)
         except sl.LinAlgError:
             return None
 
@@ -181,9 +198,9 @@ class BEKKParams(object):
             Stationary variance matrix
 
         """
-        hvarold = np.eye(self.a_mat.shape[0])
-        cc_mat = self.c_mat.dot(self.c_mat.T)
-        fun = lambda x: _bekk_recursion(self, cc_mat, x, x)
+        hvarold = np.eye(self.amat.shape[0])
+        ccmat = self.cmat.dot(self.cmat.T)
+        fun = lambda x: _bekk_recursion(self, ccmat, x, x)
         try:
             with np.errstate(divide='ignore', invalid='ignore'):
                 return sco.fixed_point(fun, hvarold)
@@ -199,10 +216,10 @@ class BEKKParams(object):
             Unconditional variance amtrix
 
         """
-        if (self.innov is None) or (not self.var_target):
+        if self.target is None:
             return self.find_stationary_var()
         else:
-            return estimate_h0(self.innov)
+            return self.target
 
     def constraint(self):
         """Compute the largest eigenvalue of BEKK model.
@@ -213,8 +230,8 @@ class BEKKParams(object):
             Largest eigenvalue
 
         """
-        kron_a = np.kron(self.a_mat, self.a_mat)
-        kron_b = np.kron(self.b_mat, self.b_mat)
+        kron_a = np.kron(self.amat, self.amat)
+        kron_b = np.kron(self.bmat, self.bmat)
         return np.abs(sl.eigvals(kron_a + kron_b)).max()
 
     def log_string(self):
@@ -227,12 +244,12 @@ class BEKKParams(object):
 
         """
         string = []
-        string.append('Varinace targeting = ' + str(self.var_target))
+        string.append('Varinace targeting = ' + str(self.target))
         string.append('Model restriction = ' + str(self.restriction))
         string.append('Max eigenvalue = %.4f' % self.constraint())
-        string.append('\nA =\n' + np.array_str(self.a_mat))
-        string.append('\nB =\n' + np.array_str(self.b_mat))
-        string.append('\nC =\n' + np.array_str(self.c_mat))
+        string.append('\nA =\n' + np.array_str(self.amat))
+        string.append('\nB =\n' + np.array_str(self.bmat))
+        string.append('\nC =\n' + np.array_str(self.cmat))
         string.append('\nH0 estim =\n'
                       + np.array_str(self.unconditional_var()))
         return string

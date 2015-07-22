@@ -81,7 +81,7 @@ class BEKK(object):
         self.cython = True
         self.hvar = None
 
-    def likelihood(self, theta, kwargs):
+    def likelihood(self, theta, target):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -99,27 +99,23 @@ class BEKK(object):
             some obscene number.
 
         """
-        param = BEKKParams(theta=theta, innov=self.innov,
-                           restriction=self.param_start.restriction,
-                           var_target=self.param_start.var_target)
+        nstocks = self.innov.shape[1]
+        param = BEKKParams(theta=theta, target=target, nstocks=nstocks,
+                           restriction=self.param_start.restriction)
 
-        if param.constraint() >= 1 or param.c_mat is None:
+        if param.constraint() >= 1 or param.cmat is None:
             return 1e10
 
         nobs, nstocks = self.innov.shape
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         self.hvar[0] = param.unconditional_var()
 
-        args = [self.hvar, self.innov, param.a_mat, param.b_mat, param.c_mat]
+        args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
         if self.cython:
-            # Numba optimized loop version
             recursion(*args)
             return likelihood(self.hvar, self.innov)
-
         else:
-            # Numba optimized loop version
-
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
 
@@ -168,7 +164,8 @@ class BEKK(object):
             for istring in string:
                 texfile.write(istring + '\n')
 
-    def estimate(self, restriction='scalar', var_target=True, **kwargs):
+    def estimate(self, restriction='scalar', var_target=True, param_start=None,
+                 **kwargs):
         """Estimate parameters of the BEKK model.
 
         Updates several attributes of the class.
@@ -181,32 +178,35 @@ class BEKK(object):
                 - 'diagonal'
                 - 'scalar'
         var_target : bool
-            Variance targeting flag. If True, then c_mat is not returned.
+            Variance targeting flag. If True, then cmat is not returned.
         kwargs : keyword arguments, optional
 
         """
         # Update default settings
         self.__dict__.update(kwargs)
+        nstocks = self.innov.shape[1]
+        if var_target:
+            target = self.innov.T.dot(self.innov) / nstocks
+        else:
+            target = None
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-        if 'param_start' not in kwargs:
-            self.param_start = BEKKParams(restriction=restriction,
-                                          var_target=var_target,
-                                          innov=self.innov)
+        if param_start is not None:
+            self.param_start = param_start
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
         self.opt_out = minimize(self.likelihood, self.param_start.theta,
-                                args=(kwargs,), method=self.method,
+                                args=(target,), method=self.method,
                                 options=options)
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = BEKKParams(theta=self.opt_out.x, innov=self.innov,
+        self.param_final = BEKKParams(theta=self.opt_out.x,
                                       restriction=restriction,
-                                      var_target=var_target)
+                                      target=target, nstocks=nstocks)
         if self.log_file is not None:
             self.print_results(**kwargs)
 
@@ -231,8 +231,8 @@ class BEKK(object):
         for i in range(1, nobs):
             error[i] = self.innov[i].dot(self.innov[i].T) - uvar
             temp = self.innov[i-1].dot(self.innov[i-1].T) - uvar
-            error[i] -= param.a_mat.dot(temp).dot(param.a_mat.T)
-            error[i] -= param.b_mat.dot(self.hvar[i-1] - uvar).dot(param.b_mat.T)
+            error[i] -= param.amat.dot(temp).dot(param.amat.T)
+            error[i] -= param.bmat.dot(self.hvar[i-1] - uvar).dot(param.bmat.T)
         return error
 
     def print_error(self):

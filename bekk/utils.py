@@ -37,8 +37,8 @@ def _bekk_recursion(param, hzero, hone, htwo):
         Updated variance matrix
 
     """
-    return hzero + param.a_mat.dot(hone).dot(param.a_mat.T) \
-        + param.b_mat.dot(htwo).dot(param.b_mat.T)
+    return hzero + param.amat.dot(hone).dot(param.amat.T) \
+        + param.bmat.dot(htwo).dot(param.bmat.T)
 
 
 def filter_var_python(hvar, innov, amat, bmat, cmat):

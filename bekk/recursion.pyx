@@ -53,7 +53,7 @@ def recursion(double[:, :, :] hvar,
                        1.0, &A.matrix, &Innov2.matrix, 0.0, &Temp.matrix)
         gsl_blas_dgemm(CblasNoTrans, CblasTrans,
                        1.0, &Temp.matrix, &A.matrix, 1.0, &Hvar.matrix)
-#
+
         # b_mat.dot(hvar[i-1]).dot(b_mat.T)
         gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
                        1.0, &B.matrix, &Hvar_lag.matrix, 0.0, &Temp.matrix)
