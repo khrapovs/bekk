@@ -1,12 +1,21 @@
 #!/usr/bin/env python
-
-#from distutils.core import setup
 from setuptools import setup, Extension, find_packages
-from setuptools.dist import Distribution
+from Cython.Distutils import build_ext
+import cython_gsl
+import numpy
 
 
 with open('README.rst') as file:
     long_description = file.read()
+
+ckwargs = {'libraries': cython_gsl.get_libraries(),
+           'library_dirs': [cython_gsl.get_library_dir()],
+           'include_dirs': [cython_gsl.get_cython_include_dir()]}
+
+ext_modules = [Extension("bekk.recursion",
+                         ["./bekk/recursion.pyx"], **ckwargs),
+               Extension("bekk.likelihood",
+                         ["./bekk/likelihood.pyx"], **ckwargs)]
 
 setup(name='bekk',
       version='1.0',
@@ -19,6 +28,9 @@ setup(name='bekk',
       py_modules=['bekk'],
       packages=find_packages(),
       keywords=['BEKK', 'ARCH', 'GARCH', 'multivariate', 'volatility'],
+      include_dirs=[cython_gsl.get_include(), numpy.get_include()],
+      cmdclass={'build_ext': build_ext},
+      ext_modules=ext_modules,
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: End Users/Desktop',
@@ -29,4 +41,4 @@ setup(name='bekk',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
       ],
-)
+      )

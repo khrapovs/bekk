@@ -12,8 +12,9 @@ import numba as nb
 import scipy.sparse as scs
 import scipy.linalg as scl
 
-__all__ = ['_bekk_recursion', 'filter_var_sparse', 'filter_var_numba',
-           'estimate_h0', 'plot_data']
+__all__ = ['_bekk_recursion', 'estimate_h0', 'plot_data',
+           'filter_var_python', 'filter_var_numba', 'filter_var_sparse',
+           'likelihood_python', 'likelihood_numba', 'likelihood_sparse']
 
 
 def _bekk_recursion(param, hzero, hone, htwo):
@@ -40,8 +41,6 @@ def _bekk_recursion(param, hzero, hone, htwo):
         + param.b_mat.dot(htwo).dot(param.b_mat.T)
 
 
-@nb.jit("float32[:,:,:](float32[:,:], float32[:,:],\
-        float32[:,:], float32[:,:], float32[:,:])", nogil=True)
 def filter_var_sparse(hvar, innov, c_mat, a_mat, b_mat):
     """Filter out variances and covariances of innovations.
 
@@ -97,7 +96,28 @@ def filter_var_numba(innov, c_mat, a_mat, b_mat, uvar):
     return hvar
 
 
-@nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
+def filter_var_python(hvar, innov2, cmat, amat, bmat):
+    """Filter out variances and covariances of innovations.
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        Return innovations
+    param : instance of BEKKParams class
+        Attributes of this class hold parameter matrices
+    Returns
+    -------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+    """
+    nobs, nstocks = innov2.shape[:2]
+    intercept = cmat.dot(cmat.T)
+    for i in range(1, nobs):
+        hvar[i] = intercept + amat.dot(innov2[i-1]).dot(amat.T) \
+            + bmat.dot(hvar[i-1]).dot(bmat.T)
+
+    return hvar
+
+
 def likelihood_sparse(hvar, innov):
     """Likelihood function.
 
@@ -119,7 +139,7 @@ def likelihood_sparse(hvar, innov):
     innov = innov.flatten()
     det = np.log(np.abs(diag_factor[~np.isnan(diag_factor)])).sum()
     fvalue = det + (factor.solve(innov) * innov).sum()
-    return .5 * (favalue + np.log(2 * np.pi) * innov.shape[0])
+    return .5 * (fvalue + np.log(2 * np.pi) * innov.shape[0])
 
 
 @nb.jit("float32(float32[:,:,:], float32[:,:])", nogil=True)
@@ -147,6 +167,32 @@ def likelihood_numba(hvar, innov):
         fvalue += (np.log(np.diag(hvari)**2) + norm_innov * innovi).sum()
 
     return .5 * (fvalue + np.log(2 * np.pi) * innov.shape[0])
+
+
+def likelihood_python(hvar, innov):
+    """Likelihood function.
+
+    Parameters
+    ----------
+    innov : (nobs, nstocks) array
+        inovations
+    hvar : (nobs, nstocks, nstocks) array
+        variance/covariances
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood contribution
+
+    """
+    lower = True
+    fvalue = 0
+    for innovi, hvari in zip(innov, hvar):
+        hvari, lower = scl.cho_factor(hvari, lower=lower, check_finite=False)
+        norm_innov = scl.cho_solve((hvari, lower), innovi, check_finite=False)
+        fvalue += (np.log(np.diag(hvari)**2) + norm_innov * innovi).sum()
+
+    return fvalue
 
 
 def estimate_h0(innov):

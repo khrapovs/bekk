@@ -11,6 +11,9 @@ import numpy as np
 import scipy.linalg as sl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
+from bekk import filter_var_python, filter_var_numba
+from bekk import likelihood_python, likelihood_numba
+from bekk import recursion, likelihood
 
 
 def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -82,17 +85,70 @@ def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     return bekk
 
 
+def time_recursion():
+
+    nstocks = 2
+    nobs = 2000
+    restriction = 'full'
+    # A, B, C - n x n matrices
+    amat = np.eye(nstocks) * .09**.5
+    bmat = np.eye(nstocks) * .9**.5
+    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
+    # Choose intercept to normalize unconditional variance to one
+    craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
+    cmat = sl.cholesky(craw, 1)
+
+    param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
+                            restriction=restriction, var_target=False)
+    innov = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+
+    hvar = filter_var_numba(innov, cmat, amat, bmat,
+                            param_true.unconditional_var())
+
+
 if __name__ == '__main__':
 
-    np.set_printoptions(precision=4, suppress=True)
-    nstocks = 2
-    var_target = False
-    nobs = 2000
-    restriction = 'diagonal'
-    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-                     restriction=restriction,
-                     nobs=nobs, log_file='../logs/log_sim.txt')
-#    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
-#              nobs=nobs, log_file='log_real.txt')
+#    np.set_printoptions(precision=4, suppress=True)
+#    nstocks = 2
+#    var_target = False
+#    nobs = 2000
+#    restriction = 'diagonal'
+#    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+#                     restriction=restriction,
+#                     nobs=nobs, log_file='../logs/log_sim.txt')
+##    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+##              nobs=nobs, log_file='log_real.txt')
+#
+#    print(bekk.param_true.theta)
 
-    print(bekk.param_true.theta)
+
+    nstocks = 6
+    nobs = 2000
+    restriction = 'full'
+    # A, B, C - n x n matrices
+    amat = np.eye(nstocks) * .09**.5
+    bmat = np.eye(nstocks) * .9**.5
+    # Craw = np.ones((nstocks, nstocks))*.5 + np.eye(nstocks)*.5
+    # Choose intercept to normalize unconditional variance to one
+    craw = np.eye(nstocks) - amat.dot(amat) - bmat.dot(bmat)
+    cmat = sl.cholesky(craw, 1)
+
+    param_true = BEKKParams(a_mat=amat, b_mat=bmat, c_mat=cmat,
+                            restriction=restriction, var_target=False)
+    innov = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+
+    innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]
+    hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+    hvar[0] = param_true.unconditional_var()
+
+    out1 = recursion(hvar, innov2, amat, bmat, cmat)
+    out2 = filter_var_python(hvar, innov2, amat, bmat, cmat)
+
+    print(np.allclose(out1, out2))
+
+    out1 = likelihood(hvar, innov)
+    out2 = likelihood_python(hvar, innov)
+
+    print(np.allclose(out1, out2))
