@@ -40,6 +40,7 @@ install:
 # Run test
 script:
   - python setup.py install
+  - python -c 'from bekk.recursion import recursion;'
   - nosetests
 
 # Calculate coverage
