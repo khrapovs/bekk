@@ -32,6 +32,7 @@ setup(name='bekk',
       include_dirs=[cython_gsl.get_include(), numpy.get_include()],
       cmdclass={'build_ext': build_ext},
       ext_modules=ext_modules,
+      zip_safe=False,
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: End Users/Desktop',
