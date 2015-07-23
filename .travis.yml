@@ -11,6 +11,12 @@ branches:
   only:
     - master
     - cython
+sudo: false
+addons:
+  apt:
+    packages:
+    # GSL library
+    - libgsl0-dev
 
 # Setup anaconda
 before_install:
@@ -21,18 +27,19 @@ before_install:
   - conda update --yes conda
   - conda update --yes openssl
   # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
+  #- sudo rm -rf /dev/shm
+  #- sudo ln -s /run/shm /dev/shm
   # GSL library
-  - sudo apt-get install libgsl0ldbl libgsl0-dev
+  #- sudo apt-get install libgsl0ldbl libgsl0-dev
 # Install packages
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION cython numpy scipy matplotlib nose seaborn
   - pip install git+git://github.com/twiecki/CythonGSL
-  - python setup.py install
+  - python setup.py build
 
 # Run test
 script:
+  - python setup.py install
   - nosetests
 
 # Calculate coverage
