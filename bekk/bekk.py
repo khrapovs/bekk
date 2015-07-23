@@ -15,9 +15,9 @@ import numpy as np
 from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
-from .recursion import recursion
-from .likelihood import likelihood
 from .utils import estimate_h0, likelihood_python, filter_var_python
+from bekk.recursion import recursion
+from bekk.likelihood import likelihood
 
 __all__ = ['BEKK']
 
