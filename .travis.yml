@@ -29,7 +29,6 @@ before_install:
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION cython numpy scipy matplotlib nose seaborn
   - pip install git+git://github.com/twiecki/CythonGSL
-  - python setup.py build
   - python setup.py install
 
 # Run test

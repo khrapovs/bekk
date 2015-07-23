@@ -14,8 +14,9 @@ import seaborn as sns
 import numpy as np
 from scipy.optimize import minimize
 
-from bekk import recursion, likelihood
 from .bekkparams import BEKKParams
+from .recursion import recursion
+from .likelihood import likelihood
 from .utils import estimate_h0, likelihood_python, filter_var_python
 
 __all__ = ['BEKK']
