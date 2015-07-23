@@ -12,7 +12,8 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, likelihood_python
-from bekk import recursion, likelihood
+from bekk.recursion import recursion
+from bekk.likelihood import likelihood
 from bekk.utils import take_time
 
 

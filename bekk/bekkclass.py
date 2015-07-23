@@ -16,7 +16,8 @@ from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import estimate_h0, likelihood_python, filter_var_python
-from bekk import recursion, likelihood
+from .recursion import recursion
+from .likelihood import likelihood
 
 __all__ = ['BEKK']
 
