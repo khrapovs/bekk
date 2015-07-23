@@ -12,8 +12,7 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import recursion
-from bekk.likelihood import likelihood
+from bekk import recursion, likelihood
 
 
 class BEKKTestCase(ut.TestCase):
