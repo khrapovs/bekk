@@ -3,7 +3,7 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-__all__ = ['likelihood']
+__all__ = ['likelihood_gauss']
 
 cdef extern from 'math.h':
     double log(double x)
@@ -12,7 +12,7 @@ cdef extern from 'math.h':
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def likelihood(double[:, :, :] hvar, double[:, :] innov):
+def likelihood_gauss(double[:, :, :] hvar, double[:, :] innov):
 
     cdef:
         Py_ssize_t nstocks, nobs, t, i

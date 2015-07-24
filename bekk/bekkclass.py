@@ -16,8 +16,8 @@ from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import estimate_h0, likelihood_python, filter_var_python
-from .recursion import recursion
-from .likelihood import likelihood
+from .recursion import filter_var
+from .likelihood import likelihood_gauss
 
 __all__ = ['BEKK']
 
@@ -107,8 +107,8 @@ class BEKK(object):
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
         if self.cython:
-            recursion(*args)
-            return likelihood(self.hvar, self.innov)
+            filter_var(*args)
+            return likelihood_gauss(self.hvar, self.innov)
         else:
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)

@@ -12,24 +12,24 @@ kwargs = {'libraries': cython_gsl.get_libraries(),
           'library_dirs': [cython_gsl.get_library_dir()],
           'include_dirs': [cython_gsl.get_cython_include_dir()]}
 
-ext_modules = [Extension("bekk.recursion", ["bekk/recursion.pyx"], **kwargs),
-               Extension("bekk.likelihood", ["bekk/likelihood.pyx"], **kwargs)]
+ext_modules = [Extension("bekk.recursion", ["./bekk/recursion.pyx"], **kwargs),
+               Extension("bekk.likelihood", ["./bekk/likelihood.pyx"], **kwargs)]
 
 setup(name='bekk',
       version='1.0',
-      description=('Simulation and estimation of BEKK(1,1) model'),
+      description='Simulation and estimation of BEKK(1,1) model',
       long_description=long_description,
       author='Stanislav Khrapov',
-      license='MIT',
       author_email='khrapovs@gmail.com',
       url='https://github.com/khrapovs/bekk',
+      license='MIT',
+      keywords=['BEKK', 'ARCH', 'GARCH', 'multivariate', 'volatility'],
       install_requires=['numpy', 'cython', 'scipy'],
       py_modules=['bekk'],
       packages=find_packages(),
-      keywords=['BEKK', 'ARCH', 'GARCH', 'multivariate', 'volatility'],
-      include_dirs=[cython_gsl.get_include(), numpy.get_include()],
-      cmdclass={'build_ext': build_ext},
       ext_modules=ext_modules,
+      cmdclass={'build_ext': build_ext},
+      include_dirs=[cython_gsl.get_include(), numpy.get_include()],
       zip_safe=False,
       classifiers=[
         'Development Status :: 4 - Beta',

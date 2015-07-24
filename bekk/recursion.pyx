@@ -3,17 +3,14 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-__all__ = ['recursion']
+__all__ = ['filter_var']
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def recursion(double[:, :, :] hvar,
-              double[:, :] innov,
-              double[:, :] amat,
-              double[:, :] bmat,
-              double[:, :] cmat):
+def filter_var(double[:, :, :] hvar, double[:, :] innov,
+               double[:, :] amat, double[:, :] bmat, double[:, :] cmat):
 
     cdef:
         Py_ssize_t nstocks, nobs

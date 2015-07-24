@@ -12,8 +12,8 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import recursion
-from bekk.likelihood import likelihood
+from bekk.recursion import filter_var
+from bekk.likelihood import likelihood_gauss
 
 
 class BEKKTestCase(ut.TestCase):
@@ -38,7 +38,7 @@ class BEKKTestCase(ut.TestCase):
             self.assertEqual(innov.shape, (nobs, nstocks))
             self.assertEqual(hvar.shape, (nobs, nstocks, nstocks))
 
-    def test_recursion(self):
+    def test_filter_var(self):
         """Test recursions."""
 
         nstocks = 6
@@ -59,7 +59,7 @@ class BEKKTestCase(ut.TestCase):
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param.get_uvar()
 
-        out2 = recursion(hvar, innov, amat, bmat, cmat)
+        out2 = filter_var(hvar, innov, amat, bmat, cmat)
 
         npt.assert_array_almost_equal(hvar_true, out1)
         npt.assert_array_almost_equal(hvar_true, out2)
@@ -73,7 +73,7 @@ class BEKKTestCase(ut.TestCase):
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param.get_uvar()
 
-        recursion(hvar, innov, amat, bmat, cmat)
+        filter_var(hvar, innov, amat, bmat, cmat)
         out2 = hvar.copy()
 
         npt.assert_array_almost_equal(hvar_true, out1)
@@ -99,10 +99,10 @@ class BEKKTestCase(ut.TestCase):
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param.get_uvar()
 
-        recursion(hvar, innov, amat, bmat, cmat)
+        filter_var(hvar, innov, amat, bmat, cmat)
 
         out1 = likelihood_python(hvar, innov)
-        out2 = likelihood(hvar, innov)
+        out2 = likelihood_gauss(hvar, innov)
 
         self.assertIsInstance(out1, float)
         self.assertIsInstance(out2, float)
