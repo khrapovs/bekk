@@ -12,8 +12,10 @@ kwargs = {'libraries': cython_gsl.get_libraries(),
           'library_dirs': [cython_gsl.get_library_dir()],
           'include_dirs': [cython_gsl.get_cython_include_dir()]}
 
-ext_modules = [Extension("bekk.recursion", ["./bekk/recursion.pyx"], **kwargs),
-               Extension("bekk.likelihood", ["./bekk/likelihood.pyx"], **kwargs)]
+ext_modules = [Extension("bekk.recursion",
+                         ["./bekk/recursion.pyx"], **kwargs),
+               Extension("bekk.likelihood",
+                         ["./bekk/likelihood.pyx"], **kwargs)]
 
 setup(name='bekk',
       version='1.0',
@@ -25,9 +27,9 @@ setup(name='bekk',
       license='MIT',
       keywords=['BEKK', 'ARCH', 'GARCH', 'multivariate', 'volatility'],
       install_requires=['numpy', 'cython', 'scipy'],
-      py_modules=['bekk'],
       packages=find_packages(),
       ext_modules=ext_modules,
+      package_dir={'bekk': './bekk'},
       cmdclass={'build_ext': build_ext},
       include_dirs=[cython_gsl.get_include(), numpy.get_include()],
       zip_safe=False,
