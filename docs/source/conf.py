@@ -15,21 +15,19 @@
 
 import sys
 import os
+import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+# sys.path.insert(0, os.path.abspath('.'))
 
 # -- Khrapov --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath('../..'))
 
-import mock
-
 MOCK_MODULES = ['numpy', 'seaborn', 'matplotlib', 'matplotlib.pylab',
-                'seaborn', 'functools',
-                'multiprocessing', 'skewstudent',
-                'scipy', 'scipy.stats', 'scipy.optimize', 'scipy.linalg', 'scipy.special']
+                'seaborn', 'skewstudent', 'cython',
+                'scipy', 'scipy.stats', 'scipy.optimize', 'scipy.linalg']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
@@ -131,7 +129,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+# html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

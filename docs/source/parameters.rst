@@ -1,4 +1,7 @@
-.. automodule:: bekk.bekkparams
+Parameters
+==========
 
-.. autoclass:: bekk.bekk.BEKKParams
-	:members:
+.. py:currentmodule:: bekk
+
+.. autoclass:: BEKKParams
+	:members: from_abc

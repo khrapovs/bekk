@@ -1,4 +1,7 @@
-.. automodule:: bekk.bekk
+BEKK class
+==========
 
-.. autoclass:: bekk.bekk.BEKK
-	:members:
+.. py:currentmodule:: bekk
+
+.. autoclass:: BEKK
+	:members: estimate
