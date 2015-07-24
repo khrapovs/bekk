@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/khrapovs/bekk.svg?branch=master
+    :target: https://travis-ci.org/khrapovs/bekk
+    
 .. image:: https://readthedocs.org/projects/bekk/badge/?version=latest
 	:target: https://readthedocs.org/projects/bekk/?badge=latest
 	:alt: Documentation Status
