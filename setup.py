@@ -8,14 +8,12 @@ import numpy
 with open('README.rst') as file:
     long_description = file.read()
 
-ckwargs = {'libraries': cython_gsl.get_libraries(),
-           'library_dirs': [cython_gsl.get_library_dir()],
-           'include_dirs': [cython_gsl.get_cython_include_dir()]}
+kwargs = {'libraries': cython_gsl.get_libraries(),
+          'library_dirs': [cython_gsl.get_library_dir()],
+          'include_dirs': [cython_gsl.get_cython_include_dir()]}
 
-ext_modules = [Extension("bekk.recursion",
-                         ["./bekk/recursion.pyx"], **ckwargs),
-               Extension("bekk.likelihood",
-                         ["./bekk/likelihood.pyx"], **ckwargs)]
+ext_modules = [Extension("bekk.recursion", ["bekk/recursion.pyx"], **kwargs),
+               Extension("bekk.likelihood", ["bekk/likelihood.pyx"], **kwargs)]
 
 setup(name='bekk',
       version='1.0',
