@@ -52,16 +52,8 @@ class BEKKParams(object):
 
         Parameters
         ----------
-        restriction : str
-            Can be
-                - 'full'
-                - 'diagonal'
-                - 'scalar'
-        target : (nstocks, nstocks) arrays
-            Variance targeting flag. If True, then cmat is not returned.
-        innov : (nobs, ntocks) array
-            Return innovations
-        kwargs : keyword arguments, optional
+        nstocks : int
+            Number os stocks in the model
 
         """
         self.amat = np.eye(nstocks) * .1**.5
@@ -79,11 +71,19 @@ class BEKKParams(object):
         return show
 
     def __repr__(self):
+        """String representation.
+
+        """
         return self.__str__()
 
     @classmethod
     def from_abc(cls, amat=None, bmat=None, cmat=None):
         """Initialize from A, B, and C arrays.
+
+        Parameters
+        ----------
+        amat, bmat, cmat : (nstocks, nstocks) arrays
+            Parameter matrices
 
         """
         nstocks = amat.shape[0]
@@ -95,20 +95,12 @@ class BEKKParams(object):
 
     @classmethod
     def from_target(cls, amat=None, bmat=None, target=None):
-        """Initialize A, B, C from target.
+        """Initialize from A, B, and variance target.
 
-        Notes
-        -----
-        amat, bmat, cmat : (nstocks, nstocks) arrays
+        Parameters
+        ----------
+        amat, bmat, target : (nstocks, nstocks) arrays
             Parameter matrices
-        theta : 1d array of parameters
-            Length depends on the model restrictions and variance targeting
-            If targeting:
-                - 'full' - 2*n**2
-                - 'diagonal' - 2*n
-                - 'scalar' - 2
-            If not targeting:
-                - + (n-1)*n/2 for parameter C
 
         """
         nstocks = target.shape[0]
@@ -122,6 +114,16 @@ class BEKKParams(object):
     def find_cmat(amat=None, bmat=None, target=None):
         """Find C matrix given A, B, and H.
         Solve for C in H = CC' + AHA' + BHB' given A, B, H.
+
+        Parameters
+        ----------
+        amat, bmat, target : (nstocks, nstocks) arrays
+            Parameter matrices
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+            Cholesky decomposition of CC'
 
         """
         ccmat = target - amat.dot(target).dot(amat.T) \
@@ -137,20 +139,27 @@ class BEKKParams(object):
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,
                    restriction=None, target=None):
-        """Initialize A, B, C from theta.
+        """Initialize from theta vector.
 
-        Notes
-        -----
-        amat, bmat, cmat : (nstocks, nstocks) arrays
-            Parameter matrices
+        Parameters
+        ----------
         theta : 1d array of parameters
             Length depends on the model restrictions and variance targeting
-            If targeting:
+            If target is not None:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-            If not targeting:
+            If target is None:
                 - + (n-1)*n/2 for parameter C
+        nstocks : int
+            Number of stocks in the model
+        restriction : str
+            Can be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+        target : (nstocks, nstocks) array
+            Variance target matrix
 
         """
         if restriction == 'full':
@@ -180,17 +189,25 @@ class BEKKParams(object):
     def get_theta(self, restriction=None, var_target=False):
         """Convert parameter mratrices to 1-dimensional array.
 
-        Notes
-        -----
-        amat, bmat, cmat : (nstocks, nstocks) arrays
-            Parameter matrices
+        Parameters
+        ----------
+        restriction : str
+            Can be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+        var_target : bool
+            Whether to estimate only A and B (True) or C as well (False)
+
+        Returns
+        -------
         theta : 1-dimensional array of parameters
             Length depends on the model restrictions and variance targeting
-            If targeting:
+            If var_target:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-            If not targeting:
+            If not var_target:
                 - + (n-1)*n/2 for parameter cmat
 r
         """
@@ -212,10 +229,15 @@ r
     def find_stationary_var(amat=None, bmat=None, cmat=None):
         """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
 
+        Parameters
+        ----------
+        amat, bmat, cmat : (nstocks, nstocks) arrays
+            Parameter matrices
+
         Returns
         -------
-        hvarnew : (nstocks, nstocks) array
-            Stationary variance matrix
+        (nstocks, nstocks) array
+            Unconditional variance matrix
 
         """
         hvar = np.eye(amat.shape[0])
@@ -233,7 +255,7 @@ r
 
         Returns
         -------
-        hvar : (nstocks, nstocks) array
+        (nstocks, nstocks) array
             Unconditional variance amtrix
 
         """
@@ -262,15 +284,9 @@ r
             List of strings
 
         """
-        string = []
-        string.append('Varinace targeting = ' + str(self.target))
-        string.append('Model restriction = ' + str(self.restriction))
-        string.append('Max eigenvalue = %.4f' % self.constraint())
-        string.append('\nA =\n' + np.array_str(self.amat))
-        string.append('\nB =\n' + np.array_str(self.bmat))
-        string.append('\nC =\n' + np.array_str(self.cmat))
-        string.append('\nH0 estim =\n'
-                      + np.array_str(self.unconditional_var()))
+        string = self.__str__()
+        string += '\nMax eigenvalue = %.4f' % self.constraint()
+        string += '\nUnconditional variance=\n' + np.array_str(self.get_uvar())
         return string
 
 
