@@ -16,8 +16,12 @@ from scipy.optimize import minimize
 
 from .bekkparams import BEKKParams
 from .utils import estimate_h0, likelihood_python, filter_var_python
-from .recursion import filter_var
-from .likelihood import likelihood_gauss
+try:
+    from .recursion import filter_var
+    from .likelihood import likelihood_gauss
+except:
+    print('Failed to import cython modules. '
+          + 'Temporary hack to compile documentation.')
 
 __all__ = ['BEKK']
 

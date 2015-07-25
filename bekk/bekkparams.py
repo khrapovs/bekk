@@ -18,28 +18,29 @@ __all__ = ['BEKKParams']
 
 class BEKKParams(object):
 
-    """Class to hold parameters of the BEKK model in different representations.
+    """Class to hold parameters of the BEKK model.
 
     Attributes
     ----------
     amat, bmat, cmat : (nstocks, nstocks) arrays
         Matrix representations of BEKK parameters
-    theta : 1-dimensional array
-        Vector of model parameters
-    innov : (nobs, ntocks) array
-            Return innovations
-    restriction : str
-        Can be
-            - 'full'
-            - 'diagonal'
-            - 'scalar'
-    target : (nstocks, nstocks) array
-        Variance targeting flag. If True, then cmat is not returned.
 
     Methods
     -------
-    unconditional_var
-        Return unconditional variance given parameters
+    from_abc
+        Initialize from A, B, and C arrays
+    from_target
+        Initialize from A, B, and variance target
+    from_theta
+        Initialize from theta vector
+    get_theta
+        Convert parameter mratrices to 1-dimensional array
+    find_cmat
+        Find C matrix given A, B, and H
+    find_stationary_var
+        Return unconditional variance given parameter matrices
+    get_uvar
+        Return unconditional variance
     constraint
         Constraint on parameters for stationarity
     log_string
@@ -138,17 +139,19 @@ class BEKKParams(object):
 
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,
-                   restriction=None, target=None):
+                   restriction='scalar', target=None):
         """Initialize from theta vector.
 
         Parameters
         ----------
-        theta : 1d array of parameters
+        theta : 1d array
             Length depends on the model restrictions and variance targeting
+
             If target is not None:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
+            
             If target is None:
                 - + (n-1)*n/2 for parameter C
         nstocks : int
@@ -186,7 +189,7 @@ class BEKKParams(object):
 
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
-    def get_theta(self, restriction=None, var_target=False):
+    def get_theta(self, restriction='scalar', var_target=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters
@@ -201,15 +204,17 @@ class BEKKParams(object):
 
         Returns
         -------
-        theta : 1-dimensional array of parameters
+        theta : 1d array
             Length depends on the model restrictions and variance targeting
+
             If var_target:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
+
             If not var_target:
                 - + (n-1)*n/2 for parameter cmat
-r
+
         """
         if restriction == 'full':
             theta = [self.amat.flatten(), self.bmat.flatten()]
@@ -280,8 +285,8 @@ r
 
         Returns
         -------
-        string : list
-            List of strings
+        string : str
+            Formatted output text
 
         """
         string = self.__str__()

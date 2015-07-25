@@ -15,6 +15,11 @@ Documentation
 
 `Documentation <http://bekk.readthedocs.org/en/latest/>`_
 
+Requirements
+------------
+
+- `CythonGSL <https://github.com/twiecki/CythonGSL>`_
+
 Installation
 ------------
 
