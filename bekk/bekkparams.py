@@ -111,6 +111,34 @@ class BEKKParams(object):
         cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
+    @classmethod
+    def from_spatial(cls, avecs=None, bvecs=None, svecs=None,
+                     vvec=None, weights=None):
+        """Initialize from spatial representation.
+
+        Parameters
+        ----------
+        avecs, bvecs: (ncat+1, nstocks) arrays
+            Parameter matrices
+        svecs : (ncat, nstocks) array
+            Parameter matrices
+        vvec : (nstocks, ) array
+            Parameter vector
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+
+        """
+        ncat, nstocks = weights.shape[:2]
+        amat, bmat = np.diag(avecs[0]), np.diag(bvecs[0])
+        smat = np.eye(nstocks)
+        for i in range(ncat):
+            amat += np.diag(avecs[i+1]).dot(weights[i])
+            bmat += np.diag(bvecs[i+1]).dot(weights[i])
+            smat -= np.diag(svecs[i]).dot(weights[i])
+        smat_inv = sl.inv(smat)
+        cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
+        return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+
     @staticmethod
     def find_cmat(amat=None, bmat=None, target=None):
         """Find C matrix given A, B, and H.
@@ -151,7 +179,7 @@ class BEKKParams(object):
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-            
+
             If target is None:
                 - + (n-1)*n/2 for parameter C
         nstocks : int
