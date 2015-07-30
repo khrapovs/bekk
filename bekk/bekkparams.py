@@ -137,7 +137,13 @@ class BEKKParams(object):
             smat -= np.diag(dvecs[i]).dot(weights[i])
         smat_inv = sl.inv(smat)
         cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
-        return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+        param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+        param.avecs = avecs
+        param.bvecs = bvecs
+        param.dvecs = dvecs
+        param.vvec = vvec
+        param.weights = weights
+        return param
 
     @staticmethod
     def find_cmat(amat=None, bmat=None, target=None):

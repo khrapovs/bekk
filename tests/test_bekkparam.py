@@ -145,6 +145,11 @@ class BEKKParamsTestCase(ut.TestCase):
         npt.assert_array_equal(amat, param.amat)
         npt.assert_array_equal(bmat, param.bmat)
         npt.assert_array_equal(cmat, param.cmat)
+        npt.assert_array_equal(avecs, param.avecs)
+        npt.assert_array_equal(bvecs, param.bvecs)
+        npt.assert_array_equal(dvecs, param.dvecs)
+        npt.assert_array_equal(vvec, param.vvec)
+        npt.assert_array_equal(weights, param.weights)
 
     def test_theta(self):
         """Test theta."""
