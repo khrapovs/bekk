@@ -151,6 +151,37 @@ class BEKKParamsTestCase(ut.TestCase):
         npt.assert_array_equal(vvec, param.vvec)
         npt.assert_array_equal(weights, param.weights)
 
+    def test_get_theta_spacial(self):
+        """Test theta vector for spatial specification."""
+
+        nstocks = 3
+        weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+        ncat = weights.shape[0]
+        alpha, beta, gamma = .01, .16, .09
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks)) * alpha**.5
+        bvecs = np.ones((ncat+1, nstocks)) * beta**.5
+        dvecs = np.ones((ncat, nstocks)) * gamma**.5
+        vvec = np.ones(nstocks)
+
+        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                        vvec=vvec, weights=weights)
+        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten()]
+        theta = np.concatenate(theta)
+        nparams = 3 * nstocks * (1 + ncat) - nstocks
+
+        self.assertEqual(nparams, param.get_theta_spacial().size)
+        npt.assert_array_equal(theta, param.get_theta_spacial())
+
+        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten(), vvec]
+        theta = np.concatenate(theta)
+        nparams = 3 * nstocks * (1 + ncat)
+
+        self.assertEqual(nparams,
+                         param.get_theta_spacial(var_target=False).size)
+        npt.assert_array_equal(theta,
+                               param.get_theta_spacial(var_target=False))
+
     def test_theta(self):
         """Test theta."""
 

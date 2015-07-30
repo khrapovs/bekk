@@ -264,18 +264,13 @@ class BEKKParams(object):
 
         return np.concatenate(theta)
 
-    def get_theta_spacial(self, restriction='scalar', var_target=True):
+    def get_theta_spacial(self, var_target=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters
         ----------
-        restriction : str
-            Can be
-                - 'full'
-                - 'diagonal'
-                - 'scalar'
         var_target : bool
-            Whether to estimate only A and B (True) or C as well (False)
+            Whether to estimate only a, b, and d (True) or v as well (False)
 
         Returns
         -------
@@ -283,25 +278,17 @@ class BEKKParams(object):
             Length depends on the model restrictions and variance targeting
 
             If var_target:
-                - 'full' - 2*n**2
-                - 'diagonal' - 2*n
-                - 'scalar' - 2
+                - 3*n*(m+1) - n
 
             If not var_target:
-                - + (n-1)*n/2 for parameter cmat
+                - + n
 
         """
-        if restriction == 'full':
-            theta = [self.amat.flatten(), self.bmat.flatten()]
-        elif restriction == 'diagonal':
-            theta = [np.diag(self.amat), np.diag(self.bmat)]
-        elif restriction == 'scalar':
-            theta = [[self.amat[0, 0]], [self.bmat[0, 0]]]
-        else:
-            raise ValueError('This restriction is not supported!')
+        theta = [self.avecs.flatten(), self.bvecs.flatten(),
+                 self.dvecs.flatten()]
 
         if not var_target:
-            theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
+            theta.append(self.vvec)
 
         return np.concatenate(theta)
 
