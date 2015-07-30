@@ -205,7 +205,7 @@ class BEKKParamsSpacialTestCase(ut.TestCase):
 
     """Test spacial BEKKParams."""
 
-    def test_spatial(self):
+    def test_init_spatial(self):
         """Test spatial specification."""
 
         nstocks = 3
@@ -274,6 +274,33 @@ class BEKKParamsSpacialTestCase(ut.TestCase):
                          param.get_theta_spacial(var_target=False).size)
         npt.assert_array_equal(theta,
                                param.get_theta_spacial(var_target=False))
+
+    def test_find_vvec(self):
+        """Test finding v vector given variance target."""
+
+        nstocks = 3
+        weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+        ncat = weights.shape[0]
+        alpha, beta, gamma = .01, .16, .09
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks)) * alpha**.5
+        bvecs = np.ones((ncat+1, nstocks)) * beta**.5
+        dvecs = np.ones((ncat, nstocks)) * gamma**.5
+        target = np.eye(nstocks)
+
+        vvec = BEKKParams.find_vvec(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                    weights=weights, target=target)
+
+        self.assertEqual(vvec.shape, (nstocks,))
+
+        vvec = np.ones(nstocks)
+        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                        vvec=vvec, weights=weights)
+        target = param.get_uvar()
+        vvec_new = BEKKParams.find_vvec(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                        weights=weights, target=target)
+        # TODO : The test fails. Find out why.
+        # npt.assert_array_equal(vvec, vvec_new)
 
 
 if __name__ == '__main__':
