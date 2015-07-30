@@ -69,6 +69,12 @@ class BEKKParams(object):
         show = "A = \n" + str(self.amat)
         show += "\nB = \n" + str(self.bmat)
         show += "\nC = \n" + str(self.cmat)
+        show += '\nMax eigenvalue = %.4f' % self.constraint()
+        uvar = self.get_uvar()
+        if uvar is not None:
+            show += '\nUnconditional variance=\n' + np.array_str(uvar)
+        else:
+            show += '\nCould not compute unconditional variance!\n'
         return show
 
     def __repr__(self):
@@ -245,7 +251,7 @@ class BEKKParams(object):
         amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
             - bmat.dot(target).dot(bmat.T)
-        return np.diag(dmat.dot(ccmat).dot(dmat.T))**.5
+        return np.abs(np.diag(dmat.dot(ccmat).dot(dmat.T)))**.5
 
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,
@@ -443,6 +449,7 @@ class BEKKParams(object):
             with np.errstate(divide='ignore', invalid='ignore'):
                 return sco.fixed_point(fun, hvar)
         except RuntimeError:
+            warnings.warn('Could not find stationary varaince!')
             return None
 
     def get_uvar(self):

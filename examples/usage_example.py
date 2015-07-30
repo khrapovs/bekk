@@ -14,7 +14,7 @@ from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
-from bekk.utils import take_time
+from bekk.utils import take_time, estimate_h0
 
 
 def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
@@ -131,33 +131,40 @@ def try_spatial():
     """Try simulating and estimating spatial BEKK.
 
     """
+    var_target = False
     nstocks = 3
-    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+    nobs = 2000
+    weights = np.array([[[0, .1, 0], [.1, 0, 0], [0, 0, 0]]])
     ncat = weights.shape[0]
-    alpha, beta, gamma = .09, .1, .09
+    alpha = np.array([.1, .05])
+    beta = np.array([.8, .1])
+    gamma = .005
     # A, B, C - n x n matrices
-    avecs = np.ones((ncat+1, nstocks)) * alpha**.5
-    bvecs = np.ones((ncat+1, nstocks)) * beta**.5
+    avecs = np.ones((ncat+1, nstocks)) * alpha[:, np.newaxis]**.5
+    bvecs = np.ones((ncat+1, nstocks)) * beta[:, np.newaxis]**.5
     dvecs = np.ones((ncat, nstocks)) * gamma**.5
     vvec = np.ones(nstocks)
 
     param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                     vvec=vvec, weights=weights)
 
-    innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='skewt', degf=30)
+    innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
 
-    plot_data(innov, hvar_true)
+#    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    bekk.estimate_spatial(param_start=param, var_target=False, weights=weights,
-                          method='SLSQP', cython=True)
+    bekk.estimate_spatial(param_start=param, var_target=var_target,
+                          weights=weights, method='SLSQP', cython=True)
+
+    print('Target:\n', estimate_h0(innov))
 
     print('\nTrue parameters:\n', param)
     print('\nEstimated parameters:\n', bekk.param_final)
 
-    print('\nTrue parameters:\n', param.get_theta_spatial(var_target=False))
+    print('\nTrue parameters:\n',
+          param.get_theta_spatial(var_target=var_target))
     print('\nEstimated parameters:\n',
-          bekk.param_final.get_theta_spatial(var_target=False))
+          bekk.param_final.get_theta_spatial(var_target=var_target))
 
     print('\nTrue a:\n', param.avecs)
     print('\nEstimated a:\n', bekk.param_final.avecs)
@@ -188,4 +195,5 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-    try_spatial()
+    with take_time('Estimation'):
+        try_spatial()
