@@ -86,6 +86,11 @@ class BEKKParams(object):
         amat, bmat, cmat : (nstocks, nstocks) arrays
             Parameter matrices
 
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
         """
         nstocks = amat.shape[0]
         param = cls(nstocks)
@@ -139,7 +144,7 @@ class BEKKParams(object):
 
         """
         ncat, nstocks = weights.shape[:2]
-        amat, bmat, dmat = cls.find_abdmat_spacial(avecs=avecs, bvecs=bvecs,
+        amat, bmat, dmat = cls.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
                                                    dvecs=dvecs,
                                                    weights=weights)
         dmat_inv = sl.inv(dmat)
@@ -153,7 +158,7 @@ class BEKKParams(object):
         return param
 
     @staticmethod
-    def find_abdmat_spacial(avecs=None, bvecs=None, dvecs=None, weights=None):
+    def find_abdmat_spatial(avecs=None, bvecs=None, dvecs=None, weights=None):
         """Initialize amat, bmat, and dmat from spatial representation.
 
         Parameters
@@ -235,7 +240,7 @@ class BEKKParams(object):
             Vector v
 
         """
-        mats = BEKKParams.find_abdmat_spacial(avecs=avecs, bvecs=bvecs,
+        mats = BEKKParams.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
                                               dvecs=dvecs, weights=weights)
         amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
@@ -269,6 +274,11 @@ class BEKKParams(object):
         target : (nstocks, nstocks) array
             Variance target matrix
 
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
         """
         if restriction == 'full':
             chunk = nstocks**2
@@ -293,6 +303,53 @@ class BEKKParams(object):
             cmat[np.tril_indices(nstocks)] = theta[2*chunk:]
 
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+
+    @classmethod
+    def from_theta_spatial(cls, theta=None, weights=None, target=None):
+        """Initialize from theta vector.
+
+        Parameters
+        ----------
+        theta : 1d array
+            Length depends on the model restrictions and variance targeting
+
+            If var_target:
+                - 3*n*(m+1) - n
+
+            If not var_target:
+                - + n
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+        target : (nstocks, nstocks) array
+            Variance target matrix
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        ncat, nstocks = weights.shape[:2]
+        abvecs_size = (ncat+1)*nstocks
+        dvecs_size = ncat*nstocks
+        avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
+        bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
+        dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
+        dvecs = dvecs.reshape((ncat, nstocks))
+
+        if target is not None:
+            if theta.size != 3*nstocks*(ncat+1)-nstocks:
+                raise ValueError('Incorrect number of params for targeting!')
+            vvec = cls.find_vvec(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                 weights=weights, target=target)
+        else:
+            if theta.size != 3*nstocks*(ncat+1):
+                msg = 'Incorrect number of params for no targeting!'
+                raise ValueError(msg)
+            vvec = theta[2*abvecs_size+dvecs_size:]
+
+        return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                vvec=vvec, weights=weights)
 
     def get_theta(self, restriction='scalar', var_target=True):
         """Convert parameter mratrices to 1-dimensional array.
@@ -335,7 +392,7 @@ class BEKKParams(object):
 
         return np.concatenate(theta)
 
-    def get_theta_spacial(self, var_target=True):
+    def get_theta_spatial(self, var_target=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters
