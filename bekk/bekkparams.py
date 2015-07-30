@@ -235,15 +235,12 @@ class BEKKParams(object):
             Vector v
 
         """
+        mats = BEKKParams.find_abdmat_spacial(avecs=avecs, bvecs=bvecs,
+                                              dvecs=dvecs, weights=weights)
+        amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
             - bmat.dot(target).dot(bmat.T)
-
-        # Extract C parameter
-        try:
-            return sl.cholesky(ccmat, 1)
-        except sl.LinAlgError:
-            warnings.warn('Matrix C is singular!')
-            return None
+        return np.diag(dmat.dot(ccmat).dot(dmat.T))
 
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,
