@@ -38,6 +38,30 @@ class BEKKTestCase(ut.TestCase):
             self.assertEqual(innov.shape, (nobs, nstocks))
             self.assertEqual(hvar.shape, (nobs, nstocks, nstocks))
 
+    def test_simulation_spatial(self):
+        """Test simulation spatial."""
+
+        nstocks = 6
+        nobs = 10
+        nstocks = 3
+        weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+        ncat = weights.shape[0]
+        alpha, beta, gamma = .01, .16, .09
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks)) * alpha**.5
+        bvecs = np.ones((ncat+1, nstocks)) * beta**.5
+        dvecs = np.ones((ncat, nstocks)) * gamma**.5
+        vvec = np.ones(nstocks)
+
+        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                        vvec=vvec, weights=weights)
+
+        for distr in ['normal', 'student', 'skewt']:
+            innov, hvar = simulate_bekk(param, nobs=nobs, distr=distr)
+
+            self.assertEqual(innov.shape, (nobs, nstocks))
+            self.assertEqual(hvar.shape, (nobs, nstocks, nstocks))
+
     def test_filter_var(self):
         """Test recursions."""
 
