@@ -148,7 +148,7 @@ class BEKKParams(object):
                                                    dvecs=dvecs,
                                                    weights=weights)
         dmat_inv = sl.inv(dmat)
-        cmat = dmat_inv.dot(np.diag(vvec)).dot(dmat_inv)
+        cmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
@@ -245,7 +245,7 @@ class BEKKParams(object):
         amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
             - bmat.dot(target).dot(bmat.T)
-        return np.diag(dmat.dot(ccmat).dot(dmat.T))
+        return np.diag(dmat.dot(ccmat).dot(dmat.T))**.5
 
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,

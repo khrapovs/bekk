@@ -134,7 +134,7 @@ def try_spatial():
     nstocks = 3
     weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
     ncat = weights.shape[0]
-    alpha, beta, gamma = .01, .16, .09
+    alpha, beta, gamma = .09, .1, .09
     # A, B, C - n x n matrices
     avecs = np.ones((ncat+1, nstocks)) * alpha**.5
     bvecs = np.ones((ncat+1, nstocks)) * beta**.5
@@ -147,6 +147,29 @@ def try_spatial():
     innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='skewt', degf=30)
 
     plot_data(innov, hvar_true)
+
+    bekk = BEKK(innov)
+    bekk.estimate_spatial(param_start=param, var_target=False, weights=weights,
+                          method='SLSQP', cython=True)
+
+    print('\nTrue parameters:\n', param)
+    print('\nEstimated parameters:\n', bekk.param_final)
+
+    print('\nTrue parameters:\n', param.get_theta_spatial(var_target=False))
+    print('\nEstimated parameters:\n',
+          bekk.param_final.get_theta_spatial(var_target=False))
+
+    print('\nTrue a:\n', param.avecs)
+    print('\nEstimated a:\n', bekk.param_final.avecs)
+
+    print('\nTrue b:\n', param.bvecs)
+    print('\nEstimated b:\n', bekk.param_final.bvecs)
+
+    print('\nTrue d:\n', param.dvecs)
+    print('\nEstimated d:\n', bekk.param_final.dvecs)
+
+    print('\nTrue v:\n', param.vvec)
+    print('\nEstimated v:\n', bekk.param_final.vvec)
 
 
 if __name__ == '__main__':

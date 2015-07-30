@@ -8,8 +8,6 @@ BEKK simulation and estimation class
 from __future__ import print_function, division
 
 import time
-import matplotlib.pylab as plt
-import seaborn as sns
 
 import numpy as np
 from scipy.optimize import minimize
@@ -104,6 +102,37 @@ class BEKK(object):
         param = BEKKParams.from_theta(theta=theta, target=self.target,
                                       nstocks=self.innov.shape[1],
                                       restriction=self.restriction)
+
+        if param.constraint() >= 1 or param.cmat is None:
+            return 1e10
+
+        args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
+
+        if self.cython:
+            filter_var(*args)
+            return likelihood_gauss(self.hvar, self.innov)
+        else:
+            filter_var_python(*args)
+            return likelihood_python(self.hvar, self.innov)
+
+    def likelihood_spatial(self, theta):
+        """Compute the conditional log-likelihood function for spatial case.
+
+        Parameters
+        ----------
+        theta : 1dim array
+            Dimension depends on the model restriction
+
+        Returns
+        -------
+        float
+            The value of the minus log-likelihood function.
+            If some regularity conditions are violated, then it returns
+            some obscene number.
+
+        """
+        param = BEKKParams.from_theta_spatial(theta=theta, target=self.target,
+                                              weights=self.weights)
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
@@ -219,6 +248,61 @@ class BEKK(object):
                                                  restriction=restriction,
                                                  target=target,
                                                  nstocks=nstocks)
+
+    def estimate_spatial(self, param_start=None, var_target=True, weights=None,
+                         method='SLSQP', cython=True):
+        """Estimate parameters of the BEKK model.
+
+        Updates several attributes of the class.
+
+        Parameters
+        ----------
+        restriction : str
+            Can be
+                - 'full'a
+                - 'diagonal'
+                - 'scalar'
+        var_target : bool
+            Variance targeting flag. If True, then cmat is not returned.
+        kwargs : keyword arguments, optional
+
+        """
+        # Update default settings
+        nobs, nstocks = self.innov.shape
+        target = estimate_h0(self.innov)
+        self.cython = cython
+        self.weights = weights
+
+        if param_start is not None:
+            theta_start = param_start.get_theta_spatial(var_target=var_target)
+        else:
+            msg = 'Automatic initial parameter is not yet implemented!'
+            raise NotImplementedError(msg)
+
+        if var_target:
+            self.target = target
+        else:
+            self.target = None
+
+        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        self.hvar[0] = target
+
+        # Optimization options
+        options = {'disp': False, 'maxiter': int(1e6)}
+        # Check for existence of initial guess among arguments.
+        # Otherwise, initialize.
+
+        # Start timer for the whole optimization
+        time_start = time.time()
+        # Run optimization
+        self.opt_out = minimize(self.likelihood_spatial, theta_start,
+                                method=method, options=options)
+        # How much time did it take in minutes?
+        self.time_delta = (time.time() - time_start) / 60
+        # Store optimal parameters in the corresponding class
+        self.param_final = BEKKParams.from_theta_spatial(theta=self.opt_out.x,
+                                                         target=self.target,
+                                                         weights=weights)
 
 
 if __name__ == '__main__':
