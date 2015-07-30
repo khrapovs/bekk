@@ -103,6 +103,11 @@ class BEKKParams(object):
         amat, bmat, target : (nstocks, nstocks) arrays
             Parameter matrices
 
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
         """
         nstocks = target.shape[0]
         if (amat is None) and (bmat is None):
@@ -127,16 +132,18 @@ class BEKKParams(object):
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
 
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
         """
         ncat, nstocks = weights.shape[:2]
-        amat, bmat = np.diag(avecs[0]), np.diag(bvecs[0])
-        smat = np.eye(nstocks)
-        for i in range(ncat):
-            amat += np.diag(avecs[i+1]).dot(weights[i])
-            bmat += np.diag(bvecs[i+1]).dot(weights[i])
-            smat -= np.diag(dvecs[i]).dot(weights[i])
-        smat_inv = sl.inv(smat)
-        cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
+        amat, bmat, dmat = cls.find_abdmat_spacial(avecs=avecs, bvecs=bvecs,
+                                                   dvecs=dvecs,
+                                                   weights=weights)
+        dmat_inv = sl.inv(dmat)
+        cmat = dmat_inv.dot(np.diag(vvec)).dot(dmat_inv)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
@@ -144,6 +151,34 @@ class BEKKParams(object):
         param.vvec = vvec
         param.weights = weights
         return param
+
+    @staticmethod
+    def find_abdmat_spacial(avecs=None, bvecs=None, dvecs=None, weights=None):
+        """Initialize amat, bmat, and dmat from spatial representation.
+
+        Parameters
+        ----------
+        avecs, bvecs: (ncat+1, nstocks) arrays
+            Parameter matrices
+        dvecs : (ncat, nstocks) array
+            Parameter matrices
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+
+        Returns
+        -------
+        amat, bmat, dmat : (nstocks, nstocks) arrays
+            BEKK parameter matrices
+
+        """
+        ncat, nstocks = weights.shape[:2]
+        amat, bmat = np.diag(avecs[0]), np.diag(bvecs[0])
+        dmat = np.eye(nstocks)
+        for i in range(ncat):
+            amat += np.diag(avecs[i+1]).dot(weights[i])
+            bmat += np.diag(bvecs[i+1]).dot(weights[i])
+            dmat -= np.diag(dvecs[i]).dot(weights[i])
+        return amat, bmat, dmat
 
     @staticmethod
     def find_cmat(amat=None, bmat=None, target=None):
@@ -159,6 +194,45 @@ class BEKKParams(object):
         -------
         (nstocks, nstocks) array
             Cholesky decomposition of CC'
+
+        """
+        ccmat = target - amat.dot(target).dot(amat.T) \
+            - bmat.dot(target).dot(bmat.T)
+
+        # Extract C parameter
+        try:
+            return sl.cholesky(ccmat, 1)
+        except sl.LinAlgError:
+            warnings.warn('Matrix C is singular!')
+            return None
+
+    @staticmethod
+    def find_vvec(avecs=None, bvecs=None, dvecs=None,
+                  weights=None, target=None):
+        r"""Find v vector given a, b, d, H, and weights.
+        Solve for diagonal of
+
+        .. math::
+            D_{W}\left(H-A_{W}^{0}HA_{W}^{0\prime}
+            -B_{W}^{0}HB_{W}^{0\prime}\right)D_{W}^{\prime}
+
+        Parameters
+        ----------
+        avecs, bvecs: (ncat+1, nstocks) arrays
+            Parameter matrices
+        dvecs : (ncat, nstocks) array
+            Parameter matrices
+        vvec : (nstocks, ) array
+            Parameter vector
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+        target : (nstocks, nstocks) array
+            Unconditional variance matrix
+
+        Returns
+        -------
+        (nstocks, ) array
+            Vector v
 
         """
         ccmat = target - amat.dot(target).dot(amat.T) \

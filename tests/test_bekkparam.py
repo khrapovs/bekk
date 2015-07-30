@@ -138,9 +138,9 @@ class BEKKParamsTestCase(ut.TestCase):
 
         amat = np.diag(avecs[0]) + np.diag(avecs[0]).dot(weights[0])
         bmat = np.diag(bvecs[0]) + np.diag(bvecs[0]).dot(weights[0])
-        smat = np.eye(nstocks) - np.diag(dvecs[0]).dot(weights[0])
-        smat_inv = scl.inv(smat)
-        cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
+        dmat = np.eye(nstocks) - np.diag(dvecs[0]).dot(weights[0])
+        dmat_inv = scl.inv(dmat)
+        cmat = dmat_inv.dot(np.diag(vvec)).dot(dmat_inv)
 
         npt.assert_array_equal(amat, param.amat)
         npt.assert_array_equal(bmat, param.bmat)
@@ -150,6 +150,14 @@ class BEKKParamsTestCase(ut.TestCase):
         npt.assert_array_equal(dvecs, param.dvecs)
         npt.assert_array_equal(vvec, param.vvec)
         npt.assert_array_equal(weights, param.weights)
+
+        mats = BEKKParams.find_abdmat_spacial(avecs=avecs, bvecs=bvecs,
+                                              dvecs=dvecs, weights=weights)
+        amat_new, bmat_new, dmat_new = mats
+
+        npt.assert_array_equal(amat, amat_new)
+        npt.assert_array_equal(bmat, bmat_new)
+        npt.assert_array_equal(dmat, dmat_new)
 
     def test_get_theta_spacial(self):
         """Test theta vector for spatial specification."""
