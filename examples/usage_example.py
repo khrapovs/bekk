@@ -12,12 +12,12 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import recursion
-from bekk.likelihood import likelihood
+from bekk.recursion import filter_var
+from bekk.likelihood import likelihood_gauss
 from bekk.utils import take_time
 
 
-def test_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
+def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
               simulate=True, log_file=None):
     """Simulate and estimate BEKK model.
 
@@ -113,7 +113,7 @@ def time_likelihood():
         filter_var_python(hvar, innov, amat, bmat, cmat)
         out1 = hvar.copy()
     with take_time('Cython recursion'):
-        recursion(hvar, innov, amat, bmat, cmat)
+        filter_var(hvar, innov, amat, bmat, cmat)
         out2 = hvar.copy()
 
     print(np.allclose(hvar_true, out1))
@@ -122,9 +122,31 @@ def time_likelihood():
     with take_time('Python likelihood'):
         out1 = likelihood_python(hvar, innov)
     with take_time('Cython likelihood'):
-        out2 = likelihood(hvar, innov)
+        out2 = likelihood_gauss(hvar, innov)
 
     print(np.allclose(out1, out2))
+
+
+def try_spatial():
+    """Try simulating and estimating spatial BEKK.
+
+    """
+    nstocks = 3
+    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+    ncat = weights.shape[0]
+    alpha, beta, gamma = .01, .16, .09
+    # A, B, C - n x n matrices
+    avecs = np.ones((ncat+1, nstocks)) * alpha**.5
+    bvecs = np.ones((ncat+1, nstocks)) * beta**.5
+    dvecs = np.ones((ncat, nstocks)) * gamma**.5
+    vvec = np.ones(nstocks)
+
+    param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                    vvec=vvec, weights=weights)
+
+    innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='skewt', degf=30)
+
+    plot_data(innov, hvar_true)
 
 
 if __name__ == '__main__':
@@ -135,10 +157,12 @@ if __name__ == '__main__':
     nobs = 2000
     restriction = 'full'
 
-    bekk = test_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
-                     restriction=restriction, nobs=nobs)
+#    bekk = try_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+#                     restriction=restriction, nobs=nobs)
 
-#    test_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+#    try_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
 #              nobs=nobs, log_file='log_real.txt')
 
 #    time_likelihood()
+
+    try_spatial()

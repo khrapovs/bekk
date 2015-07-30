@@ -342,6 +342,7 @@ class BEKKParamsspatialTestCase(ut.TestCase):
 #        npt.assert_array_equal(param.bvecs, param_new.bvecs)
 #        npt.assert_array_equal(param.dvecs, param_new.dvecs)
 
+
 if __name__ == '__main__':
 
     ut.main()
