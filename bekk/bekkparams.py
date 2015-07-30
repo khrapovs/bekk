@@ -112,7 +112,7 @@ class BEKKParams(object):
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
     @classmethod
-    def from_spatial(cls, avecs=None, bvecs=None, svecs=None,
+    def from_spatial(cls, avecs=None, bvecs=None, dvecs=None,
                      vvec=None, weights=None):
         """Initialize from spatial representation.
 
@@ -120,7 +120,7 @@ class BEKKParams(object):
         ----------
         avecs, bvecs: (ncat+1, nstocks) arrays
             Parameter matrices
-        svecs : (ncat, nstocks) array
+        dvecs : (ncat, nstocks) array
             Parameter matrices
         vvec : (nstocks, ) array
             Parameter vector
@@ -134,7 +134,7 @@ class BEKKParams(object):
         for i in range(ncat):
             amat += np.diag(avecs[i+1]).dot(weights[i])
             bmat += np.diag(bvecs[i+1]).dot(weights[i])
-            smat -= np.diag(svecs[i]).dot(weights[i])
+            smat -= np.diag(dvecs[i]).dot(weights[i])
         smat_inv = sl.inv(smat)
         cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
@@ -218,6 +218,47 @@ class BEKKParams(object):
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
     def get_theta(self, restriction='scalar', var_target=True):
+        """Convert parameter mratrices to 1-dimensional array.
+
+        Parameters
+        ----------
+        restriction : str
+            Can be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+        var_target : bool
+            Whether to estimate only A and B (True) or C as well (False)
+
+        Returns
+        -------
+        theta : 1d array
+            Length depends on the model restrictions and variance targeting
+
+            If var_target:
+                - 'full' - 2*n**2
+                - 'diagonal' - 2*n
+                - 'scalar' - 2
+
+            If not var_target:
+                - + (n-1)*n/2 for parameter cmat
+
+        """
+        if restriction == 'full':
+            theta = [self.amat.flatten(), self.bmat.flatten()]
+        elif restriction == 'diagonal':
+            theta = [np.diag(self.amat), np.diag(self.bmat)]
+        elif restriction == 'scalar':
+            theta = [[self.amat[0, 0]], [self.bmat[0, 0]]]
+        else:
+            raise ValueError('This restriction is not supported!')
+
+        if not var_target:
+            theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
+
+        return np.concatenate(theta)
+
+    def get_theta_spacial(self, restriction='scalar', var_target=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters

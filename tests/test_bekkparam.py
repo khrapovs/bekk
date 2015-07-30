@@ -130,15 +130,15 @@ class BEKKParamsTestCase(ut.TestCase):
         # A, B, C - n x n matrices
         avecs = np.ones((ncat+1, nstocks)) * alpha**.5
         bvecs = np.ones((ncat+1, nstocks)) * beta**.5
-        svecs = np.ones((ncat, nstocks)) * gamma**.5
+        dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, svecs=svecs,
+        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                         vvec=vvec, weights=weights)
 
         amat = np.diag(avecs[0]) + np.diag(avecs[0]).dot(weights[0])
         bmat = np.diag(bvecs[0]) + np.diag(bvecs[0]).dot(weights[0])
-        smat = np.eye(nstocks) - np.diag(svecs[0]).dot(weights[0])
+        smat = np.eye(nstocks) - np.diag(dvecs[0]).dot(weights[0])
         smat_inv = scl.inv(smat)
         cmat = smat_inv.dot(np.diag(vvec)).dot(smat_inv)
 
