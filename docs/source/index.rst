@@ -29,6 +29,6 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   Parameter class <parameters>
-   BEKK class <bekk>
-   Data simulation <data>
+   parameters
+   bekkclass
+   generate_data

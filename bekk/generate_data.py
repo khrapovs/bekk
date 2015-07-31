@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Generate data
-=============
+Data generation
+===============
 
 """
 
@@ -15,11 +15,11 @@ __all__ = ['simulate_bekk', 'regenerate_data']
 
 
 def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
-    r"""Simulate data.
+    """Simulate data.
 
     Parameters
     ----------
-    param : instance of BEKKParams class
+    param : BEKKParams instance
         Attributes of this class hold parameter matrices
     nobs : int
         Number of observations to generate. Time series length
@@ -27,9 +27,9 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
         Name of the distribution from which to generate innovations.
         Must be
 
-        - normal
-        - student
-        - skewt
+            - 'normal'
+            - 'student'
+            - 'skewt'
     degf : int
         Degrees of freedom for Student or SkewStudent distributions
     lam : float
@@ -74,7 +74,7 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
 
 
 def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
-    """Download and save data to disk.
+    """Download stock market data and save it to disk.
 
     Parameters
     ----------

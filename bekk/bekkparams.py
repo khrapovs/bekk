@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK(1,1) parameter class
-=========================
+BEKK parameter class
+====================
 
 """
 from __future__ import print_function, division
@@ -43,8 +43,6 @@ class BEKKParams(object):
         Return unconditional variance
     constraint
         Constraint on parameters for stationarity
-    log_string
-        Forms the nice string for output
 
     """
 
@@ -134,10 +132,12 @@ class BEKKParams(object):
 
         Parameters
         ----------
-        avecs, bvecs: (ncat+1, nstocks) arrays
-            Parameter matrices
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
         dvecs : (ncat, nstocks) array
-            Parameter matrices
+            Parameter matrix
         vvec : (nstocks, ) array
             Parameter vector
         weights : (ncat, nstocks, nstocks) array
@@ -169,10 +169,12 @@ class BEKKParams(object):
 
         Parameters
         ----------
-        avecs, bvecs: (ncat+1, nstocks) arrays
-            Parameter matrices
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
         dvecs : (ncat, nstocks) array
-            Parameter matrices
+            Parameter matrix
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
 
@@ -229,10 +231,12 @@ class BEKKParams(object):
 
         Parameters
         ----------
-        avecs, bvecs: (ncat+1, nstocks) arrays
-            Parameter matrices
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
         dvecs : (ncat, nstocks) array
-            Parameter matrices
+            Parameter matrix
         vvec : (nstocks, ) array
             Parameter vector
         weights : (ncat, nstocks, nstocks) array
@@ -269,7 +273,7 @@ class BEKKParams(object):
                 - 'scalar' - 2
 
             If target is None:
-                - + (n-1)*n/2 for parameter C
+                - +(n-1)*n/2 for parameter C
         nstocks : int
             Number of stocks in the model
         restriction : str
@@ -320,10 +324,10 @@ class BEKKParams(object):
             Length depends on the model restrictions and variance targeting
 
             If var_target:
-                - 3*n*(m+1) - n
+                - 3*n*(m+1)-n
 
             If not var_target:
-                - + n
+                - +n
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
         target : (nstocks, nstocks) array
@@ -381,7 +385,7 @@ class BEKKParams(object):
                 - 'scalar' - 2
 
             If not var_target:
-                - + (n-1)*n/2 for parameter cmat
+                - +(n-1)*n/2 for parameter cmat
 
         """
         if restriction == 'full':
@@ -415,7 +419,7 @@ class BEKKParams(object):
                 - 3*n*(m+1) - n
 
             If not var_target:
-                - + n
+                - +n
 
         """
         theta = [self.avecs.flatten(), self.bvecs.flatten(),
@@ -476,20 +480,6 @@ class BEKKParams(object):
         kron_a = np.kron(self.amat, self.amat)
         kron_b = np.kron(self.bmat, self.bmat)
         return np.abs(sl.eigvals(kron_a + kron_b)).max()
-
-    def log_string(self):
-        """Create string for log file.
-
-        Returns
-        -------
-        string : str
-            Formatted output text
-
-        """
-        string = self.__str__()
-        string += '\nMax eigenvalue = %.4f' % self.constraint()
-        string += '\nUnconditional variance=\n' + np.array_str(self.get_uvar())
-        return string
 
 
 if __name__ == '__main__':

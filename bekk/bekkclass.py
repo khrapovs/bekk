@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK simulation and estimation class
-====================================
+BEKK model class
+================
 
 """
 from __future__ import print_function, division
@@ -25,42 +25,35 @@ __all__ = ['BEKK']
 
 
 class BEKK(object):
-    r"""BEKK model. Estimation class.
+    r"""BEKK model.
 
     .. math::
-        u_t|H_t &\sim N(0,H_t) \\
-        u_t     &= e_t H_t^{1/2}, e_t \sim N(0,I) \\
-        H_t     &= E_{t-1}[u_tu_t^\prime]
+        u_t = e_t H_t^{1/2},\quad e_t \sim N(0,I),
 
-    One lag, no asymmetries
+    with variance matrix evolving accrding to the following recursion:
 
     .. math::
-        H_t = CC^\prime + Au_{t-1}u_{t-1}^\prime A^\prime + BH_{t-1}B^\prime
-
-    Parameters
-    ----------
-    innov : (nobs, nstocks) array
-        Return innovations
+        H_t = CC^\prime + Au_{t-1}u_{t-1}^\prime A^\prime + BH_{t-1}B^\prime.
 
     Attributes
     ----------
-    innov : (nobs, nstocks) array
+    innov
         Return innovations
-    log_file : str
+    log_file
         File name to write the results of estimation
-    param_start : BEKKParams instance
+    param_start
         Initial values of model parameters
-    param_final : BEKKParams instance
+    param_final
         Final values of model parameters
-    opt_out : scipy.minimize.OptimizeResult instance
+    opt_out
         Optimization results
 
     Methods
     -------
-    print_results
-        Print results after estimation was completed
     estimate
-        Estimate model parameters
+        Estimate parameters of standard BEKK
+    estimate_spatial
+        Estimate parameters of spatial BEKK
 
     """
 
@@ -191,22 +184,27 @@ class BEKK(object):
             for istring in string:
                 texfile.write(istring + '\n')
 
-    def estimate(self, restriction='scalar', var_target=True,
-                 param_start=None, method='SLSQP', cython=True):
+    def estimate(self, param_start=None, restriction='scalar', var_target=True,
+                 method='SLSQP', cython=True):
         """Estimate parameters of the BEKK model.
 
         Updates several attributes of the class.
 
         Parameters
         ----------
+        param_start : BEKKParams instance
+            Starting parameters
         restriction : str
             Can be
-                - 'full'a
+                - 'full'
                 - 'diagonal'
                 - 'scalar'
         var_target : bool
             Variance targeting flag. If True, then cmat is not returned.
-        kwargs : keyword arguments, optional
+        method : str
+            Optimization method. See scipy.optimize.minimize
+        cython : bool
+            Whether to use Cython optimizations (True) or not (False)
 
         """
         # Update default settings
@@ -257,14 +255,16 @@ class BEKK(object):
 
         Parameters
         ----------
-        restriction : str
-            Can be
-                - 'full'a
-                - 'diagonal'
-                - 'scalar'
+        param_start : BEKKParams instance
+            Starting parameters
         var_target : bool
             Variance targeting flag. If True, then cmat is not returned.
-        kwargs : keyword arguments, optional
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+        method : str
+            Optimization method. See scipy.optimize.minimize
+        cython : bool
+            Whether to use Cython optimizations (True) or not (False)
 
         """
         # Update default settings
