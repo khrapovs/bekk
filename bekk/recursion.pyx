@@ -18,9 +18,9 @@ def filter_var(double[:, :, :] hvar, double[:, :] innov,
         gsl_matrix_view A, B, C, Intercept, Innov, Innov2, Hvar, Temp
 
     nobs, nstocks = hvar.shape[0], hvar.shape[1]
-    intercept = np.zeros_like(cmat)
-    temp = np.zeros_like(cmat)
-    innov2 = np.zeros_like(cmat)
+    intercept = np.zeros_like(cmat, float)
+    temp = np.zeros_like(cmat, float)
+    innov2 = np.zeros_like(cmat, float)
 
     A = gsl_matrix_view_array(&amat[0, 0], nstocks, nstocks)
     B = gsl_matrix_view_array(&bmat[0, 0], nstocks, nstocks)

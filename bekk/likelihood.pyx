@@ -25,8 +25,8 @@ def likelihood_gauss(double[:, :, :] hvar, double[:, :] innov):
 
     nobs, nstocks = hvar.shape[0], hvar.shape[1]
 
-    temp = np.zeros(nstocks)
-    logf = np.zeros(nobs)
+    temp = np.zeros(nstocks, float)
+    logf = np.zeros(nobs, float)
     Temp = gsl_vector_view_array(&temp[0], nstocks)
 
     for t in range(nobs):
