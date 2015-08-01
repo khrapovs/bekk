@@ -22,7 +22,7 @@ class BEKKParams(object):
 
     Attributes
     ----------
-    amat, bmat, cmat : (nstocks, nstocks) arrays
+    amat, bmat, cmat
         Matrix representations of BEKK parameters
 
     Methods
@@ -31,12 +31,22 @@ class BEKKParams(object):
         Initialize from A, B, and C arrays
     from_target
         Initialize from A, B, and variance target
+    from_spatial
+        Initialize from spatial representation
+    find_abdmat_spatial
+        Initialize amat, bmat, and dmat from spatial representation
     from_theta
         Initialize from theta vector
+    from_theta_spatial
+        Initialize from theta vector
     get_theta
-        Convert parameter mratrices to 1-dimensional array
+        Convert parameter matrices to 1-dimensional array
+    get_theta_spatial
+        Convert parameter matrices to 1-dimensional array
     find_cmat
         Find C matrix given A, B, and H
+    find_vvec
+        Find v vector given a, b, d, H, and weights
     find_stationary_var
         Return unconditional variance given parameter matrices
     get_uvar
@@ -403,7 +413,7 @@ class BEKKParams(object):
         return np.concatenate(theta)
 
     def get_theta_spatial(self, var_target=True):
-        """Convert parameter mratrices to 1-dimensional array.
+        """Convert parameter matrices to 1-dimensional array.
 
         Parameters
         ----------
