@@ -12,8 +12,8 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import filter_var
-from bekk.likelihood import likelihood_gauss
+from bekk.recursion import filter_var, filter_var2
+from bekk.likelihood import likelihood_gauss, likelihood_gauss2
 
 
 class BEKKTestCase(ut.TestCase):
@@ -65,7 +65,7 @@ class BEKKTestCase(ut.TestCase):
     def test_filter_var(self):
         """Test recursions."""
 
-        nstocks = 6
+        nstocks = 2
         nobs = 2000
         # A, B, C - n x n matrices
         amat = np.eye(nstocks) * .09**.5
@@ -73,6 +73,7 @@ class BEKKTestCase(ut.TestCase):
         target = np.eye(nstocks)
         param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
         cmat = param.cmat
+
         innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
 
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
@@ -85,52 +86,43 @@ class BEKKTestCase(ut.TestCase):
 
         out2 = filter_var(hvar, innov, amat, bmat, cmat)
 
-        npt.assert_array_almost_equal(hvar_true, out1)
-        npt.assert_array_almost_equal(hvar_true, out2)
-
         hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         hvar[0] = param.get_uvar()
 
-        filter_var_python(hvar, innov, amat, bmat, cmat)
-        out1 = hvar.copy()
+        out3 = filter_var2(hvar, innov, amat, bmat, cmat)
 
-        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param.get_uvar()
+        idxl = np.tril_indices(nstocks)
+        idxu = np.triu_indices(nstocks)
 
-        filter_var(hvar, innov, amat, bmat, cmat)
-        out2 = hvar.copy()
+        out3[:, idxu[0], idxu[1]] = out3[:, idxl[0], idxl[1]]
 
         npt.assert_array_almost_equal(hvar_true, out1)
         npt.assert_array_almost_equal(hvar_true, out2)
-
-        self.assertIsInstance(out1, np.ndarray)
-        self.assertIsInstance(out2, np.ndarray)
+        npt.assert_array_almost_equal(hvar_true, out3)
 
     def test_likelihood(self):
         """Test likelihood."""
 
-        nstocks = 6
+        nstocks = 2
         nobs = 2000
         # A, B, C - n x n matrices
         amat = np.eye(nstocks) * .09**.5
         bmat = np.eye(nstocks) * .9**.5
         target = np.eye(nstocks)
         param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
-        cmat = param.cmat
 
-        innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
-
-        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param.get_uvar()
-
-        filter_var(hvar, innov, amat, bmat, cmat)
+        innov, hvar = simulate_bekk(param, nobs=nobs, distr='normal')
 
         out1 = likelihood_python(hvar, innov)
         out2 = likelihood_gauss(hvar, innov)
+        out3 = likelihood_gauss2(hvar, innov)
 
         self.assertIsInstance(out1, float)
         self.assertIsInstance(out2, float)
+        self.assertIsInstance(out3, float)
+
         self.assertAlmostEqual(out1, out2)
+        self.assertAlmostEqual(out2, out3)
 
 
 if __name__ == '__main__':
