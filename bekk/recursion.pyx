@@ -70,14 +70,15 @@ def filter_var2(double[:, :, :] hvar, double[:, :] innov,
 
     cdef:
         int inc = 1
-        int nobs = hvar.shape[0]
-        int n = hvar.shape[1]
+        int nobs = innov.shape[0]
+        int n = innov.shape[1]
         double alpha = 1.0
         double beta = 0.0
         double beta2 = 1.0
-        double[:] temp = np.empty(n, float, order='F')
-        double[:, :] temp2 = np.empty((n, n), float, order='F')
-        double[:, :] intercept = np.empty((n, n), float, order='F')
+        double scale = 1.0 / nobs
+        double[:] temp = np.empty(n, float)
+        double[:, :] temp2 = np.empty((n, n), float)
+        double[:, :] intercept = np.empty((n, n), float)
 
     # CC'
     # http://www.math.utah.edu/software/lapack/lapack-blas/dsyrk.html

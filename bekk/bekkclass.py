@@ -15,8 +15,8 @@ from scipy.optimize import minimize
 from .bekkparams import BEKKParams
 from .utils import estimate_h0, likelihood_python, filter_var_python
 try:
-    from .recursion import filter_var
-    from .likelihood import likelihood_gauss
+    from .recursion import filter_var, filter_var2
+    from .likelihood import likelihood_gauss, likelihood_gauss2
 except:
     print('Failed to import cython modules. '
           + 'Temporary hack to compile documentation.')
@@ -102,8 +102,8 @@ class BEKK(object):
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
         if self.cython:
-            filter_var(*args)
-            return likelihood_gauss(self.hvar, self.innov)
+            filter_var2(*args)
+            return likelihood_gauss2(self.hvar, self.innov)
         else:
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
@@ -133,8 +133,8 @@ class BEKK(object):
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
         if self.cython:
-            filter_var(*args)
-            return likelihood_gauss(self.hvar, self.innov)
+            filter_var2(*args)
+            return likelihood_gauss2(self.hvar, self.innov)
         else:
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
@@ -227,7 +227,7 @@ class BEKK(object):
             self.target = None
 
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = target
+        self.hvar[0] = target.copy()
 
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
@@ -244,7 +244,7 @@ class BEKK(object):
         # Store optimal parameters in the corresponding class
         self.param_final = BEKKParams.from_theta(theta=self.opt_out.x,
                                                  restriction=restriction,
-                                                 target=target,
+                                                 target=self.target,
                                                  nstocks=nstocks)
 
     def estimate_spatial(self, param_start=None, var_target=True, weights=None,
@@ -285,7 +285,7 @@ class BEKK(object):
             self.target = None
 
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = target
+        self.hvar[0] = target.copy()
 
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
