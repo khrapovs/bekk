@@ -34,7 +34,6 @@ before_install:
 # Install packages
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION cython numpy scipy matplotlib nose seaborn
-  - pip install git+git://github.com/twiecki/CythonGSL
   - pip install git+git://github.com/khrapovs/skewstudent
   - python setup.py build
 

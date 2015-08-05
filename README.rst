@@ -18,7 +18,7 @@ Documentation
 Requirements
 ------------
 
-- `CythonGSL <https://github.com/twiecki/CythonGSL>`_
+- `SkewStudent <https://github.com/khrapovs/skewstudent>`_
 
 Installation
 ------------

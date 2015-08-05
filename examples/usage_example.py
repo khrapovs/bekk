@@ -12,8 +12,8 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import filter_var, filter_var2
-from bekk.likelihood import likelihood_gauss, likelihood_gauss2
+from bekk.recursion import filter_var
+from bekk.likelihood import likelihood_gauss
 from bekk.utils import take_time, estimate_h0
 
 
@@ -116,33 +116,22 @@ def time_likelihood():
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
     hvar[0] = param_true.get_uvar().copy()
 
-    with take_time('Cython recursion'):
+    with take_time('Cython recursion 2'):
         filter_var(hvar, innov, amat, bmat, cmat)
         hvar2 = hvar.copy()
-
-    hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-    hvar[0] = param_true.get_uvar().copy()
-
-    with take_time('Cython recursion 2'):
-        filter_var2(hvar, innov, amat, bmat, cmat)
-        hvar3 = hvar.copy()
         idxl = np.tril_indices(nstocks)
         idxu = np.triu_indices(nstocks)
-        hvar3[:, idxu[0], idxu[1]] = hvar3[:, idxl[0], idxl[1]]
+        hvar2[:, idxu[0], idxu[1]] = hvar2[:, idxl[0], idxl[1]]
 
     print(np.allclose(hvar_true, hvar1))
     print(np.allclose(hvar_true, hvar2))
-    print(np.allclose(hvar_true, hvar3))
 
     with take_time('Python likelihood'):
         out1 = likelihood_python(hvar, innov)
     with take_time('Cython likelihood'):
         out2 = likelihood_gauss(hvar, innov)
-    with take_time('Cython likelihood'):
-        out3 = likelihood_gauss2(hvar, innov)
 
     print(np.allclose(out1, out2))
-    print(np.allclose(out1, out3))
 
 
 def try_standard():

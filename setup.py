@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 from setuptools import setup, Extension, find_packages
 from Cython.Distutils import build_ext
-import cython_gsl
 import numpy
 
 
 with open('README.rst') as file:
     long_description = file.read()
 
-kwargs = {'libraries': cython_gsl.get_libraries(),
-          'library_dirs': [cython_gsl.get_library_dir()],
-          'include_dirs': [cython_gsl.get_cython_include_dir()]}
+kwargs = {'libraries': [], 'include_dirs': [numpy.get_include()]}
 
 ext_modules = [Extension("bekk.recursion",
                          ["./bekk/recursion.pyx"], **kwargs),
@@ -31,7 +28,7 @@ setup(name='bekk',
       ext_modules=ext_modules,
       package_dir={'bekk': './bekk'},
       cmdclass={'build_ext': build_ext},
-      include_dirs=[cython_gsl.get_include(), numpy.get_include()],
+      include_dirs=[numpy.get_include()],
       zip_safe=False,
       classifiers=[
         'Development Status :: 4 - Beta',
