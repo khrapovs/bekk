@@ -67,18 +67,20 @@ def likelihood_gauss2(double[:, :, :] hvar, double[:, :] innov):
         int n = hvar.shape[1]
         double[:] temp = np.zeros(n, float)
         double[:] logf = np.zeros(nobs, float)
+        double[:, :] hvarcopy = np.zeros((n, n), float)
 
     for t in range(nobs):
 
         temp = innov[t].copy()
+        hvarcopy = hvar[t].copy()
 
         # H^(-1/2)
         # http://www.math.utah.edu/software/lapack/lapack-d/dpotrf.html
-        dpotrf('U', &n, &hvar[t, 0, 0], &n, &info)
+        dpotrf('U', &n, &hvarcopy[0, 0], &n, &info)
 
         # uH^(-1)
         # http://www.math.utah.edu/software/lapack/lapack-d/dpotrs.html
-        dpotrs('U', &n, &nrhs, &hvar[t, 0, 0], &n, &temp[0], &n, &info)
+        dpotrs('U', &n, &nrhs, &hvarcopy[0, 0], &n, &temp[0], &n, &info)
 
         # uH^(-1)u'
         # http://www.mathkeisan.com/usersguide/man/ddot.html
@@ -86,6 +88,6 @@ def likelihood_gauss2(double[:, :, :] hvar, double[:, :] innov):
 
         # log|H|
         for i in range(n):
-            logf[t] += log(hvar[t, i, i] ** 2)
+            logf[t] += log(hvarcopy[i, i] ** 2)
 
     return np.asarray(logf).sum()
