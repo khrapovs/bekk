@@ -12,8 +12,8 @@ import scipy.linalg as scl
 
 from bekk import BEKK, BEKKParams, simulate_bekk
 from bekk import filter_var_python, likelihood_python
-from bekk.recursion import filter_var, filter_var2
-from bekk.likelihood import likelihood_gauss, likelihood_gauss2
+from bekk.recursion import filter_var
+from bekk.likelihood import likelihood_gauss
 
 
 class BEKKTestCase(ut.TestCase):
@@ -86,19 +86,13 @@ class BEKKTestCase(ut.TestCase):
 
         out2 = filter_var(hvar, innov, amat, bmat, cmat)
 
-        hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        hvar[0] = param.get_uvar()
-
-        out3 = filter_var2(hvar, innov, amat, bmat, cmat)
-
         idxl = np.tril_indices(nstocks)
         idxu = np.triu_indices(nstocks)
 
-        out3[:, idxu[0], idxu[1]] = out3[:, idxl[0], idxl[1]]
+        out2[:, idxu[0], idxu[1]] = out2[:, idxl[0], idxl[1]]
 
         npt.assert_array_almost_equal(hvar_true, out1)
         npt.assert_array_almost_equal(hvar_true, out2)
-        npt.assert_array_almost_equal(hvar_true, out3)
 
     def test_likelihood(self):
         """Test likelihood."""
@@ -115,14 +109,11 @@ class BEKKTestCase(ut.TestCase):
 
         out1 = likelihood_python(hvar, innov)
         out2 = likelihood_gauss(hvar, innov)
-        out3 = likelihood_gauss2(hvar, innov)
 
         self.assertIsInstance(out1, float)
         self.assertIsInstance(out2, float)
-        self.assertIsInstance(out3, float)
 
         self.assertAlmostEqual(out1, out2)
-        self.assertAlmostEqual(out2, out3)
 
 
 if __name__ == '__main__':
