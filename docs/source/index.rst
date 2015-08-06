@@ -30,5 +30,6 @@ Contents
    :maxdepth: 1
 
    parameters
-   bekkclass
+   estimation
+   results
    generate_data

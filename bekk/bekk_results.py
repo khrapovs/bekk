@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK estimation results
-=======================
+BEKK results
+============
 
 """
 from __future__ import print_function, division
@@ -20,6 +20,28 @@ class BEKKResults(object):
 
     Attributes
     ----------
+    innov
+        Return innovations
+    hvar
+        Filtered variance matrices
+    var_target
+        Estimated varinace target
+    param_start
+        Starting parameters
+    param_final
+        Estimated parameters
+    model
+        Specific model to estimate
+    restriction
+        Restriction on parameters
+    use_target
+        Variance targeting flag
+    weights
+        Weight matrices for spatial model only
+    method
+        Optimization method. See scipy.optimize.minimize
+    cython
+        Whether to use Cython optimizations (True) or not (False)
 
     Methods
     -------
@@ -28,14 +50,42 @@ class BEKKResults(object):
     """
 
     def __init__(self, innov=None, hvar=None, var_target=None, model=None,
-                 use_target=None, restriction=None,
+                 use_target=None, restriction=None, method=None, cython=None,
                  param_start=None, param_final=None, time_delta=None,
                  opt_out=None):
         """Initialize the class.
 
         Parameters
         ----------
+        innov : (nobs, nstocks) array
+            Return innovations
+        hvar : (nobs, nstocks, nstocks) array
+            Filtered variance matrices
+        var_target : (nstocks, nstocks) array
+            Estimated varinace target
+        param_start : BEKKParams instance
+            Starting parameters
+        param_final : BEKKParams instance
+            Estimated parameters
+        model : str
+            Specific model to estimate. Must be
 
+                - 'standard'
+                - 'spatial'
+        restriction : str
+            Restriction on parameters. Must be
+
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+        use_target : bool
+            Variance targeting flag
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices for spatial model only
+        method : str
+            Optimization method. See scipy.optimize.minimize
+        cython : bool
+            Whether to use Cython optimizations (True) or not (False)
 
         """
         self.param_start = param_start
@@ -65,26 +115,3 @@ class BEKKResults(object):
         show += '\nFinal log-likelihood = %.2f' % (-self.opt_out.fun) + '\n'
         show += '=' * width
         return show
-
-#        like_start = self.likelihood(self.param_start.theta, kwargs)
-#        like_final = self.likelihood(self.param_final.theta, kwargs)
-#        # Form the string
-#        string = ['\n']
-#        string.append('Method = ' + self.method)
-#        string.append('Total time (minutes) = %.2f' % self.time_delta)
-#        if 'theta_true' in kwargs:
-#            string.append('True likelihood = %.2f' % like_true)
-#        string.append('Initial likelihood = %.2f' % like_start)
-#        string.append('Final likelihood = %.2f' % like_final)
-#        string.append('Likelihood difference = %.2f' %
-#                      (like_start - like_final))
-#        string.append('Success = ' + str(self.opt_out.success))
-#        string.append('Message = ' + str(self.opt_out.message))
-#        string.append('Iterations = ' + str(self.opt_out.nit))
-#        string.extend(self.param_final.log_string())
-#        string.append('\nH0 target =\n'
-#                      + np.array_str(estimate_h0(self.innov)))
-#        # Save results to the log file
-#        with open(self.log_file, 'a') as texfile:
-#            for istring in string:
-#                texfile.write(istring + '\n')

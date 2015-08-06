@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK model class
-================
+BEKK estimation
+===============
 
 """
 from __future__ import print_function, division
@@ -182,8 +182,8 @@ class BEKK(object):
         else:
             raise NotImplementedError('The model is not implemented!')
 
-        return BEKKResults(innov=self.innov, hvar=self.hvar,
-                           var_target=var_target, model=model,
+        return BEKKResults(innov=self.innov, hvar=self.hvar, cython=cython,
+                           var_target=var_target, model=model, method=method,
                            use_target=use_target, restriction=restriction,
                            param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)
