@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK generic parameter class
-============================
+Generic parameter class
+-----------------------
 
 """
 from __future__ import print_function, division
@@ -29,24 +29,8 @@ class ParamGeneric(object):
     -------
     from_abc
         Initialize from A, B, and C arrays
-    from_target
-        Initialize from A, B, and variance target
-    from_spatial
-        Initialize from spatial representation
-    find_abdmat_spatial
-        Initialize amat, bmat, and dmat from spatial representation
-    from_theta
-        Initialize from theta vector
-    from_theta_spatial
-        Initialize from theta vector
-    get_theta
-        Convert parameter matrices to 1-dimensional array
-    get_theta_spatial
-        Convert parameter matrices to 1-dimensional array
     find_cmat
         Find C matrix given A, B, and H
-    find_vvec
-        Find v vector given a, b, d, H, and weights
     find_stationary_var
         Return unconditional variance given parameter matrices
     get_uvar

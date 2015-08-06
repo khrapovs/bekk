@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK standadrd parameter class
-==============================
+Standadrd parameter class
+-------------------------
 
 """
 from __future__ import print_function, division
@@ -32,28 +32,10 @@ class ParamStandard(ParamGeneric):
         Initialize from A, B, and C arrays
     from_target
         Initialize from A, B, and variance target
-    from_spatial
-        Initialize from spatial representation
-    find_abdmat_spatial
-        Initialize amat, bmat, and dmat from spatial representation
     from_theta
-        Initialize from theta vector
-    from_theta_spatial
         Initialize from theta vector
     get_theta
         Convert parameter matrices to 1-dimensional array
-    get_theta_spatial
-        Convert parameter matrices to 1-dimensional array
-    find_cmat
-        Find C matrix given A, B, and H
-    find_vvec
-        Find v vector given a, b, d, H, and weights
-    find_stationary_var
-        Return unconditional variance given parameter matrices
-    get_uvar
-        Return unconditional variance
-    constraint
-        Constraint on parameters for stationarity
 
     """
 
@@ -89,32 +71,6 @@ class ParamStandard(ParamGeneric):
             amat, bmat = param.amat, param.bmat
         cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
-
-    @staticmethod
-    def find_cmat(amat=None, bmat=None, target=None):
-        """Find C matrix given A, B, and H.
-        Solve for C in H = CC' + AHA' + BHB' given A, B, H.
-
-        Parameters
-        ----------
-        amat, bmat, target : (nstocks, nstocks) arrays
-            Parameter matrices
-
-        Returns
-        -------
-        (nstocks, nstocks) array
-            Cholesky decomposition of CC'
-
-        """
-        ccmat = target - amat.dot(target).dot(amat.T) \
-            - bmat.dot(target).dot(bmat.T)
-
-        # Extract C parameter
-        try:
-            return sl.cholesky(ccmat, 1)
-        except sl.LinAlgError:
-            warnings.warn('Matrix C is singular!')
-            return None
 
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,

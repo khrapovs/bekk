@@ -1,4 +1,4 @@
 .. automodule:: bekk.bekkclass
 
-.. autoclass:: bekk.BEKK
-	:members: estimate, estimate_spatial
+.. autoclass:: bekk.bekkclass.BEKK
+	:members: estimate

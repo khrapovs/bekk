@@ -51,9 +51,7 @@ class BEKK(object):
     Methods
     -------
     estimate
-        Estimate parameters of standard BEKK
-    estimate_spatial
-        Estimate parameters of spatial BEKK
+        Estimate parameters of the model
 
     """
 
@@ -170,18 +168,20 @@ class BEKK(object):
         param_start : BEKKParams instance
             Starting parameters
         model : str
-            Specific model to estimate. Can be:
+            Specific model to estimate. Must be
+
                 - 'standard'
-                - 'saptial'
+                - 'spatial'
         restriction : str
-            Can be
+            Restriction on parameters. Must be
+
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
         var_target : bool
             Variance targeting flag. If True, then cmat is not returned.
         weights : (ncat, nstocks, nstocks) array
-            Weight matrices
+            Weight matrices for spatial only
         method : str
             Optimization method. See scipy.optimize.minimize
         cython : bool
