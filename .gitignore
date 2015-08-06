@@ -27,4 +27,5 @@
 *.so
 .ipynb_checkpoints
 build/
+logs/
 *.egg-info
