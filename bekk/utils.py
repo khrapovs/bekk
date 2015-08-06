@@ -134,7 +134,10 @@ def plot_data(innov, hvar):
 
 
 def format_time(t):
-    if t > 1 or t == 0:
+    if t > 60 or t == 0:
+        units = 'min'
+        t /= 60
+    if t > 1:
         units = 's'
     elif t > 1e-3:
         units = 'ms'

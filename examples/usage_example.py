@@ -153,18 +153,13 @@ def try_standard():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    bekk.estimate(param_start=param_true, var_target=var_target,
-                  method='SLSQP', restriction='full', cython=True)
+    result = bekk.estimate(param_start=param_true, var_target=var_target,
+                        method='SLSQP', restriction='full', cython=True)
+
+    print(result)
+    print('\nEstimated parameters:\n', result.param_final)
 
     print('Target:\n', estimate_h0(innov))
-
-    print('\nTrue parameters:\n', param_true)
-    print('\nEstimated parameters:\n', bekk.param_final)
-
-    print('\nTrue parameters:\n',
-          param_true.get_theta(var_target=var_target))
-    print('\nEstimated parameters:\n',
-          bekk.param_final.get_theta(var_target=var_target))
 
 
 def try_spatial():
@@ -193,30 +188,33 @@ def try_spatial():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    bekk.estimate(param_start=param, var_target=var_target, model='spatial',
-                  weights=weights, method='SLSQP', cython=True)
+    result = bekk.estimate(param_start=param, var_target=var_target,
+                        model='spatial', weights=weights, method='SLSQP',
+                        cython=True)
+
+    print(result)
 
     print('Target:\n', estimate_h0(innov))
 
     print('\nTrue parameters:\n', param)
-    print('\nEstimated parameters:\n', bekk.param_final)
+    print('\nEstimated parameters:\n', result.param_final)
 
     print('\nTrue parameters:\n',
           param.get_theta(var_target=var_target))
     print('\nEstimated parameters:\n',
-          bekk.param_final.get_theta(var_target=var_target))
+          result.param_final.get_theta(var_target=var_target))
 
     print('\nTrue a:\n', param.avecs)
-    print('\nEstimated a:\n', bekk.param_final.avecs)
+    print('\nEstimated a:\n', result.param_final.avecs)
 
     print('\nTrue b:\n', param.bvecs)
-    print('\nEstimated b:\n', bekk.param_final.bvecs)
+    print('\nEstimated b:\n', result.param_final.bvecs)
 
     print('\nTrue d:\n', param.dvecs)
-    print('\nEstimated d:\n', bekk.param_final.dvecs)
+    print('\nEstimated d:\n', result.param_final.dvecs)
 
     print('\nTrue v:\n', param.vvec)
-    print('\nEstimated v:\n', bekk.param_final.vvec)
+    print('\nEstimated v:\n', result.param_final.vvec)
 
 
 if __name__ == '__main__':
@@ -235,8 +233,8 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-    with take_time('Estimation'):
+    with take_time('\nTotal simulation and estimation'):
         try_standard()
 
-    with take_time('Estimation'):
-        try_spatial()
+#    with take_time('Total simulation and estimation'):
+#        try_spatial()

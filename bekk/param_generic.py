@@ -58,16 +58,16 @@ class ParamGeneric(object):
         """String representation.
 
         """
-        show = "A = \n" + str(self.amat)
+        show = "\nA = \n" + str(self.amat)
         show += "\nB = \n" + str(self.bmat)
         show += "\nC = \n" + str(self.cmat)
-        show += '\nMax eigenvalue = %.4f' % self.constraint()
         uvar = self.get_uvar()
         if uvar is not None:
-            show += '\nUnconditional variance=\n' + np.array_str(uvar)
+            show += '\n\nUnconditional variance =\n' + np.array_str(uvar)
         else:
             show += '\nCould not compute unconditional variance!\n'
-        return show
+        show += '\n\nMax eigenvalue = %.4f' % self.constraint()
+        return show + '\n'
 
     def __repr__(self):
         """String representation.

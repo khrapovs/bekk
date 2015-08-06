@@ -12,7 +12,7 @@ import time
 import numpy as np
 from scipy.optimize import minimize
 
-from bekk import ParamStandard, ParamSpatial
+from bekk import ParamStandard, ParamSpatial, BEKKResults
 from .utils import estimate_h0, likelihood_python, filter_var_python
 try:
     from .recursion import filter_var
@@ -25,6 +25,7 @@ __all__ = ['BEKK']
 
 
 class BEKK(object):
+
     r"""BEKK model.
 
     .. math::
@@ -123,40 +124,6 @@ class BEKK(object):
         """
         pass
 
-    def print_results(self, **kwargs):
-        """Print stuff after estimation.
-
-        Parameters
-        ----------
-        kwargs : dict, optional
-            Keyword arguments
-
-        """
-        if 'param_true' in kwargs:
-            like_true = self.likelihood(kwargs['param_true'].theta, kwargs)
-        like_start = self.likelihood(self.param_start.theta, kwargs)
-        like_final = self.likelihood(self.param_final.theta, kwargs)
-        # Form the string
-        string = ['\n']
-        string.append('Method = ' + self.method)
-        string.append('Total time (minutes) = %.2f' % self.time_delta)
-        if 'theta_true' in kwargs:
-            string.append('True likelihood = %.2f' % like_true)
-        string.append('Initial likelihood = %.2f' % like_start)
-        string.append('Final likelihood = %.2f' % like_final)
-        string.append('Likelihood difference = %.2f' %
-                      (like_start - like_final))
-        string.append('Success = ' + str(self.opt_out.success))
-        string.append('Message = ' + str(self.opt_out.message))
-        string.append('Iterations = ' + str(self.opt_out.nit))
-        string.extend(self.param_final.log_string())
-        string.append('\nH0 target =\n'
-                      + np.array_str(estimate_h0(self.innov)))
-        # Save results to the log file
-        with open(self.log_file, 'a') as texfile:
-            for istring in string:
-                texfile.write(istring + '\n')
-
     def estimate(self, param_start=None, restriction='scalar', var_target=True,
                  method='SLSQP', cython=True, model='standard', weights=None):
         """Estimate parameters of the BEKK model.
@@ -220,19 +187,22 @@ class BEKK(object):
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        self.opt_out = minimize(self.likelihood, theta_start, method=method,
+        opt_out = minimize(self.likelihood, theta_start, method=method,
                                 options=options)
         # How much time did it take in minutes?
-        self.time_delta = (time.time() - time_start) / 60
+        time_delta = time.time() - time_start
         # Store optimal parameters in the corresponding class
         if self.model == 'standard':
-            self.param_final = ParamStandard.from_theta(theta=self.opt_out.x,
+            param_final = ParamStandard.from_theta(theta=opt_out.x,
                                                      restriction=restriction,
                                                      target=self.target,
                                                      nstocks=nstocks)
         elif self.model == 'spatial':
-            self.param_final = ParamSpatial.from_theta(theta=self.opt_out.x,
+            param_final = ParamSpatial.from_theta(theta=opt_out.x,
                                                          target=self.target,
                                                          weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
+
+        return BEKKResults(param_start=param_start, param_final=param_final,
+                           time_delta=time_delta, opt_out=opt_out)
