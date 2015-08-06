@@ -193,8 +193,8 @@ def try_spatial():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    bekk.estimate_spatial(param_start=param, var_target=var_target,
-                          weights=weights, method='SLSQP', cython=True)
+    bekk.estimate(param_start=param, var_target=var_target, model='spatial',
+                  weights=weights, method='SLSQP', cython=True)
 
     print('Target:\n', estimate_h0(innov))
 
@@ -235,8 +235,8 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-#    with take_time('Estimation'):
-#        try_standard()
+    with take_time('Estimation'):
+        try_standard()
 
     with take_time('Estimation'):
         try_spatial()

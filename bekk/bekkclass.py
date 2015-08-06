@@ -92,41 +92,15 @@ class BEKK(object):
             some obscene number.
 
         """
-        param = ParamStandard.from_theta(theta=theta, target=self.target,
-                                         nstocks=self.innov.shape[1],
-                                         restriction=self.restriction)
-
-        if param.constraint() >= 1 or param.cmat is None:
-            return 1e10
-
-        args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
-
-        if self.cython:
-            filter_var(*args)
-            return likelihood_gauss(self.hvar, self.innov)
+        if self.model == 'standard':
+            param = ParamStandard.from_theta(theta=theta, target=self.target,
+                                             nstocks=self.innov.shape[1],
+                                             restriction=self.restriction)
+        elif self.model == 'spatial':
+            param = ParamSpatial.from_theta(theta=theta, target=self.target,
+                                            weights=self.weights)
         else:
-            filter_var_python(*args)
-            return likelihood_python(self.hvar, self.innov)
-
-    def likelihood_spatial(self, theta):
-        """Compute the conditional log-likelihood function for spatial case.
-
-        Parameters
-        ----------
-        theta : 1dim array
-            Dimension depends on the model restriction
-
-        Returns
-        -------
-        float
-            The value of the minus log-likelihood function.
-            If some regularity conditions are violated, then it returns
-            some obscene number.
-
-        """
-        param = ParamSpatial.from_theta(theta=theta,
-                                                target=self.target,
-                                                weights=self.weights)
+            raise NotImplementedError('The model is not implemented!')
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
@@ -186,7 +160,7 @@ class BEKK(object):
                 texfile.write(istring + '\n')
 
     def estimate(self, param_start=None, restriction='scalar', var_target=True,
-                 method='SLSQP', cython=True):
+                 method='SLSQP', cython=True, model='standard', weights=None):
         """Estimate parameters of the BEKK model.
 
         Updates several attributes of the class.
@@ -195,6 +169,10 @@ class BEKK(object):
         ----------
         param_start : BEKKParams instance
             Starting parameters
+        model : str
+            Specific model to estimate. Can be:
+                - 'standard'
+                - 'saptial'
         restriction : str
             Can be
                 - 'full'
@@ -202,6 +180,8 @@ class BEKK(object):
                 - 'scalar'
         var_target : bool
             Variance targeting flag. If True, then cmat is not returned.
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
         method : str
             Optimization method. See scipy.optimize.minimize
         cython : bool
@@ -213,6 +193,8 @@ class BEKK(object):
         target = estimate_h0(self.innov)
         self.restriction = restriction
         self.cython = cython
+        self.model = model
+        self.weights = weights
 
         if param_start is not None:
             theta_start = param_start.get_theta(restriction=restriction,
@@ -243,70 +225,14 @@ class BEKK(object):
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = ParamStandard.from_theta(theta=self.opt_out.x,
-                                                 restriction=restriction,
-                                                 target=self.target,
-                                                 nstocks=nstocks)
-
-    def estimate_spatial(self, param_start=None, var_target=True, weights=None,
-                         method='SLSQP', cython=True):
-        """Estimate parameters of the BEKK model.
-
-        Updates several attributes of the class.
-
-        Parameters
-        ----------
-        param_start : BEKKParams instance
-            Starting parameters
-        var_target : bool
-            Variance targeting flag. If True, then cmat is not returned.
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices
-        method : str
-            Optimization method. See scipy.optimize.minimize
-        cython : bool
-            Whether to use Cython optimizations (True) or not (False)
-
-        """
-        # Update default settings
-        nobs, nstocks = self.innov.shape
-        target = estimate_h0(self.innov)
-        self.cython = cython
-        self.weights = weights
-
-        if param_start is not None:
-            theta_start = param_start.get_theta(var_target=var_target)
-        else:
-            msg = 'Automatic initial parameter is not yet implemented!'
-            raise NotImplementedError(msg)
-
-        if var_target:
-            self.target = target
-        else:
-            self.target = None
-
-        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = target.copy()
-
-        # Optimization options
-        options = {'disp': False, 'maxiter': int(1e6)}
-        # Check for existence of initial guess among arguments.
-        # Otherwise, initialize.
-
-        # Start timer for the whole optimization
-        time_start = time.time()
-        # Run optimization
-        self.opt_out = minimize(self.likelihood_spatial, theta_start,
-                                method=method, options=options)
-        # How much time did it take in minutes?
-        self.time_delta = (time.time() - time_start) / 60
-        # Store optimal parameters in the corresponding class
-        self.param_final = ParamSpatial.from_theta(theta=self.opt_out.x,
+        if self.model == 'standard':
+            self.param_final = ParamStandard.from_theta(theta=self.opt_out.x,
+                                                     restriction=restriction,
+                                                     target=self.target,
+                                                     nstocks=nstocks)
+        elif self.model == 'spatial':
+            self.param_final = ParamSpatial.from_theta(theta=self.opt_out.x,
                                                          target=self.target,
                                                          weights=weights)
-
-
-if __name__ == '__main__':
-    pass
-    #from usage_example import test_bekk
-    #test_bekk(nstocks=1, nobs=500, var_target=False)
+        else:
+            raise NotImplementedError('The model is not implemented!')

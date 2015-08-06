@@ -241,7 +241,7 @@ class ParamSpatial(ParamGeneric):
         return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                 vvec=vvec, weights=weights)
 
-    def get_theta(self, var_target=True):
+    def get_theta(self, restriction='scalar', var_target=True):
         """Convert parameter matrices to 1-dimensional array.
 
         Parameters
