@@ -124,7 +124,7 @@ class BEKK(object):
             some obscene number.
 
         """
-        param = ParamSpatial.from_theta_spatial(theta=theta,
+        param = ParamSpatial.from_theta(theta=theta,
                                                 target=self.target,
                                                 weights=self.weights)
 
@@ -218,7 +218,7 @@ class BEKK(object):
             theta_start = param_start.get_theta(restriction=restriction,
                                                 var_target=var_target)
         else:
-            param_start = BEKKParams.from_target(target=target)
+            param_start = ParamStandard.from_target(target=target)
             theta_start = param_start.get_theta(restriction=restriction,
                                                 var_target=var_target)
 
@@ -243,7 +243,7 @@ class BEKK(object):
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = BEKKParams.from_theta(theta=self.opt_out.x,
+        self.param_final = ParamStandard.from_theta(theta=self.opt_out.x,
                                                  restriction=restriction,
                                                  target=self.target,
                                                  nstocks=nstocks)
@@ -275,7 +275,7 @@ class BEKK(object):
         self.weights = weights
 
         if param_start is not None:
-            theta_start = param_start.get_theta_spatial(var_target=var_target)
+            theta_start = param_start.get_theta(var_target=var_target)
         else:
             msg = 'Automatic initial parameter is not yet implemented!'
             raise NotImplementedError(msg)
@@ -301,7 +301,7 @@ class BEKK(object):
         # How much time did it take in minutes?
         self.time_delta = (time.time() - time_start) / 60
         # Store optimal parameters in the corresponding class
-        self.param_final = BEKKParams.from_theta_spatial(theta=self.opt_out.x,
+        self.param_final = ParamSpatial.from_theta(theta=self.opt_out.x,
                                                          target=self.target,
                                                          weights=weights)
 

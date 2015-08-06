@@ -10,7 +10,8 @@ import time
 import numpy as np
 import scipy.linalg as scl
 
-from bekk import BEKK, BEKKParams, simulate_bekk, regenerate_data, plot_data
+from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
+                  regenerate_data, plot_data)
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
@@ -51,7 +52,7 @@ def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     B = np.eye(nstocks) * .9**.5
     target = np.eye(nstocks)
 
-    param_true = BEKKParams.from_target(amat=A, bmat=B, target=target)
+    param_true = ParamStandard.from_target(amat=A, bmat=B, target=target)
     theta_true = param_true.get_theta(var_target=var_target,
                                       restriction=restriction)
     print('True parameter:\n', theta_true)
@@ -101,7 +102,7 @@ def time_likelihood():
     amat = np.eye(nstocks) * .09**.5
     bmat = np.eye(nstocks) * .9**.5
     target = np.eye(nstocks)
-    param_true = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+    param_true = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
     cmat = param_true.cmat
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
@@ -116,7 +117,7 @@ def time_likelihood():
     hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
     hvar[0] = param_true.get_uvar().copy()
 
-    with take_time('Cython recursion 2'):
+    with take_time('Cython recursion'):
         filter_var(hvar, innov, amat, bmat, cmat)
         hvar2 = hvar.copy()
         idxl = np.tril_indices(nstocks)
@@ -145,7 +146,7 @@ def try_standard():
     amat = np.eye(nstocks) * .09**.5
     bmat = np.eye(nstocks) * .9**.5
     target = np.eye(nstocks)
-    param_true = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+    param_true = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
@@ -184,7 +185,7 @@ def try_spatial():
     dvecs = np.ones((ncat, nstocks)) * gamma**.5
     vvec = np.ones(nstocks)
 
-    param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+    param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                     vvec=vvec, weights=weights)
 
     innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
@@ -201,9 +202,9 @@ def try_spatial():
     print('\nEstimated parameters:\n', bekk.param_final)
 
     print('\nTrue parameters:\n',
-          param.get_theta_spatial(var_target=var_target))
+          param.get_theta(var_target=var_target))
     print('\nEstimated parameters:\n',
-          bekk.param_final.get_theta_spatial(var_target=var_target))
+          bekk.param_final.get_theta(var_target=var_target))
 
     print('\nTrue a:\n', param.avecs)
     print('\nEstimated a:\n', bekk.param_final.avecs)
@@ -234,8 +235,8 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-    with take_time('Estimation'):
-        try_standard()
-
 #    with take_time('Estimation'):
-#        try_spatial()
+#        try_standard()
+
+    with take_time('Estimation'):
+        try_spatial()
