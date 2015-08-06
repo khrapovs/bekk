@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK parameter class
-====================
+BEKK saptial parameter class
+============================
 
 """
 from __future__ import print_function, division
 
-import warnings
-
 import numpy as np
 import scipy.linalg as sl
-import scipy.optimize as sco
 
-__all__ = ['BEKKParams']
+from .param_generic import ParamGeneric
+
+__all__ = ['ParamSpatial']
 
 
-class BEKKParams(object):
+class ParamSpatial(ParamGeneric):
 
     """Class to hold parameters of the BEKK model.
 
@@ -65,53 +64,7 @@ class BEKKParams(object):
             Number os stocks in the model
 
         """
-        self.amat = np.eye(nstocks) * .1**.5
-        self.bmat = np.eye(nstocks) * .8**.5
-        self.cmat = self.find_cmat(amat=self.amat, bmat=self.bmat,
-                                   target=np.eye(nstocks))
-
-    def __str__(self):
-        """String representation.
-
-        """
-        show = "A = \n" + str(self.amat)
-        show += "\nB = \n" + str(self.bmat)
-        show += "\nC = \n" + str(self.cmat)
-        show += '\nMax eigenvalue = %.4f' % self.constraint()
-        uvar = self.get_uvar()
-        if uvar is not None:
-            show += '\nUnconditional variance=\n' + np.array_str(uvar)
-        else:
-            show += '\nCould not compute unconditional variance!\n'
-        return show
-
-    def __repr__(self):
-        """String representation.
-
-        """
-        return self.__str__()
-
-    @classmethod
-    def from_abc(cls, amat=None, bmat=None, cmat=None):
-        """Initialize from A, B, and C arrays.
-
-        Parameters
-        ----------
-        amat, bmat, cmat : (nstocks, nstocks) arrays
-            Parameter matrices
-
-        Returns
-        -------
-        param : BEKKParams instance
-            BEKK parameters
-
-        """
-        nstocks = amat.shape[0]
-        param = cls(nstocks)
-        param.amat = amat
-        param.bmat = bmat
-        param.cmat = cmat
-        return param
+        super(ParamSpatial, self).__init__(nstocks)
 
     @classmethod
     def from_target(cls, amat=None, bmat=None, target=None):
@@ -204,32 +157,6 @@ class BEKKParams(object):
         return amat, bmat, dmat
 
     @staticmethod
-    def find_cmat(amat=None, bmat=None, target=None):
-        """Find C matrix given A, B, and H.
-        Solve for C in H = CC' + AHA' + BHB' given A, B, H.
-
-        Parameters
-        ----------
-        amat, bmat, target : (nstocks, nstocks) arrays
-            Parameter matrices
-
-        Returns
-        -------
-        (nstocks, nstocks) array
-            Cholesky decomposition of CC'
-
-        """
-        ccmat = target - amat.dot(target).dot(amat.T) \
-            - bmat.dot(target).dot(bmat.T)
-
-        # Extract C parameter
-        try:
-            return sl.cholesky(ccmat, 1)
-        except sl.LinAlgError:
-            warnings.warn('Matrix C is singular!')
-            return None
-
-    @staticmethod
     def find_vvec(avecs=None, bvecs=None, dvecs=None,
                   weights=None, target=None):
         r"""Find v vector given a, b, d, H, and weights.
@@ -260,72 +187,15 @@ class BEKKParams(object):
             Vector v
 
         """
-        mats = BEKKParams.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
-                                              dvecs=dvecs, weights=weights)
+        mats = ParamSpatial.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
+                                                dvecs=dvecs, weights=weights)
         amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
             - bmat.dot(target).dot(bmat.T)
         return np.abs(np.diag(dmat.dot(ccmat).dot(dmat.T)))**.5
 
     @classmethod
-    def from_theta(cls, theta=None, nstocks=None,
-                   restriction='scalar', target=None):
-        """Initialize from theta vector.
-
-        Parameters
-        ----------
-        theta : 1d array
-            Length depends on the model restrictions and variance targeting
-
-            If target is not None:
-                - 'full' - 2*n**2
-                - 'diagonal' - 2*n
-                - 'scalar' - 2
-
-            If target is None:
-                - +(n-1)*n/2 for parameter C
-        nstocks : int
-            Number of stocks in the model
-        restriction : str
-            Can be
-                - 'full'
-                - 'diagonal'
-                - 'scalar'
-        target : (nstocks, nstocks) array
-            Variance target matrix
-
-        Returns
-        -------
-        param : BEKKParams instance
-            BEKK parameters
-
-        """
-        if restriction == 'full':
-            chunk = nstocks**2
-            sqsize = [nstocks, nstocks]
-            amat = theta[:chunk].reshape(sqsize)
-            bmat = theta[chunk:2*chunk].reshape(sqsize)
-        elif restriction == 'diagonal':
-            chunk = nstocks
-            amat = np.diag(theta[:chunk])
-            bmat = np.diag(theta[chunk:2*chunk])
-        elif restriction == 'scalar':
-            chunk = 1
-            amat = np.eye(nstocks) * theta[:chunk]
-            bmat = np.eye(nstocks) * theta[chunk:2*chunk]
-        else:
-            raise ValueError('This restriction is not supported!')
-
-        if target is not None:
-            cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
-        else:
-            cmat = np.zeros((nstocks, nstocks))
-            cmat[np.tril_indices(nstocks)] = theta[2*chunk:]
-
-        return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
-
-    @classmethod
-    def from_theta_spatial(cls, theta=None, weights=None, target=None):
+    def from_theta(cls, theta=None, weights=None, target=None):
         """Initialize from theta vector.
 
         Parameters
@@ -371,48 +241,7 @@ class BEKKParams(object):
         return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                 vvec=vvec, weights=weights)
 
-    def get_theta(self, restriction='scalar', var_target=True):
-        """Convert parameter mratrices to 1-dimensional array.
-
-        Parameters
-        ----------
-        restriction : str
-            Can be
-                - 'full'
-                - 'diagonal'
-                - 'scalar'
-        var_target : bool
-            Whether to estimate only A and B (True) or C as well (False)
-
-        Returns
-        -------
-        theta : 1d array
-            Length depends on the model restrictions and variance targeting
-
-            If var_target:
-                - 'full' - 2*n**2
-                - 'diagonal' - 2*n
-                - 'scalar' - 2
-
-            If not var_target:
-                - +(n-1)*n/2 for parameter cmat
-
-        """
-        if restriction == 'full':
-            theta = [self.amat.flatten(), self.bmat.flatten()]
-        elif restriction == 'diagonal':
-            theta = [np.diag(self.amat), np.diag(self.bmat)]
-        elif restriction == 'scalar':
-            theta = [[self.amat[0, 0]], [self.bmat[0, 0]]]
-        else:
-            raise ValueError('This restriction is not supported!')
-
-        if not var_target:
-            theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
-
-        return np.concatenate(theta)
-
-    def get_theta_spatial(self, var_target=True):
+    def get_theta(self, var_target=True):
         """Convert parameter matrices to 1-dimensional array.
 
         Parameters
@@ -439,59 +268,3 @@ class BEKKParams(object):
             theta.append(self.vvec)
 
         return np.concatenate(theta)
-
-    @staticmethod
-    def find_stationary_var(amat=None, bmat=None, cmat=None):
-        """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
-
-        Parameters
-        ----------
-        amat, bmat, cmat : (nstocks, nstocks) arrays
-            Parameter matrices
-
-        Returns
-        -------
-        (nstocks, nstocks) array
-            Unconditional variance matrix
-
-        """
-        hvar = np.eye(amat.shape[0])
-        ccmat = cmat.dot(cmat.T)
-        fun = lambda x: 2 * x - ccmat - amat.dot(x).dot(amat.T) \
-            - bmat.dot(x).dot(bmat.T)
-        try:
-            with np.errstate(divide='ignore', invalid='ignore'):
-                return sco.fixed_point(fun, hvar)
-        except RuntimeError:
-            warnings.warn('Could not find stationary varaince!')
-            return None
-
-    def get_uvar(self):
-        """Unconditional variance matrix regardless of the model.
-
-        Returns
-        -------
-        (nstocks, nstocks) array
-            Unconditional variance amtrix
-
-        """
-        return self.find_stationary_var(amat=self.amat, bmat=self.bmat,
-                                        cmat=self.cmat)
-
-    def constraint(self):
-        """Compute the largest eigenvalue of BEKK model.
-
-        Returns
-        -------
-        float
-            Largest eigenvalue
-
-        """
-        kron_a = np.kron(self.amat, self.amat)
-        kron_b = np.kron(self.bmat, self.bmat)
-        return np.abs(sl.eigvals(kron_a + kron_b)).max()
-
-
-if __name__ == '__main__':
-
-    pass

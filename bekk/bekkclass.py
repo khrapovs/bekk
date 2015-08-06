@@ -12,7 +12,7 @@ import time
 import numpy as np
 from scipy.optimize import minimize
 
-from .bekkparams import BEKKParams
+from bekk import ParamStandard, ParamSpatial
 from .utils import estimate_h0, likelihood_python, filter_var_python
 try:
     from .recursion import filter_var
@@ -92,9 +92,9 @@ class BEKK(object):
             some obscene number.
 
         """
-        param = BEKKParams.from_theta(theta=theta, target=self.target,
-                                      nstocks=self.innov.shape[1],
-                                      restriction=self.restriction)
+        param = ParamStandard.from_theta(theta=theta, target=self.target,
+                                         nstocks=self.innov.shape[1],
+                                         restriction=self.restriction)
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
@@ -124,8 +124,9 @@ class BEKK(object):
             some obscene number.
 
         """
-        param = BEKKParams.from_theta_spatial(theta=theta, target=self.target,
-                                              weights=self.weights)
+        param = ParamSpatial.from_theta_spatial(theta=theta,
+                                                target=self.target,
+                                                weights=self.weights)
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10

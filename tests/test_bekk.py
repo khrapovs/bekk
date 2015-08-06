@@ -10,7 +10,7 @@ import numpy as np
 import numpy.testing as npt
 import scipy.linalg as scl
 
-from bekk import BEKK, BEKKParams, simulate_bekk
+from bekk import BEKK, ParamStandard, ParamSpatial, simulate_bekk
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
@@ -30,7 +30,7 @@ class BEKKTestCase(ut.TestCase):
         bmat = np.eye(nstocks) * .9**.5
         target = np.eye(nstocks)
 
-        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+        param = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
 
         for distr in ['normal', 'student', 'skewt']:
             innov, hvar = simulate_bekk(param, nobs=nobs, distr=distr)
@@ -53,7 +53,7 @@ class BEKKTestCase(ut.TestCase):
         dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = BEKKParams.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                         vvec=vvec, weights=weights)
 
         for distr in ['normal', 'student', 'skewt']:
@@ -71,7 +71,7 @@ class BEKKTestCase(ut.TestCase):
         amat = np.eye(nstocks) * .09**.5
         bmat = np.eye(nstocks) * .9**.5
         target = np.eye(nstocks)
-        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+        param = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
         cmat = param.cmat
 
         innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
@@ -103,7 +103,7 @@ class BEKKTestCase(ut.TestCase):
         amat = np.eye(nstocks) * .09**.5
         bmat = np.eye(nstocks) * .9**.5
         target = np.eye(nstocks)
-        param = BEKKParams.from_target(amat=amat, bmat=bmat, target=target)
+        param = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
 
         innov, hvar = simulate_bekk(param, nobs=nobs, distr='normal')
 
