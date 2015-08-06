@@ -80,19 +80,24 @@ class ParamStandard(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If target is not None:
+
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
 
             If target is None:
+
                 - +(n-1)*n/2 for parameter C
+
         nstocks : int
             Number of stocks in the model
         restriction : str
             Can be
+
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
+
         target : (nstocks, nstocks) array
             Variance target matrix
 
@@ -133,9 +138,11 @@ class ParamStandard(ParamGeneric):
         ----------
         restriction : str
             Can be
+
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
+
         use_target : bool
             Whether to estimate only A and B (True) or C as well (False)
 
@@ -145,6 +152,7 @@ class ParamStandard(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If use_target:
+
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2

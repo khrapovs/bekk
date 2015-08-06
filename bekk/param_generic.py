@@ -65,7 +65,7 @@ class ParamGeneric(object):
         if uvar is not None:
             show += '\n\nUnconditional variance =\n' + np.array_str(uvar)
         else:
-            show += '\nCould not compute unconditional variance!\n'
+            show += '\nCould not compute unconditional variance!'
         show += '\n\nMax eigenvalue = %.4f' % self.constraint()
         return show + '\n'
 

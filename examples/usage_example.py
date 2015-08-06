@@ -157,9 +157,6 @@ def try_standard():
                         method='SLSQP', restriction='full', cython=True)
 
     print(result)
-    print('\nEstimated parameters:\n', result.param_final)
-
-    print('Target:\n', estimate_uvar(innov))
 
 
 def try_spatial():

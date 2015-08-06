@@ -66,16 +66,10 @@ class BEKK(object):
 
         """
         self.innov = innov
-        self.log_file = None
-        self.param_start = None
-        self.param_final = None
-        self.method = 'SLSQP'
-        self.time_delta = None
-        self.opt_out = None
-        self.cython = True
         self.hvar = None
 
-    def likelihood(self, theta):
+    def likelihood(self, theta, model=None, target=None, restriction=None,
+                   weights=None, cython=True):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -91,13 +85,13 @@ class BEKK(object):
             some obscene number.
 
         """
-        if self.model == 'standard':
-            param = ParamStandard.from_theta(theta=theta, target=self.target,
+        if model == 'standard':
+            param = ParamStandard.from_theta(theta=theta, target=target,
                                              nstocks=self.innov.shape[1],
-                                             restriction=self.restriction)
-        elif self.model == 'spatial':
-            param = ParamSpatial.from_theta(theta=theta, target=self.target,
-                                            weights=self.weights)
+                                             restriction=restriction)
+        elif model == 'spatial':
+            param = ParamSpatial.from_theta(theta=theta, target=target,
+                                            weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
 
@@ -106,7 +100,7 @@ class BEKK(object):
 
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
-        if self.cython:
+        if cython:
             filter_var(*args)
             return likelihood_gauss(self.hvar, self.innov)
         else:
@@ -146,53 +140,50 @@ class BEKK(object):
         """
         # Update default settings
         nobs, nstocks = self.innov.shape
-        uuse_target = estimate_uvar(self.innov)
-        self.restriction = restriction
-        self.cython = cython
-        self.model = model
-        self.weights = weights
+        var_target = estimate_uvar(self.innov)
+        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
+        self.hvar[0] = var_target.copy()
 
         if param_start is not None:
             theta_start = param_start.get_theta(restriction=restriction,
                                                 use_target=use_target)
         else:
-            param_start = ParamStandard.from_target(target=uuse_target)
+            param_start = ParamStandard.from_target(target=var_target)
             theta_start = param_start.get_theta(restriction=restriction,
                                                 use_target=use_target)
-
         if use_target:
-            self.target = uuse_target
+            target = var_target
         else:
-            self.target = None
-
-        self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = uuse_target.copy()
+            target = None
 
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-
+        args = (model, target, restriction, weights, cython)
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        opt_out = minimize(self.likelihood, theta_start, method=method,
-                           options=options)
+        opt_out = minimize(self.likelihood, theta_start, args=args,
+                           method=method, options=options)
         # How much time did it take in minutes?
         time_delta = time.time() - time_start
 
         # Store optimal parameters in the corresponding class
-        if self.model == 'standard':
+        if model == 'standard':
             param_final = ParamStandard.from_theta(theta=opt_out.x,
                                                    restriction=restriction,
-                                                   target=self.target,
+                                                   target=target,
                                                    nstocks=nstocks)
-        elif self.model == 'spatial':
+        elif model == 'spatial':
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
-                                                  target=self.target,
+                                                  target=target,
                                                   weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
 
-        return BEKKResults(param_start=param_start, param_final=param_final,
+        return BEKKResults(innov=self.innov, hvar=self.hvar,
+                           var_target=var_target, model=model,
+                           use_target=use_target, restriction=restriction,
+                           param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)

@@ -27,7 +27,9 @@ class BEKKResults(object):
 
     """
 
-    def __init__(self, param_start=None, param_final=None, time_delta=None,
+    def __init__(self, innov=None, hvar=None, var_target=None, model=None,
+                 use_target=None, restriction=None,
+                 param_start=None, param_final=None, time_delta=None,
                  opt_out=None):
         """Initialize the class.
 
@@ -40,6 +42,10 @@ class BEKKResults(object):
         self.param_final = param_final
         self.time_delta = time_delta
         self.opt_out = opt_out
+        self.var_target = var_target
+        self.model = model
+        self.restriction = restriction
+        self.use_target = use_target
 
     def __str__(self):
         """String representation.
@@ -47,9 +53,16 @@ class BEKKResults(object):
         """
         width = 60
         show = '=' * width
+        show += '\nModel: ' + self.model
+        show += '\nRestriction: ' + self.restriction
+        show += '\nUse target: ' + str(self.use_target)
+        show += '\nIterations = ' + str(self.opt_out.nit)
         show += '\nOptimization time = %s' % format_time(self.time_delta)
-        show += '\nFinal parameters:'
+        show += '\n\nFinal parameters:'
         show += str(self.param_final)
+        show += '\nVariance target:\n'
+        show += str(self.var_target) + '\n'
+        show += '\nFinal log-likelihood = %.2f' % (-self.opt_out.fun) + '\n'
         show += '=' * width
         return show
 
