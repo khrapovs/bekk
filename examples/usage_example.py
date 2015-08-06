@@ -153,7 +153,7 @@ def try_standard():
 
     bekk = BEKK(innov)
     bekk.estimate(param_start=param_true, var_target=var_target,
-                  method='SLSQP', cython=True)
+                  method='SLSQP', restriction='full', cython=True)
 
     print('Target:\n', estimate_h0(innov))
 
@@ -234,8 +234,8 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-#    with take_time('Estimation'):
-#        try_standard()
-
     with take_time('Estimation'):
-        try_spatial()
+        try_standard()
+
+#    with take_time('Estimation'):
+#        try_spatial()
