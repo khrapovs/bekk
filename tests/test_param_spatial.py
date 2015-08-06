@@ -83,9 +83,9 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         nparams = 3 * nstocks * (1 + ncat)
 
         self.assertEqual(nparams,
-                         param.get_theta(var_target=False).size)
+                         param.get_theta(use_target=False).size)
         npt.assert_array_equal(theta,
-                               param.get_theta(var_target=False))
+                               param.get_theta(use_target=False))
 
     def test_find_vvec(self):
         """Test finding v vector given variance target."""

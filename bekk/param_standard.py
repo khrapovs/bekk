@@ -7,10 +7,7 @@ Standadrd parameter class
 """
 from __future__ import print_function, division
 
-import warnings
-
 import numpy as np
-import scipy.linalg as sl
 
 from .param_generic import ParamGeneric
 
@@ -129,7 +126,7 @@ class ParamStandard(ParamGeneric):
 
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
-    def get_theta(self, restriction='scalar', var_target=True):
+    def get_theta(self, restriction='scalar', use_target=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters
@@ -139,7 +136,7 @@ class ParamStandard(ParamGeneric):
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
-        var_target : bool
+        use_target : bool
             Whether to estimate only A and B (True) or C as well (False)
 
         Returns
@@ -147,12 +144,12 @@ class ParamStandard(ParamGeneric):
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If var_target:
+            If use_target:
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
 
-            If not var_target:
+            If not use_target:
                 - +(n-1)*n/2 for parameter cmat
 
         """
@@ -165,7 +162,7 @@ class ParamStandard(ParamGeneric):
         else:
             raise ValueError('This restriction is not supported!')
 
-        if not var_target:
+        if not use_target:
             theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
 
         return np.concatenate(theta)

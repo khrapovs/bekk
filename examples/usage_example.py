@@ -15,10 +15,10 @@ from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
-from bekk.utils import take_time, estimate_h0
+from bekk.utils import take_time, estimate_uvar
 
 
-def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
+def try_bekk(nstocks=2, nobs=500, restriction='scalar', use_target=True,
               simulate=True, log_file=None):
     """Simulate and estimate BEKK model.
 
@@ -33,7 +33,7 @@ def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
             - 'full'
             - 'diagonal'
             - 'scalar'
-    var_target : bool
+    use_target : bool
         Variance targeting flag.
         If True, then unconditonal variance is estimated on the first step.
         The rest of parameters are estimated on the second step.
@@ -53,7 +53,7 @@ def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
     target = np.eye(nstocks)
 
     param_true = ParamStandard.from_target(amat=A, bmat=B, target=target)
-    theta_true = param_true.get_theta(var_target=var_target,
+    theta_true = param_true.get_theta(use_target=use_target,
                                       restriction=restriction)
     print('True parameter:\n', theta_true)
     # Data file
@@ -78,11 +78,11 @@ def try_bekk(nstocks=2, nobs=500, restriction='scalar', var_target=True,
         # Initialize the object
         bekk = BEKK(innov)
         bekk.estimate(param_start=param_true, restriction=restriction,
-                      var_target=var_target, method='SLSQP', cython=cython)
+                      use_target=use_target, method='SLSQP', cython=cython)
 
         print('Cython: ', cython)
         theta_final = bekk.param_final.get_theta(restriction=restriction,
-                                                 var_target=var_target)
+                                                 use_target=use_target)
         print(theta_final)
         params.append(theta_final)
         print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
@@ -139,7 +139,7 @@ def try_standard():
     """Try simulating and estimating spatial BEKK.
 
     """
-    var_target = False
+    use_target = False
     nstocks = 2
     nobs = 2000
     # A, B, C - n x n matrices
@@ -153,20 +153,20 @@ def try_standard():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    result = bekk.estimate(param_start=param_true, var_target=var_target,
+    result = bekk.estimate(param_start=param_true, use_target=use_target,
                         method='SLSQP', restriction='full', cython=True)
 
     print(result)
     print('\nEstimated parameters:\n', result.param_final)
 
-    print('Target:\n', estimate_h0(innov))
+    print('Target:\n', estimate_uvar(innov))
 
 
 def try_spatial():
     """Try simulating and estimating spatial BEKK.
 
     """
-    var_target = False
+    use_target = False
     nstocks = 3
     nobs = 2000
     weights = np.array([[[0, .1, 0], [.1, 0, 0], [0, 0, 0]]])
@@ -188,21 +188,21 @@ def try_spatial():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    result = bekk.estimate(param_start=param, var_target=var_target,
+    result = bekk.estimate(param_start=param, use_target=use_target,
                         model='spatial', weights=weights, method='SLSQP',
                         cython=True)
 
     print(result)
 
-    print('Target:\n', estimate_h0(innov))
+    print('Target:\n', estimate_uvar(innov))
 
     print('\nTrue parameters:\n', param)
     print('\nEstimated parameters:\n', result.param_final)
 
     print('\nTrue parameters:\n',
-          param.get_theta(var_target=var_target))
+          param.get_theta(use_target=use_target))
     print('\nEstimated parameters:\n',
-          result.param_final.get_theta(var_target=var_target))
+          result.param_final.get_theta(use_target=use_target))
 
     print('\nTrue a:\n', param.avecs)
     print('\nEstimated a:\n', result.param_final.avecs)
@@ -221,14 +221,14 @@ if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
     nstocks = 2
-    var_target = True
+    use_target = True
     nobs = 2000
     restriction = 'full'
 
-#    bekk = try_bekk(nstocks=nstocks, simulate=True, var_target=var_target,
+#    bekk = try_bekk(nstocks=nstocks, simulate=True, use_target=use_target,
 #                     restriction=restriction, nobs=nobs)
 
-#    try_bekk(nstocks=nstocks, simulate=False, var_target=var_target,
+#    try_bekk(nstocks=nstocks, simulate=False, use_target=use_target,
 #              nobs=nobs, log_file='log_real.txt')
 
 #    time_likelihood()

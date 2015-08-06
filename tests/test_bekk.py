@@ -8,7 +8,6 @@ from __future__ import print_function, division
 import unittest as ut
 import numpy as np
 import numpy.testing as npt
-import scipy.linalg as scl
 
 from bekk import BEKK, ParamStandard, ParamSpatial, simulate_bekk
 from bekk import filter_var_python, likelihood_python

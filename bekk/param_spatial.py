@@ -185,10 +185,10 @@ class ParamSpatial(ParamGeneric):
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If var_target:
+            If use_target:
                 - 3*n*(m+1)-n
 
-            If not var_target:
+            If not use_target:
                 - +n
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
@@ -223,12 +223,12 @@ class ParamSpatial(ParamGeneric):
         return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                 vvec=vvec, weights=weights)
 
-    def get_theta(self, restriction='scalar', var_target=True):
+    def get_theta(self, restriction='scalar', use_target=True):
         """Convert parameter matrices to 1-dimensional array.
 
         Parameters
         ----------
-        var_target : bool
+        use_target : bool
             Whether to estimate only a, b, and d (True) or v as well (False)
 
         Returns
@@ -236,17 +236,17 @@ class ParamSpatial(ParamGeneric):
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If var_target:
+            If use_target:
                 - 3*n*(m+1) - n
 
-            If not var_target:
+            If not use_target:
                 - +n
 
         """
         theta = [self.avecs.flatten(), self.bvecs.flatten(),
                  self.dvecs.flatten()]
 
-        if not var_target:
+        if not use_target:
             theta.append(self.vvec)
 
         return np.concatenate(theta)

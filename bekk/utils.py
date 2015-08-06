@@ -13,7 +13,7 @@ import seaborn as sns
 import numpy as np
 import scipy.linalg as scl
 
-__all__ = ['_bekk_recursion', 'estimate_h0', 'plot_data',
+__all__ = ['_bekk_recursion', 'estimate_uvar', 'plot_data',
            'filter_var_python',  'likelihood_python']
 
 
@@ -92,7 +92,7 @@ def likelihood_python(hvar, innov):
     return fvalue
 
 
-def estimate_h0(innov):
+def estimate_uvar(innov):
     """Estimate unconditional realized covariance matrix.
 
     Parameters

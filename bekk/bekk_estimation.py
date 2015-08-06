@@ -13,7 +13,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from bekk import ParamStandard, ParamSpatial, BEKKResults
-from .utils import estimate_h0, likelihood_python, filter_var_python
+from .utils import estimate_uvar, likelihood_python, filter_var_python
 try:
     from .recursion import filter_var
     from .likelihood import likelihood_gauss
@@ -113,18 +113,7 @@ class BEKK(object):
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
 
-    def callback(self, theta):
-        """Empty callback function.
-
-        Parameters
-        ----------
-        theta : 1dim array
-            Parameter vector
-
-        """
-        pass
-
-    def estimate(self, param_start=None, restriction='scalar', var_target=True,
+    def estimate(self, param_start=None, restriction='scalar', use_target=True,
                  method='SLSQP', cython=True, model='standard', weights=None):
         """Estimate parameters of the BEKK model.
 
@@ -145,7 +134,7 @@ class BEKK(object):
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
-        var_target : bool
+        use_target : bool
             Variance targeting flag. If True, then cmat is not returned.
         weights : (ncat, nstocks, nstocks) array
             Weight matrices for spatial only
@@ -157,7 +146,7 @@ class BEKK(object):
         """
         # Update default settings
         nobs, nstocks = self.innov.shape
-        target = estimate_h0(self.innov)
+        uuse_target = estimate_uvar(self.innov)
         self.restriction = restriction
         self.cython = cython
         self.model = model
@@ -165,19 +154,19 @@ class BEKK(object):
 
         if param_start is not None:
             theta_start = param_start.get_theta(restriction=restriction,
-                                                var_target=var_target)
+                                                use_target=use_target)
         else:
-            param_start = ParamStandard.from_target(target=target)
+            param_start = ParamStandard.from_target(target=uuse_target)
             theta_start = param_start.get_theta(restriction=restriction,
-                                                var_target=var_target)
+                                                use_target=use_target)
 
-        if var_target:
-            self.target = target
+        if use_target:
+            self.target = uuse_target
         else:
             self.target = None
 
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
-        self.hvar[0] = target.copy()
+        self.hvar[0] = uuse_target.copy()
 
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
@@ -188,19 +177,20 @@ class BEKK(object):
         time_start = time.time()
         # Run optimization
         opt_out = minimize(self.likelihood, theta_start, method=method,
-                                options=options)
+                           options=options)
         # How much time did it take in minutes?
         time_delta = time.time() - time_start
+
         # Store optimal parameters in the corresponding class
         if self.model == 'standard':
             param_final = ParamStandard.from_theta(theta=opt_out.x,
-                                                     restriction=restriction,
-                                                     target=self.target,
-                                                     nstocks=nstocks)
+                                                   restriction=restriction,
+                                                   target=self.target,
+                                                   nstocks=nstocks)
         elif self.model == 'spatial':
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
-                                                         target=self.target,
-                                                         weights=weights)
+                                                  target=self.target,
+                                                  weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
 
