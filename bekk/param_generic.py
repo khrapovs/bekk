@@ -9,6 +9,8 @@ from __future__ import print_function, division
 
 import warnings
 
+from functools import partial
+
 import numpy as np
 import scipy.linalg as sl
 import scipy.optimize as sco
@@ -157,6 +159,24 @@ class ParamGeneric(object):
             return None
 
     @staticmethod
+    def fixed_point(uvar, amat=None, bmat=None, ccmat=None):
+        """Function for finding fixed point of
+        H = CC' + AHA' + BHB' given A, B, C.
+
+        Parameters
+        ----------
+        uvar, amat, bmat, ccmat : (nstocks, nstocks) arrays
+            Parameter matrices
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+
+        """
+        return 2 * uvar - ccmat - amat.dot(uvar).dot(amat.T) \
+            - bmat.dot(uvar).dot(bmat.T)
+
+    @staticmethod
     def find_stationary_var(amat=None, bmat=None, cmat=None):
         """Find fixed point of H = CC' + AHA' + BHB' given A, B, C.
 
@@ -172,9 +192,8 @@ class ParamGeneric(object):
 
         """
         hvar = np.eye(amat.shape[0])
-        ccmat = cmat.dot(cmat.T)
-        fun = lambda x: 2 * x - ccmat - amat.dot(x).dot(amat.T) \
-            - bmat.dot(x).dot(bmat.T)
+        kwargs = {'amat': amat, 'bmat': bmat, 'ccmat': cmat.dot(cmat.T)}
+        fun = partial(ParamGeneric.fixed_point, **kwargs)
         try:
             with np.errstate(divide='ignore', invalid='ignore'):
                 return sco.fixed_point(fun, hvar)
