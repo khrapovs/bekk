@@ -140,6 +140,39 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         self.assertEqual(nparams, theta_exp.size)
         npt.assert_array_equal(theta, theta_exp)
 
+        restriction = 'full'
+        cfree = True
+        theta = [avecs.flatten(), bvecs.flatten(),
+                 param.cmat[np.tril_indices(param.cmat.shape[0])]]
+        theta = np.concatenate(theta)
+        nparams = 2 * nstocks * (1 + ncat) + nstocks * (nstocks + 1) // 2
+        theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'diagonal'
+        cfree = True
+        theta = [avecs.flatten(), bvecs.flatten(),
+                 param.cmat[np.tril_indices(param.cmat.shape[0])]]
+        theta = np.concatenate(theta)
+        nparams = 2 * nstocks * (1 + ncat) + nstocks * (nstocks + 1) // 2
+        theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'scalar'
+        cfree = True
+        theta = [avecs[:, 0], bvecs[:, 0],
+                 param.cmat[np.tril_indices(param.cmat.shape[0])]]
+        theta = np.concatenate(theta)
+        nparams = 2 * (1 + ncat) + nstocks * (nstocks + 1) // 2
+        theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
     def test_find_vvec(self):
         """Test finding v vector given variance target."""
 
@@ -275,6 +308,54 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(param.amat, param_new.amat)
         npt.assert_array_equal(param.bmat, param_new.bmat)
         npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+
+        restriction = 'full'
+        cfree = True
+        theta = [avecs.flatten(), bvecs.flatten(),
+                 param.cmat[np.tril_indices(nstocks)]]
+        theta = np.concatenate(theta)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            cfree=cfree)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(np.tril(param.cmat), param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+
+        restriction = 'diagonal'
+        cfree = True
+        theta = [avecs.flatten(), bvecs.flatten(),
+                 param.cmat[np.tril_indices(nstocks)]]
+        theta = np.concatenate(theta)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            cfree=cfree)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(np.tril(param.cmat), param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+
+        restriction = 'scalar'
+        cfree = True
+        theta = [avecs[:, 0], bvecs[:, 0],
+                 param.cmat[np.tril_indices(nstocks)]]
+        theta = np.concatenate(theta)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            cfree=cfree)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(np.tril(param.cmat), param_new.cmat)
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
         npt.assert_array_equal(None, param_new.dvecs)

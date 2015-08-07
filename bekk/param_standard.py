@@ -51,7 +51,7 @@ class ParamStandard(ParamGeneric):
         return 'standard'
 
     @classmethod
-    def from_theta(cls, theta=None, nstocks=None,
+    def from_theta(cls, theta=None, nstocks=None, cfree=True,
                    restriction='scalar', target=None):
         """Initialize from theta vector.
 
@@ -108,7 +108,7 @@ class ParamStandard(ParamGeneric):
 
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
-    def get_theta(self, restriction='scalar', use_target=True):
+    def get_theta(self, restriction='scalar', use_target=True, cfree=True):
         """Convert parameter mratrices to 1-dimensional array.
 
         Parameters

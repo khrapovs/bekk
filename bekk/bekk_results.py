@@ -50,7 +50,8 @@ class BEKKResults(object):
     """
 
     def __init__(self, innov=None, hvar=None, var_target=None, model=None,
-                 use_target=None, restriction=None, method=None, cython=None,
+                 use_target=None, restriction=None, cfree=None,
+                 method=None, cython=None,
                  param_start=None, param_final=None, time_delta=None,
                  opt_out=None):
         """Initialize the class.
@@ -79,7 +80,9 @@ class BEKKResults(object):
                 - 'diagonal'
                 - 'scalar'
         use_target : bool
-            Variance targeting flag
+            Whether to use variance targeting (True) or not (False)
+        cfree : bool
+            Whether to leave C matrix free (True) or not (False)
         weights : (ncat, nstocks, nstocks) array
             Weight matrices for spatial model only
         method : str
@@ -96,6 +99,7 @@ class BEKKResults(object):
         self.model = model
         self.restriction = restriction
         self.use_target = use_target
+        self.cfree = cfree
 
     def __str__(self):
         """String representation.
@@ -106,6 +110,7 @@ class BEKKResults(object):
         show += '\nModel: ' + self.model
         show += '\nRestriction: ' + self.restriction
         show += '\nUse target: ' + str(self.use_target)
+        show += '\nMatrix C is free: ' + str(self.cfree)
         show += '\nIterations = ' + str(self.opt_out.nit)
         show += '\nOptimization time = %s' % format_time(self.time_delta)
         show += '\n\nFinal parameters:'

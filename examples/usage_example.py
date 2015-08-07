@@ -156,7 +156,8 @@ def try_spatial():
 
     """
     use_target = False
-    restriction = 'full'
+    cfree = True
+    restriction = 'scalar'
     nstocks = 3
     nobs = 2000
     weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
@@ -181,14 +182,16 @@ def try_spatial():
 
     bekk = BEKK(innov)
     result = bekk.estimate(param_start=param_true, use_target=use_target,
-                           restriction=restriction, model='spatial',
-                           weights=weights, method='SLSQP', cython=True)
+                           cfree=cfree, restriction=restriction,
+                           model='spatial', weights=weights, method='SLSQP',
+                           cython=True)
 
     print(result)
 
-    theta_true = param_true.get_theta(use_target=use_target,
+    theta_true = param_true.get_theta(use_target=use_target, cfree=cfree,
                                       restriction=restriction)
     theta_final = result.param_final.get_theta(use_target=use_target,
+                                               cfree=cfree,
                                                restriction=restriction)
     norm = np.linalg.norm(theta_true - theta_final)
 
@@ -203,6 +206,7 @@ def try_spatial_combinations():
 
     """
     use_target = False
+    cfree = True
     restriction = 'full'
     nstocks = 3
     nobs = 2000
@@ -230,14 +234,16 @@ def try_spatial_combinations():
     # Estimate spatial
 
     result = bekk.estimate(param_start=param_true, use_target=use_target,
-                           restriction=restriction, model='spatial',
-                           weights=weights, method='SLSQP', cython=True)
+                           restriction=restriction, cfree=cfree,
+                           model='spatial', weights=weights, method='SLSQP',
+                           cython=True)
 
     print(result)
 
-    theta_true = param_true.get_theta(use_target=use_target,
+    theta_true = param_true.get_theta(use_target=use_target, cfree=cfree,
                                       restriction=restriction)
     theta_final = result.param_final.get_theta(use_target=use_target,
+                                               cfree=cfree,
                                                restriction=restriction)
     norm = np.linalg.norm(theta_true - theta_final)
 
@@ -253,8 +259,9 @@ def try_spatial_combinations():
                                         cmat=param_true.cmat)
 
     result = bekk.estimate(param_start=param_true, use_target=use_target,
-                           restriction=restriction, model='standard',
-                           weights=weights, method='SLSQP', cython=True)
+                           restriction=restriction, cfree=cfree,
+                           model='standard', weights=weights, method='SLSQP',
+                           cython=True)
 
     print(result)
 
@@ -280,8 +287,8 @@ if __name__ == '__main__':
 #    with take_time('\nTotal simulation and estimation'):
 #        try_standard()
 
-#    with take_time('Total simulation and estimation'):
-#        try_spatial()
-
     with take_time('Total simulation and estimation'):
-        try_spatial_combinations()
+        try_spatial()
+
+#    with take_time('Total simulation and estimation'):
+#        try_spatial_combinations()

@@ -8,7 +8,8 @@ Estimation is performed using Quasi Maximum Likelihood (QML) method.
 Specifically, the individual contribution to the Gaussian log-likelihood is
 
 .. math::
-    l_{t}\left(\theta\right)=-\ln\left|H_{t}\right|-u_{t}^{\prime}H_{t}^{-1}u_{t}.
+    l_{t}\left(\theta\right)=
+    -\ln\left|H_{t}\right|-u_{t}^{\prime}H_{t}^{-1}u_{t}.
 
 """
 from __future__ import print_function, division
@@ -16,6 +17,7 @@ from __future__ import print_function, division
 import time
 
 import numpy as np
+
 from scipy.optimize import minimize
 
 from bekk import ParamStandard, ParamSpatial, BEKKResults
@@ -66,8 +68,8 @@ class BEKK(object):
         self.innov = innov
         self.hvar = None
 
-    def likelihood(self, theta, model=None, target=None, restriction=None,
-                   weights=None, cython=True):
+    def likelihood(self, theta, model='standard', target=None, cfree=False,
+                   restriction='full', weights=None, cython=True):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -85,10 +87,12 @@ class BEKK(object):
         """
         if model == 'standard':
             param = ParamStandard.from_theta(theta=theta, target=target,
+                                             cfree=cfree,
                                              nstocks=self.innov.shape[1],
                                              restriction=restriction)
         elif model == 'spatial':
             param = ParamSpatial.from_theta(theta=theta, target=target,
+                                            cfree=cfree,
                                             restriction=restriction,
                                             weights=weights)
         else:
@@ -106,8 +110,9 @@ class BEKK(object):
             filter_var_python(*args)
             return likelihood_python(self.hvar, self.innov)
 
-    def estimate(self, param_start=None, restriction='scalar', use_target=True,
-                 method='SLSQP', cython=True, model='standard', weights=None):
+    def estimate(self, param_start=None, restriction='scalar', cfree=False,
+                 use_target=True, model='standard', weights=None,
+                 method='SLSQP', cython=True):
         """Estimate parameters of the BEKK model.
 
         Parameters
@@ -130,7 +135,9 @@ class BEKK(object):
                 - 'scalar'
 
         use_target : bool
-            Variance targeting flag. If True, then cmat is not returned.
+            Whether to use variance targeting (True) or not (False)
+        cfree : bool
+            Whether to leave C matrix free (True) or not (False)
         weights : (ncat, nstocks, nstocks) array
             Weight matrices for spatial only
         method : str
@@ -159,7 +166,7 @@ class BEKK(object):
                 raise NotImplementedError('The model is not implemented!')
 
         theta_start = param_start.get_theta(restriction=restriction,
-                                            use_target=use_target)
+                                            use_target=use_target, cfree=cfree)
         if use_target:
             target = var_target
         else:
@@ -169,7 +176,7 @@ class BEKK(object):
         options = {'disp': False, 'maxiter': int(1e6)}
         # Check for existence of initial guess among arguments.
         # Otherwise, initialize.
-        args = (model, target, restriction, weights, cython)
+        args = (model, target, cfree, restriction, weights, cython)
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
@@ -182,18 +189,19 @@ class BEKK(object):
         if model == 'standard':
             param_final = ParamStandard.from_theta(theta=opt_out.x,
                                                    restriction=restriction,
-                                                   target=target,
+                                                   target=target, cfree=cfree,
                                                    nstocks=nstocks)
         elif model == 'spatial':
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
                                                   restriction=restriction,
-                                                  target=target,
+                                                  target=target, cfree=cfree,
                                                   weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
 
         return BEKKResults(innov=self.innov, hvar=self.hvar, cython=cython,
                            var_target=var_target, model=model, method=method,
-                           use_target=use_target, restriction=restriction,
+                           use_target=use_target, cfree=cfree,
+                           restriction=restriction,
                            param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)
