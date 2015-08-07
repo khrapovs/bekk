@@ -10,8 +10,7 @@ import time
 import numpy as np
 
 from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
-                  regenerate_data, plot_data, init_param_standard,
-                  init_param_spatial)
+                  regenerate_data, plot_data)
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
@@ -283,7 +282,7 @@ def try_interative_estimation_standard():
     """Try estimating parameters from simple to more complicated model.
 
     """
-    restriction = 'full'
+    restriction = 'scalar'
     nstocks = 3
     nobs = 2000
     # A, B, C - n x n matrices
@@ -294,10 +293,10 @@ def try_interative_estimation_standard():
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
-    param_final = init_param_standard(innov, restriction=restriction)
+    bekk = BEKK(innov)
+    result = bekk.estimate(use_target=False, restriction=restriction)
 
-    print('\nTrue parameter:', param_true)
-    print('\nEstimated parameter:', param_final)
+    print(result)
 
 
 def try_interative_estimation_spatial():
@@ -325,11 +324,10 @@ def try_interative_estimation_spatial():
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
-    param_final = init_param_spatial(innov, restriction=restriction,
-                                     weights=weights)
-
-    print('\nTrue parameter:', param_true)
-    print('\nEstimated parameter:', param_final)
+    bekk = BEKK(innov)
+    result = bekk.estimate(use_target=False, restriction=restriction,
+                           cfree=False, model='spatial', weights=weights)
+    print(result)
 
 
 if __name__ == '__main__':

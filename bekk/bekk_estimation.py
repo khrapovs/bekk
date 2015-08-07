@@ -31,7 +31,7 @@ except:
     print('Failed to import cython modules. '
           + 'Temporary hack to compile documentation.')
 
-__all__ = ['BEKK', 'init_param_standard', 'init_param_spatial']
+__all__ = ['BEKK']
 
 
 class BEKK(object):
@@ -163,9 +163,10 @@ class BEKK(object):
         # Otherwise, initialize.
         if param_start is None:
             if model == 'standard':
-                param_start = ParamStandard.from_target(target=var_target)
+                param_start = self.init_param_standard(restriction=restriction)
             elif model == 'spatial':
-                param_start = ParamSpatial.from_target(target=var_target)
+                param_start = self.init_param_spatial(restriction=restriction,
+                                                      weights=weights)
             else:
                 raise NotImplementedError('The model is not implemented!')
 
@@ -213,89 +214,81 @@ class BEKK(object):
                            param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)
 
+    def init_param_standard(self, restriction='scalar'):
+        """Estimate scalar BEKK with variance targeting.
 
-def init_param_standard(innov, restriction='scalar'):
-    """Estimate scalar BEKK with variance targeting.
+        Parameters
+        ----------
+        restriction : str
+            Restriction on parameters.
 
-    Parameters
-    ----------
-    restriction : str
-        Restriction on parameters.
+            Must be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
 
-        Must be
-            - 'full'
-            - 'diagonal'
-            - 'scalar'
+        Returns
+        -------
+        ParamStandard instance
+            Parameter object
 
-    Returns
-    -------
-    ParamStandard instance
-        Parameter object
+        """
+        param = ParamStandard(nstocks=self.innov.shape[1])
 
-    """
-    bekk = BEKK(innov)
-    param = ParamStandard(nstocks=innov.shape[1])
-
-    with take_time('Estimating scalar'):
-        result = bekk.estimate(param_start=param, use_target=True,
-                               restriction='scalar', model='standard')
-    param = result.param_final
-
-    if restriction in ('diagonal', 'full'):
-        with take_time('Estimating diagonal'):
-            result = bekk.estimate(param_start=param, use_target=True,
-                                   restriction='diagonal', model='standard')
+        with take_time('Estimating scalar'):
+            result = self.estimate(param_start=param, use_target=True,
+                                   restriction='scalar', model='standard')
         param = result.param_final
 
-    if restriction == 'full':
-        with take_time('Estimating full'):
-            result = bekk.estimate(param_start=param, use_target=True,
-                                   restriction='full', model='standard')
-        param = result.param_final
+        if restriction in ('diagonal', 'full'):
+            with take_time('Estimating diagonal'):
+                result = self.estimate(param_start=param, use_target=True,
+                                       restriction='diagonal',
+                                       model='standard')
+            param = result.param_final
 
-    return param
+        if restriction == 'full':
+            with take_time('Estimating full'):
+                result = self.estimate(param_start=param, use_target=True,
+                                       restriction='full', model='standard')
+            param = result.param_final
 
+        return param
 
-def init_param_spatial(innov, restriction='scalar', weights=None):
-    """Estimate scalar BEKK with variance targeting.
+    def init_param_spatial(self, restriction='scalar', weights=None):
+        """Estimate scalar BEKK with variance targeting.
 
-    Parameters
-    ----------
-    restriction : str
-        Restriction on parameters.
+        Parameters
+        ----------
+        restriction : str
+            Restriction on parameters.
 
-        Must be
-            - 'full'
-            - 'diagonal'
-            - 'scalar'
+            Must be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices for spatial only
 
-    Returns
-    -------
-    ParamSpatial instance
-        Parameter object
+        Returns
+        -------
+        ParamSpatial instance
+            Parameter object
 
-    """
-    bekk = BEKK(innov)
-    param = ParamSpatial(nstocks=innov.shape[1])
+        """
+        param = ParamSpatial(nstocks=self.innov.shape[1])
 
-    with take_time('Estimating scalar'):
-        result = bekk.estimate(param_start=param, use_target=True,
-                               weights=weights,
-                               restriction='scalar', model='spatial')
-    param = result.param_final
-
-    if restriction in ('diagonal', 'full'):
-        with take_time('Estimating diagonal'):
-            result = bekk.estimate(param_start=param, use_target=True,
+        with take_time('Estimating scalar'):
+            result = self.estimate(param_start=param, use_target=True,
                                    weights=weights,
-                                   restriction='diagonal', model='spatial')
+                                   restriction='scalar', model='spatial')
         param = result.param_final
 
-    if restriction == 'full':
-        with take_time('Estimating full'):
-            result = bekk.estimate(param_start=param, use_target=True,
-                                   weights=weights,
-                                   restriction='full', model='spatial')
-        param = result.param_final
+        if restriction in ('diagonal', 'full'):
+            with take_time('Estimating full/diagonal'):
+                result = self.estimate(param_start=param, use_target=True,
+                                       weights=weights,
+                                       restriction='full', model='spatial')
+            param = result.param_final
 
-    return param
+        return param

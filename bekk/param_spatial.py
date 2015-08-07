@@ -295,6 +295,11 @@ class ParamSpatial(ParamGeneric):
         if cfree and (not use_target):
             theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
         elif (not cfree) and (not use_target):
+            if self.dvecs is None:
+                shape = (self.avecs.shape[0]-1, self.avecs.shape[1])
+                self.dvecs = np.zeros(shape)
+            if self.vvec is None:
+                self.vvec = np.ones(self.avecs.shape[1])
             if restriction in ['full', 'diagonal']:
                 theta.extend([self.dvecs.flatten(), self.vvec])
             elif restriction == 'scalar':
