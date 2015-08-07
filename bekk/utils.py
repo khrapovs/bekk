@@ -110,6 +110,18 @@ def plot_data(innov, hvar):
 
 
 def format_time(t):
+    """Format time for nice printing.
+
+    Parameters
+    ----------
+    t : float
+        Time in seconds
+
+    Returns
+    -------
+    format template
+
+    """
     if t > 60 or t == 0:
         units = 'min'
         t /= 60
@@ -129,6 +141,19 @@ def format_time(t):
 
 @contextlib.contextmanager
 def take_time(desc):
+    """Context manager for timing the code.
+
+    Parameters
+    ----------
+    desc : str
+        Description of the code
+
+    Example
+    -------
+    >>> with take_time('Estimation'):
+    >>>    estimate()
+
+    """
     t0 = time.time()
     yield
     dt = time.time() - t0

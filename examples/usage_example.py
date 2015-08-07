@@ -68,7 +68,7 @@ def try_bekk():
         print('Time elapsed %.2f, seconds\n' % (time.time() - time_start))
 
     print('\nNorm difference between the estimates: %.4f'
-        % np.linalg.norm(params[0] - params[1]))
+          % np.linalg.norm(params[0] - params[1]))
     return bekk
 
 
