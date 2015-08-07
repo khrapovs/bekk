@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
+r"""
 BEKK estimation
 ===============
+
+Estimation is performed using Quasi Maximum Likelihood (QML) method.
+Specifically, the individual contribution to the Gaussian log-likelihood is
+
+.. math::
+    l_{t}\left(\theta\right)=-\ln\left|H_{t}\right|-u_{t}^{\prime}H_{t}^{-1}u_{t}.
 
 """
 from __future__ import print_function, division
