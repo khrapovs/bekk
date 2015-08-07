@@ -50,7 +50,7 @@ class ParamSpatial(ParamGeneric):
 
     @classmethod
     def from_spatial(cls, avecs=None, bvecs=None, dvecs=None,
-                     vvec=None, weights=None):
+                     vvec=None, target=None, weights=None):
         """Initialize from spatial representation.
 
         Parameters
@@ -63,6 +63,8 @@ class ParamSpatial(ParamGeneric):
             Parameter matrix
         vvec : (nstocks, ) array
             Parameter vector
+        target : (nstocks, nstocks) array
+            Variance target matrix
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
 
@@ -77,13 +79,19 @@ class ParamSpatial(ParamGeneric):
                                                    dvecs=dvecs,
                                                    weights=weights)
         dmat_inv = sl.inv(dmat)
-        cmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
+        if target is None:
+            cmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
+        else:
+            # avecs, bvecs, and target are only inputs
+            cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
+
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = dvecs
         param.vvec = vvec
         param.weights = weights
+
         return param
 
     @staticmethod
@@ -113,7 +121,9 @@ class ParamSpatial(ParamGeneric):
         for i in range(ncat):
             amat += np.diag(avecs[i+1]).dot(weights[i])
             bmat += np.diag(bvecs[i+1]).dot(weights[i])
+        if dvecs is not None:
             dmat -= np.diag(dvecs[i]).dot(weights[i])
+
         return amat, bmat, dmat
 
     @staticmethod
@@ -155,7 +165,8 @@ class ParamSpatial(ParamGeneric):
         return np.abs(np.diag(dmat.dot(ccmat).dot(dmat.T)))**.5
 
     @classmethod
-    def from_theta(cls, theta=None, weights=None, target=None):
+    def from_theta(cls, theta=None, weights=None,
+                   restriction='scalar', target=None):
         """Initialize from theta vector.
 
         Parameters
@@ -163,15 +174,20 @@ class ParamSpatial(ParamGeneric):
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If use_target:
+            If target is not None:
                 - 3*n*(m+1)-n
 
-            If not use_target:
+            If target not None:
                 - +n
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
         target : (nstocks, nstocks) array
             Variance target matrix
+        restriction : str
+            Can be
+
+                - 'full' = 'diagonal'
+                - 'scalar'
 
         Returns
         -------
@@ -180,26 +196,41 @@ class ParamSpatial(ParamGeneric):
 
         """
         ncat, nstocks = weights.shape[:2]
-        abvecs_size = (ncat+1)*nstocks
-        dvecs_size = ncat*nstocks
-        avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
-        bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
-        dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
-        dvecs = dvecs.reshape((ncat, nstocks))
+        if restriction in ['full', 'diagonal']:
+            abvecs_size = (ncat+1)*nstocks
+            avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
+            bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
 
-        if target is not None:
-            if theta.size != 3*nstocks*(ncat+1)-nstocks:
-                raise ValueError('Incorrect number of params for targeting!')
-            vvec = cls.find_vvec(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                 weights=weights, target=target)
+        elif restriction == 'scalar':
+            abvecs_size = ncat+1
+            avecs = np.tile(theta[:abvecs_size, np.newaxis], nstocks)
+            bvecs = np.tile(theta[abvecs_size:2*abvecs_size, np.newaxis],
+                            nstocks)
         else:
-            if theta.size != 3*nstocks*(ncat+1):
-                msg = 'Incorrect number of params for no targeting!'
-                raise ValueError(msg)
-            vvec = theta[2*abvecs_size+dvecs_size:]
+            raise NotImplementedError('Restriction is not implemented!')
+
+        if target is None:
+            if restriction in ['full', 'diagonal']:
+                dvecs_size = ncat*nstocks
+                dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
+                dvecs = dvecs.reshape((ncat, nstocks))
+                vvec = theta[2*abvecs_size+dvecs_size:]
+            elif restriction == 'scalar':
+                dvecs_size = ncat
+                dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
+                dvecs = np.tile(dvecs[:, np.newaxis], nstocks)
+                vvec = np.tile(theta[2*abvecs_size+dvecs_size:], nstocks)
+            else:
+                raise NotImplementedError('Restriction is not implemented!')
+            return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                    vvec=vvec, weights=weights)
+        else:
+            dvecs = None
+            vvec = None
 
         return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                vvec=vvec, weights=weights)
+                                vvec=vvec, target=target, weights=weights)
+
 
     def get_theta(self, restriction='scalar', use_target=True):
         """Convert parameter matrices to 1-dimensional array.
@@ -208,23 +239,46 @@ class ParamSpatial(ParamGeneric):
         ----------
         use_target : bool
             Whether to estimate only a, b, and d (True) or v as well (False)
+        restriction : str
+            Can be
+
+                - 'full' = 'diagonal'
+                - 'scalar'
+        use_target : bool
+            Whether to estimate only A and B (True) or C as well (False)
 
         Returns
         -------
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If use_target:
-                - 3*n*(m+1) - n
+            If use_target is True:
+                - 'full' or 'diagonal' - 2*n*(m+1)
+                - 'scalar' - 2*(m+1)
 
-            If not use_target:
-                - +n
+            If use_target is False:
+                - 'full' or 'diagonal' - +n
+                - 'scalar' - + (m+1)
 
         """
-        theta = [self.avecs.flatten(), self.bvecs.flatten(),
-                 self.dvecs.flatten()]
-
-        if not use_target:
-            theta.append(self.vvec)
+        if use_target:
+            if restriction in ['full', 'diagonal']:
+                theta = [self.avecs.flatten(), self.bvecs.flatten()]
+            elif restriction == 'scalar':
+                theta = [self.avecs[:, 0].flatten(),
+                         self.bvecs[:, 0].flatten()]
+            else:
+                raise NotImplementedError('Restriction is not implemented!')
+        else:
+            if restriction in ['full', 'diagonal']:
+                theta = [self.avecs.flatten(), self.bvecs.flatten(),
+                         self.dvecs.flatten(), self.vvec]
+            elif restriction == 'scalar':
+                theta = [self.avecs[:, 0].flatten(),
+                         self.bvecs[:, 0].flatten(),
+                         self.dvecs[:, 0].flatten(),
+                         np.array([self.vvec[0]])]
+            else:
+                raise NotImplementedError('Restriction is not implemented!')
 
         return np.concatenate(theta)

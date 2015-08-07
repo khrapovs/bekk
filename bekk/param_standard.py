@@ -129,13 +129,13 @@ class ParamStandard(ParamGeneric):
         theta : 1d array
             Length depends on the model restrictions and variance targeting
 
-            If use_target:
+            If use_target is True:
 
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
 
-            If not use_target:
+            If use_target is False:
                 - +(n-1)*n/2 for parameter cmat
 
         """

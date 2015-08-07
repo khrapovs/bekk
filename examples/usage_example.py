@@ -164,7 +164,8 @@ def try_spatial():
     """Try simulating and estimating spatial BEKK.
 
     """
-    use_target = False
+    use_target = True
+    restriction = 'full'
     nstocks = 3
     nobs = 2000
     weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
@@ -179,7 +180,7 @@ def try_spatial():
     vvec = np.ones(nstocks)
 
     param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                    vvec=vvec, weights=weights)
+                                      vvec=vvec, weights=weights)
 
     innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
 
@@ -187,8 +188,8 @@ def try_spatial():
 
     bekk = BEKK(innov)
     result = bekk.estimate(param_start=param, use_target=use_target,
-                        model='spatial', weights=weights, method='SLSQP',
-                        cython=True)
+                           restriction=restriction, model='spatial',
+                           weights=weights, method='SLSQP', cython=True)
 
     print(result)
 

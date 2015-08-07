@@ -91,6 +91,7 @@ class BEKK(object):
                                              restriction=restriction)
         elif model == 'spatial':
             param = ParamSpatial.from_theta(theta=theta, target=target,
+                                            restriction=restriction,
                                             weights=weights)
         else:
             raise NotImplementedError('The model is not implemented!')
@@ -180,6 +181,7 @@ class BEKK(object):
                                                    nstocks=nstocks)
         elif model == 'spatial':
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
+                                                  restriction=restriction,
                                                   target=target,
                                                   weights=weights)
         else:

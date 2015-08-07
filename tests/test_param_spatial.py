@@ -30,8 +30,9 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, weights=weights)
+        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                          dvecs=dvecs, vvec=vvec,
+                                          weights=weights)
 
         amat = np.diag(avecs[0]) + np.diag(avecs[0]).dot(weights[0])
         bmat = np.diag(bvecs[0]) + np.diag(bvecs[0]).dot(weights[0])
@@ -49,7 +50,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(weights, param.weights)
 
         mats = ParamSpatial.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
-                                              dvecs=dvecs, weights=weights)
+                                                dvecs=dvecs, weights=weights)
         amat_new, bmat_new, dmat_new = mats
 
         npt.assert_array_equal(amat, amat_new)
@@ -69,23 +70,75 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, weights=weights)
-        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten()]
+        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                          dvecs=dvecs, vvec=vvec,
+                                          weights=weights)
+
+        restriction = 'full'
+        use_target = True
+        theta = [avecs.flatten(), bvecs.flatten()]
         theta = np.concatenate(theta)
-        nparams = 3 * nstocks * (1 + ncat) - nstocks
+        nparams = 2 * nstocks * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
 
-        self.assertEqual(nparams, param.get_theta().size)
-        npt.assert_array_equal(theta, param.get_theta())
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
 
+        restriction = 'full'
+        use_target = False
         theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten(), vvec]
         theta = np.concatenate(theta)
         nparams = 3 * nstocks * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
 
-        self.assertEqual(nparams,
-                         param.get_theta(use_target=False).size)
-        npt.assert_array_equal(theta,
-                               param.get_theta(use_target=False))
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'diagonal'
+        use_target = True
+        theta = [avecs.flatten(), bvecs.flatten()]
+        theta = np.concatenate(theta)
+        nparams = 2 * nstocks * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'diagonal'
+        use_target = False
+        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten(), vvec]
+        theta = np.concatenate(theta)
+        nparams = 3 * nstocks * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'scalar'
+        use_target = True
+        theta = [avecs[:, 0], bvecs[:, 0]]
+        theta = np.concatenate(theta)
+        nparams = 2 * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
+
+        restriction = 'scalar'
+        use_target = False
+        theta = [avecs[:, 0], bvecs[:, 0], dvecs[:, 0], np.array([vvec[0]])]
+        theta = np.concatenate(theta)
+        nparams = 3 * (1 + ncat)
+        theta_exp = param.get_theta(restriction=restriction,
+                                    use_target=use_target)
+
+        self.assertEqual(nparams, theta_exp.size)
+        npt.assert_array_equal(theta, theta_exp)
 
     def test_find_vvec(self):
         """Test finding v vector given variance target."""
@@ -106,11 +159,13 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         self.assertEqual(vvec.shape, (nstocks,))
 
         vvec = np.ones(nstocks)
-        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, weights=weights)
+        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                          dvecs=dvecs, vvec=vvec,
+                                          weights=weights)
         target = param.get_uvar()
-        vvec_new = ParamSpatial.find_vvec(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        weights=weights, target=target)
+        vvec_new = ParamSpatial.find_vvec(avecs=avecs, bvecs=bvecs,
+                                          dvecs=dvecs, weights=weights,
+                                          target=target)
         # TODO : The test fails. Find out why.
         # npt.assert_array_equal(vvec, vvec_new)
 
@@ -127,12 +182,17 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, weights=weights)
+        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                          dvecs=dvecs, vvec=vvec,
+                                          weights=weights)
 
+        restriction = 'full'
+        target = None
         theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten(), vvec]
         theta = np.concatenate(theta)
-        param_new = ParamSpatial.from_theta(theta=theta, weights=weights)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            target=target)
 
         npt.assert_array_equal(param.amat, param_new.amat)
         npt.assert_array_equal(param.bmat, param_new.bmat)
@@ -141,18 +201,83 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
         npt.assert_array_equal(param.dvecs, param_new.dvecs)
 
-        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten()]
+        restriction = 'full'
+        target = param.get_uvar()
+        theta = [avecs.flatten(), bvecs.flatten()]
+        theta = np.concatenate(theta)
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+
+        restriction = 'diagonal'
+        target = None
+        theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten(), vvec]
         theta = np.concatenate(theta)
         param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
-                                                  target=param.get_uvar())
+                                            restriction=restriction,
+                                            target=target)
 
-        # TODO : The test fails. Find out why.
-#        npt.assert_array_equal(param.amat, param_new.amat)
-#        npt.assert_array_equal(param.bmat, param_new.bmat)
-#        npt.assert_array_equal(param.cmat, param_new.cmat)
-#        npt.assert_array_equal(param.avecs, param_new.avecs)
-#        npt.assert_array_equal(param.bvecs, param_new.bvecs)
-#        npt.assert_array_equal(param.dvecs, param_new.dvecs)
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(param.cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(param.dvecs, param_new.dvecs)
+
+        restriction = 'diagonal'
+        target = param.get_uvar()
+        theta = [avecs.flatten(), bvecs.flatten()]
+        theta = np.concatenate(theta)
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+
+        restriction = 'scalar'
+        target = None
+        theta = [avecs[:, 0], bvecs[:, 0], dvecs[:, 0], np.array([vvec[0]])]
+        theta = np.concatenate(theta)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(param.cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(param.dvecs, param_new.dvecs)
+
+        restriction = 'scalar'
+        target = param.get_uvar()
+        theta = [avecs[:, 0], bvecs[:, 0]]
+        theta = np.concatenate(theta)
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        param_new = ParamSpatial.from_theta(theta=theta, weights=weights,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
 
 
 if __name__ == '__main__':
