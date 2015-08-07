@@ -115,11 +115,15 @@ class BEKK(object):
         param_start : BEKKParams instance
             Starting parameters
         model : str
-            Specific model to estimate. Must be
+            Specific model to estimate.
+
+            Must be
                 - 'standard'
                 - 'spatial'
         restriction : str
-            Restriction on parameters. Must be
+            Restriction on parameters.
+
+            Must be
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
