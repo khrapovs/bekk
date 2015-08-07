@@ -100,11 +100,11 @@ class ParamStandard(ParamGeneric):
         else:
             raise ValueError('This restriction is not supported!')
 
-        if target is not None:
-            cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
-        else:
+        if target is None:
             cmat = np.zeros((nstocks, nstocks))
             cmat[np.tril_indices(nstocks)] = theta[2*chunk:]
+        else:
+            cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
 
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 

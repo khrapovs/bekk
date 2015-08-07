@@ -120,6 +120,7 @@ class BEKK(object):
             Must be
                 - 'standard'
                 - 'spatial'
+
         restriction : str
             Restriction on parameters.
 
@@ -127,6 +128,7 @@ class BEKK(object):
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
+
         use_target : bool
             Variance targeting flag. If True, then cmat is not returned.
         weights : (ncat, nstocks, nstocks) array
