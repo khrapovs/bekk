@@ -140,6 +140,7 @@ def try_standard():
 
     """
     use_target = False
+    restriction = 'diagonal'
     nstocks = 2
     nobs = 2000
     # A, B, C - n x n matrices
@@ -154,7 +155,7 @@ def try_standard():
 
     bekk = BEKK(innov)
     result = bekk.estimate(param_start=param_true, use_target=use_target,
-                        method='SLSQP', restriction='full', cython=True)
+                           method='SLSQP', restriction=restriction)
 
     print(result)
 

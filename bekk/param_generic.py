@@ -97,6 +97,28 @@ class ParamGeneric(object):
         param.cmat = cmat
         return param
 
+    @classmethod
+    def from_target(cls, amat=None, bmat=None, target=None):
+        """Initialize from A, B, and variance target.
+
+        Parameters
+        ----------
+        amat, bmat, target : (nstocks, nstocks) arrays
+            Parameter matrices
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        nstocks = target.shape[0]
+        if (amat is None) and (bmat is None):
+            param = cls(nstocks)
+            amat, bmat = param.amat, param.bmat
+        cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
+        return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+
     @staticmethod
     def find_cmat(amat=None, bmat=None, target=None):
         """Find C matrix given A, B, and H.

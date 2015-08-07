@@ -144,13 +144,16 @@ class BEKK(object):
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         self.hvar[0] = var_target.copy()
 
-        if param_start is not None:
-            theta_start = param_start.get_theta(restriction=restriction,
-                                                use_target=use_target)
-        else:
-            param_start = ParamStandard.from_target(target=var_target)
-            theta_start = param_start.get_theta(restriction=restriction,
-                                                use_target=use_target)
+        if param_start is None:
+            if model == 'standard':
+                param_start = ParamStandard.from_target(target=var_target)
+            elif model == 'spatial':
+                param_start = ParamSpatial.from_target(target=var_target)
+            else:
+                raise NotImplementedError('The model is not implemented!')
+
+        theta_start = param_start.get_theta(restriction=restriction,
+                                            use_target=use_target)
         if use_target:
             target = var_target
         else:
