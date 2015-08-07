@@ -47,6 +47,13 @@ class ParamStandard(ParamGeneric):
         """
         super(ParamStandard, self).__init__(nstocks)
 
+    @staticmethod
+    def get_model():
+        """Return model name.
+
+        """
+        return 'standard'
+
     @classmethod
     def from_theta(cls, theta=None, nstocks=None,
                    restriction='scalar', target=None):

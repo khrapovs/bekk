@@ -48,6 +48,13 @@ class ParamSpatial(ParamGeneric):
         """
         super(ParamSpatial, self).__init__(nstocks)
 
+    @staticmethod
+    def get_model():
+        """Return model name.
+
+        """
+        return 'spatial'
+
     @classmethod
     def from_spatial(cls, avecs=None, bvecs=None, dvecs=None,
                      vvec=None, target=None, weights=None):
@@ -230,7 +237,6 @@ class ParamSpatial(ParamGeneric):
 
         return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                                 vvec=vvec, target=target, weights=weights)
-
 
     def get_theta(self, restriction='scalar', use_target=True):
         """Convert parameter matrices to 1-dimensional array.

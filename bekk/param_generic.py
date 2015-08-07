@@ -58,15 +58,24 @@ class ParamGeneric(object):
         """String representation.
 
         """
-        show = "\nA = \n" + str(self.amat)
-        show += "\nB = \n" + str(self.bmat)
-        show += "\nC = \n" + str(self.cmat)
+        show = '\n\nMax eigenvalue = %.4f\n' % self.constraint()
+
+        show += "\nA =\n" + str(self.amat)
+        show += "\nB =\n" + str(self.bmat)
+        show += "\nC =\n" + str(self.cmat)
+
+        if self.get_model() == 'spatial':
+            show += '\n\nSpatial parameters:'
+            show += '\na =\n' + str(self.avecs)
+            show += '\nb =\n' + str(self.bvecs)
+            show += '\nd =\n' + str(self.dvecs)
+            show += '\nv =\n' + str(self.vvec)
+
         uvar = self.get_uvar()
         if uvar is not None:
             show += '\n\nUnconditional variance =\n' + np.array_str(uvar)
         else:
-            show += '\nCould not compute unconditional variance!'
-        show += '\n\nMax eigenvalue = %.4f' % self.constraint()
+            show += '\n\nCould not compute unconditional variance!'
         return show + '\n'
 
     def __repr__(self):

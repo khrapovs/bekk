@@ -194,21 +194,10 @@ def try_spatial():
     print(result)
 
     print('\nTrue parameters:\n',
-          param.get_theta(use_target=use_target))
+          param.get_theta(use_target=use_target, restriction=restriction))
     print('\nEstimated parameters:\n',
-          result.param_final.get_theta(use_target=use_target))
-
-    print('\nTrue a:\n', param.avecs)
-    print('\nEstimated a:\n', result.param_final.avecs)
-
-    print('\nTrue b:\n', param.bvecs)
-    print('\nEstimated b:\n', result.param_final.bvecs)
-
-    print('\nTrue d:\n', param.dvecs)
-    print('\nEstimated d:\n', result.param_final.dvecs)
-
-    print('\nTrue v:\n', param.vvec)
-    print('\nEstimated v:\n', result.param_final.vvec)
+          result.param_final.get_theta(use_target=use_target,
+                                       restriction=restriction))
 
 
 if __name__ == '__main__':
