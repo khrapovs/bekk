@@ -22,7 +22,8 @@ from scipy.optimize import minimize
 from functools import partial
 
 from bekk import ParamStandard, ParamSpatial, BEKKResults
-from .utils import estimate_uvar, likelihood_python, filter_var_python
+from .utils import (estimate_uvar, likelihood_python, filter_var_python,
+                    take_time)
 try:
     from .recursion import filter_var
     from .likelihood import likelihood_gauss
@@ -30,7 +31,7 @@ except:
     print('Failed to import cython modules. '
           + 'Temporary hack to compile documentation.')
 
-__all__ = ['BEKK']
+__all__ = ['BEKK', 'init_param_standard', 'init_param_spatial']
 
 
 class BEKK(object):
@@ -211,3 +212,90 @@ class BEKK(object):
                            restriction=restriction,
                            param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)
+
+
+def init_param_standard(innov, restriction='scalar'):
+    """Estimate scalar BEKK with variance targeting.
+
+    Parameters
+    ----------
+    restriction : str
+        Restriction on parameters.
+
+        Must be
+            - 'full'
+            - 'diagonal'
+            - 'scalar'
+
+    Returns
+    -------
+    ParamStandard instance
+        Parameter object
+
+    """
+    bekk = BEKK(innov)
+    param = ParamStandard(nstocks=innov.shape[1])
+
+    with take_time('Estimating scalar'):
+        result = bekk.estimate(param_start=param, use_target=True,
+                               restriction='scalar', model='standard')
+    param = result.param_final
+
+    if restriction in ('diagonal', 'full'):
+        with take_time('Estimating diagonal'):
+            result = bekk.estimate(param_start=param, use_target=True,
+                                   restriction='diagonal', model='standard')
+        param = result.param_final
+
+    if restriction == 'full':
+        with take_time('Estimating full'):
+            result = bekk.estimate(param_start=param, use_target=True,
+                                   restriction='full', model='standard')
+        param = result.param_final
+
+    return param
+
+
+def init_param_spatial(innov, restriction='scalar', weights=None):
+    """Estimate scalar BEKK with variance targeting.
+
+    Parameters
+    ----------
+    restriction : str
+        Restriction on parameters.
+
+        Must be
+            - 'full'
+            - 'diagonal'
+            - 'scalar'
+
+    Returns
+    -------
+    ParamSpatial instance
+        Parameter object
+
+    """
+    bekk = BEKK(innov)
+    param = ParamSpatial(nstocks=innov.shape[1])
+
+    with take_time('Estimating scalar'):
+        result = bekk.estimate(param_start=param, use_target=True,
+                               weights=weights,
+                               restriction='scalar', model='spatial')
+    param = result.param_final
+
+    if restriction in ('diagonal', 'full'):
+        with take_time('Estimating diagonal'):
+            result = bekk.estimate(param_start=param, use_target=True,
+                                   weights=weights,
+                                   restriction='diagonal', model='spatial')
+        param = result.param_final
+
+    if restriction == 'full':
+        with take_time('Estimating full'):
+            result = bekk.estimate(param_start=param, use_target=True,
+                                   weights=weights,
+                                   restriction='full', model='spatial')
+        param = result.param_final
+
+    return param

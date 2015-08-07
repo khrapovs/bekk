@@ -10,7 +10,8 @@ import time
 import numpy as np
 
 from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
-                  regenerate_data, plot_data)
+                  regenerate_data, plot_data, init_param_standard,
+                  init_param_spatial)
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
@@ -278,6 +279,59 @@ def try_spatial_combinations():
     print('\nEucledean norm of the difference = %.4f' % norm)
 
 
+def try_interative_estimation_standard():
+    """Try estimating parameters from simple to more complicated model.
+
+    """
+    restriction = 'full'
+    nstocks = 3
+    nobs = 2000
+    # A, B, C - n x n matrices
+    amat = np.eye(nstocks) * .09**.5
+    bmat = np.eye(nstocks) * .9**.5
+    target = np.eye(nstocks)
+    param_true = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
+
+    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+    param_final = init_param_standard(innov, restriction=restriction)
+
+    print('\nTrue parameter:', param_true)
+    print('\nEstimated parameter:', param_final)
+
+
+def try_interative_estimation_spatial():
+    """Try estimating parameters from simple to more complicated model.
+
+    """
+    restriction = 'full'
+    nstocks = 3
+    nobs = 2000
+    groups = [(0, 1)]
+    weights = get_weight(groups=groups, nitems=nstocks)
+    ncat = weights.shape[0]
+    alpha = np.array([.1, .01])
+    beta = np.array([.5, .01])
+    gamma = .0
+    # A, B, C - n x n matrices
+    avecs = np.ones((ncat+1, nstocks)) * alpha[:, np.newaxis]**.5
+    bvecs = np.ones((ncat+1, nstocks)) * beta[:, np.newaxis]**.5
+    dvecs = np.ones((ncat, nstocks)) * gamma**.5
+    vvec = np.ones(nstocks)
+
+    param_true = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                           dvecs=dvecs, vvec=vvec,
+                                           weights=weights)
+
+    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+    param_final = init_param_spatial(innov, restriction=restriction,
+                                     weights=weights)
+
+    print('\nTrue parameter:', param_true)
+    print('\nEstimated parameter:', param_final)
+
+
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
@@ -292,5 +346,11 @@ if __name__ == '__main__':
 #    with take_time('Total simulation and estimation'):
 #        try_spatial()
 
-    with take_time('Total simulation and estimation'):
-        try_spatial_combinations()
+#    with take_time('Total simulation and estimation'):
+#        try_spatial_combinations()
+
+#    with take_time('Initialize parameters for standard model'):
+#        try_interative_estimation_standard()
+
+    with take_time('Initialize parameters for spatial model'):
+        try_interative_estimation_spatial()
