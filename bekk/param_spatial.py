@@ -43,10 +43,13 @@ class ParamSpatial(ParamGeneric):
 
         """
         super(ParamSpatial, self).__init__(nstocks)
-        self.avecs = None
-        self.bvecs = None
-        self.dvecs = None
-        self.vvec = None
+        self.avecs = np.vstack((np.diag(self.amat), np.zeros(nstocks)))
+        self.bvecs = np.vstack((np.diag(self.bmat), np.zeros(nstocks)))
+        self.dvecs = np.zeros((1, nstocks))
+        self.vvec = self.find_vvec(avecs=self.avecs, bvecs=self.bvecs,
+                                   dvecs=self.dvecs,
+                                   weights=np.zeros((1, 3, 3)),
+                                   target=np.eye(nstocks))
 
     @staticmethod
     def get_model():

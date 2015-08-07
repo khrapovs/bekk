@@ -17,6 +17,20 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
 
     """Test spatial ParamSpatial."""
 
+    def test_init_empty(self):
+        """Test spatial specification."""
+
+        nstocks = 3
+        param = ParamSpatial(nstocks=nstocks)
+
+        self.assertEqual(param.amat.shape, (nstocks, nstocks))
+        self.assertEqual(param.bmat.shape, (nstocks, nstocks))
+        self.assertEqual(param.cmat.shape, (nstocks, nstocks))
+        self.assertEqual(param.avecs.shape, (2, nstocks))
+        self.assertEqual(param.bvecs.shape, (2, nstocks))
+        self.assertEqual(param.dvecs.shape, (1, nstocks))
+        self.assertEqual(param.vvec.shape, (nstocks, ))
+
     def test_init_spatial(self):
         """Test spatial specification."""
 

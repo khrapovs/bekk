@@ -19,6 +19,7 @@ import time
 import numpy as np
 
 from scipy.optimize import minimize
+from functools import partial
 
 from bekk import ParamStandard, ParamSpatial, BEKKResults
 from .utils import estimate_uvar, likelihood_python, filter_var_python
@@ -157,6 +158,8 @@ class BEKK(object):
         self.hvar = np.zeros((nobs, nstocks, nstocks), dtype=float)
         self.hvar[0] = var_target.copy()
 
+        # Check for existence of initial guess among arguments.
+        # Otherwise, initialize.
         if param_start is None:
             if model == 'standard':
                 param_start = ParamStandard.from_target(target=var_target)
@@ -174,13 +177,16 @@ class BEKK(object):
 
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
-        # Check for existence of initial guess among arguments.
-        # Otherwise, initialize.
-        args = (model, target, cfree, restriction, weights, cython)
+        # Likelihood arguments
+        kwargs = {'model': model, 'target': target, 'cfree': cfree,
+                  'restriction': restriction, 'weights': weights,
+                  'cython': cython}
+        # Likelihood function
+        likelihood = partial(self.likelihood, **kwargs)
         # Start timer for the whole optimization
         time_start = time.time()
         # Run optimization
-        opt_out = minimize(self.likelihood, theta_start, args=args,
+        opt_out = minimize(likelihood, theta_start,
                            method=method, options=options)
         # How much time did it take in minutes?
         time_delta = time.time() - time_start

@@ -287,8 +287,8 @@ if __name__ == '__main__':
 #    with take_time('\nTotal simulation and estimation'):
 #        try_standard()
 
-    with take_time('Total simulation and estimation'):
-        try_spatial()
-
 #    with take_time('Total simulation and estimation'):
-#        try_spatial_combinations()
+#        try_spatial()
+
+    with take_time('Total simulation and estimation'):
+        try_spatial_combinations()
