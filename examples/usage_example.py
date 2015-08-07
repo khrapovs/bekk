@@ -14,7 +14,7 @@ from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
-from bekk.utils import take_time
+from bekk.utils import take_time, get_weight
 
 
 def try_bekk():
@@ -160,7 +160,8 @@ def try_spatial():
     restriction = 'scalar'
     nstocks = 3
     nobs = 2000
-    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+    groups = [(0, 1)]
+    weights = get_weight(groups=groups, nitems=nstocks)
     ncat = weights.shape[0]
     alpha = np.array([.1, .01])
     beta = np.array([.5, .01])
@@ -195,8 +196,8 @@ def try_spatial():
                                                restriction=restriction)
     norm = np.linalg.norm(theta_true - theta_final)
 
-    print('\nParameters (true and estimated):\n',
-          np.vstack([theta_true, theta_final]).T)
+    print('\nParameters (true and estimated):')
+    print(np.vstack([theta_true, theta_final]).T)
     print('\nEucledean norm of the difference = %.4f' % norm)
 
 
@@ -210,7 +211,8 @@ def try_spatial_combinations():
     restriction = 'full'
     nstocks = 3
     nobs = 2000
-    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+    groups = [(0, 1)]
+    weights = get_weight(groups=groups, nitems=nstocks)
     ncat = weights.shape[0]
     alpha = np.array([.1, .01])
     beta = np.array([.5, .01])
