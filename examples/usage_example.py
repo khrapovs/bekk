@@ -167,11 +167,11 @@ def try_spatial():
     use_target = False
     nstocks = 3
     nobs = 2000
-    weights = np.array([[[0, .1, 0], [.1, 0, 0], [0, 0, 0]]])
+    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
     ncat = weights.shape[0]
-    alpha = np.array([.1, .05])
-    beta = np.array([.8, .1])
-    gamma = .005
+    alpha = np.array([.1, .01])
+    beta = np.array([.5, .01])
+    gamma = .0
     # A, B, C - n x n matrices
     avecs = np.ones((ncat+1, nstocks)) * alpha[:, np.newaxis]**.5
     bvecs = np.ones((ncat+1, nstocks)) * beta[:, np.newaxis]**.5
@@ -191,11 +191,6 @@ def try_spatial():
                         cython=True)
 
     print(result)
-
-    print('Target:\n', estimate_uvar(innov))
-
-    print('\nTrue parameters:\n', param)
-    print('\nEstimated parameters:\n', result.param_final)
 
     print('\nTrue parameters:\n',
           param.get_theta(use_target=use_target))
@@ -231,8 +226,8 @@ if __name__ == '__main__':
 
 #    time_likelihood()
 
-    with take_time('\nTotal simulation and estimation'):
-        try_standard()
+#    with take_time('\nTotal simulation and estimation'):
+#        try_standard()
 
-#    with take_time('Total simulation and estimation'):
-#        try_spatial()
+    with take_time('Total simulation and estimation'):
+        try_spatial()
