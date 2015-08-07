@@ -151,7 +151,7 @@ class ParamGeneric(object):
         try:
             return sl.cholesky(ccmat, 1)
         except sl.LinAlgError:
-            warnings.warn('Matrix C is singular!')
+            # warnings.warn('Matrix C is singular!')
             return None
 
     @staticmethod

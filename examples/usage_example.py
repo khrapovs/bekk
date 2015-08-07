@@ -159,6 +159,16 @@ def try_standard():
 
     print(result)
 
+    theta_true = param_true.get_theta(use_target=use_target,
+                                      restriction=restriction)
+    theta_final = result.param_final.get_theta(use_target=use_target,
+                                               restriction=restriction)
+    norm = np.linalg.norm(theta_true - theta_final)
+
+    print('\nTrue parameters:\n', theta_true)
+    print('\nEstimated parameters:\n', theta_final)
+    print('\nEucledean norm of the difference = %.4f' % norm)
+
 
 def try_spatial():
     """Try simulating and estimating spatial BEKK.
@@ -179,25 +189,30 @@ def try_spatial():
     dvecs = np.ones((ncat, nstocks)) * gamma**.5
     vvec = np.ones(nstocks)
 
-    param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                      vvec=vvec, weights=weights)
+    param_true = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                           dvecs=dvecs, vvec=vvec,
+                                           weights=weights)
 
-    innov, hvar_true = simulate_bekk(param, nobs=nobs, distr='normal')
+    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    result = bekk.estimate(param_start=param, use_target=use_target,
+    result = bekk.estimate(param_start=param_true, use_target=use_target,
                            restriction=restriction, model='spatial',
                            weights=weights, method='SLSQP', cython=True)
 
     print(result)
 
-    print('\nTrue parameters:\n',
-          param.get_theta(use_target=use_target, restriction=restriction))
-    print('\nEstimated parameters:\n',
-          result.param_final.get_theta(use_target=use_target,
-                                       restriction=restriction))
+    theta_true = param_true.get_theta(use_target=use_target,
+                                      restriction=restriction)
+    theta_final = result.param_final.get_theta(use_target=use_target,
+                                               restriction=restriction)
+    norm = np.linalg.norm(theta_true - theta_final)
+
+    print('\nTrue parameters:\n', theta_true)
+    print('\nEstimated parameters:\n', theta_final)
+    print('\nEucledean norm of the difference = %.4f' % norm)
 
 
 if __name__ == '__main__':
