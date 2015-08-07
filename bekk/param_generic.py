@@ -179,7 +179,7 @@ class ParamGeneric(object):
             with np.errstate(divide='ignore', invalid='ignore'):
                 return sco.fixed_point(fun, hvar)
         except RuntimeError:
-            warnings.warn('Could not find stationary varaince!')
+            # warnings.warn('Could not find stationary varaince!')
             return None
 
     def get_uvar(self):

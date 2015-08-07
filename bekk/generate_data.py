@@ -25,15 +25,15 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
         Number of observations to generate. Time series length
     distr : str
         Name of the distribution from which to generate innovations.
-        Must be
 
+        Must be
             - 'normal'
             - 'student'
             - 'skewt'
     degf : int
         Degrees of freedom for Student or SkewStudent distributions
     lam : float
-        Skewness parameter for Student or SkewStudent distributions
+        Skewness parameter for Student or SkewStudent distributions.
         Must be between (-1, 1)
 
     Returns

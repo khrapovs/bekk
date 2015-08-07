@@ -8,44 +8,24 @@ from __future__ import print_function, division
 import time
 
 import numpy as np
-import scipy.linalg as scl
 
 from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
                   regenerate_data, plot_data)
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
-from bekk.utils import take_time, estimate_uvar
+from bekk.utils import take_time
 
 
-def try_bekk(nstocks=2, nobs=500, restriction='scalar', use_target=True,
-              simulate=True, log_file=None):
+def try_bekk():
     """Simulate and estimate BEKK model.
 
-    Parameters
-    ----------
-    nstocks : int
-        Number of stocks in the model
-    nobs : int
-        The length of time series
-    restriction : str
-        Restriction on model parameters. Can be
-            - 'full'
-            - 'diagonal'
-            - 'scalar'
-    use_target : bool
-        Variance targeting flag.
-        If True, then unconditonal variance is estimated on the first step.
-        The rest of parameters are estimated on the second step.
-    simulate : bool
-        Whether to simulate the data (True) or load actual returns (False).
-    log_file : str
-        Name of the log file to output results.
-
     """
-    if log_file is not None:
-        with open(log_file, 'w') as texfile:
-            texfile.write('')
+    nstocks = 2
+    use_target = True
+    nobs = 2000
+    restriction = 'full'
+    simulate = True
 
     # A, B, C - n x n matrices
     A = np.eye(nstocks) * .09**.5
@@ -136,18 +116,19 @@ def time_likelihood():
 
 
 def try_standard():
-    """Try simulating and estimating spatial BEKK.
+    """Try simulating and estimating standard BEKK.
 
     """
     use_target = False
-    restriction = 'diagonal'
-    nstocks = 2
+    restriction = 'full'
+    nstocks = 6
     nobs = 2000
     # A, B, C - n x n matrices
     amat = np.eye(nstocks) * .09**.5
     bmat = np.eye(nstocks) * .9**.5
     target = np.eye(nstocks)
     param_true = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
+    print(param_true)
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
@@ -165,8 +146,8 @@ def try_standard():
                                                restriction=restriction)
     norm = np.linalg.norm(theta_true - theta_final)
 
-    print('\nTrue parameters:\n', theta_true)
-    print('\nEstimated parameters:\n', theta_final)
+    print('\nParameters (true and estimated):\n',
+          np.vstack([theta_true, theta_final]).T)
     print('\nEucledean norm of the difference = %.4f' % norm)
 
 
@@ -174,7 +155,7 @@ def try_spatial():
     """Try simulating and estimating spatial BEKK.
 
     """
-    use_target = True
+    use_target = False
     restriction = 'full'
     nstocks = 3
     nobs = 2000
@@ -192,6 +173,7 @@ def try_spatial():
     param_true = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
                                            dvecs=dvecs, vvec=vvec,
                                            weights=weights)
+    print(param_true)
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
@@ -210,29 +192,96 @@ def try_spatial():
                                                restriction=restriction)
     norm = np.linalg.norm(theta_true - theta_final)
 
-    print('\nTrue parameters:\n', theta_true)
-    print('\nEstimated parameters:\n', theta_final)
+    print('\nParameters (true and estimated):\n',
+          np.vstack([theta_true, theta_final]).T)
+    print('\nEucledean norm of the difference = %.4f' % norm)
+
+
+def try_spatial_combinations():
+    """Try simulating spatial BEKK
+    and estimating it with both spatial and standard.
+
+    """
+    use_target = False
+    restriction = 'full'
+    nstocks = 3
+    nobs = 2000
+    weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
+    ncat = weights.shape[0]
+    alpha = np.array([.1, .01])
+    beta = np.array([.5, .01])
+    gamma = .0
+    # A, B, C - n x n matrices
+    avecs = np.ones((ncat+1, nstocks)) * alpha[:, np.newaxis]**.5
+    bvecs = np.ones((ncat+1, nstocks)) * beta[:, np.newaxis]**.5
+    dvecs = np.ones((ncat, nstocks)) * gamma**.5
+    vvec = np.ones(nstocks)
+
+    param_true = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
+                                           dvecs=dvecs, vvec=vvec,
+                                           weights=weights)
+    print(param_true)
+
+    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+    bekk = BEKK(innov)
+
+    # -------------------------------------------------------------------------
+    # Estimate spatial
+
+    result = bekk.estimate(param_start=param_true, use_target=use_target,
+                           restriction=restriction, model='spatial',
+                           weights=weights, method='SLSQP', cython=True)
+
+    print(result)
+
+    theta_true = param_true.get_theta(use_target=use_target,
+                                      restriction=restriction)
+    theta_final = result.param_final.get_theta(use_target=use_target,
+                                               restriction=restriction)
+    norm = np.linalg.norm(theta_true - theta_final)
+
+    print('\nParameters (true and estimated):\n',
+          np.vstack([theta_true, theta_final]).T)
+    print('\nEucledean norm of the difference = %.4f' % norm)
+
+    # -------------------------------------------------------------------------
+    # Estimate standard
+
+    param_true = ParamStandard.from_abc(amat=param_true.amat,
+                                        bmat=param_true.bmat,
+                                        cmat=param_true.cmat)
+
+    result = bekk.estimate(param_start=param_true, use_target=use_target,
+                           restriction=restriction, model='standard',
+                           weights=weights, method='SLSQP', cython=True)
+
+    print(result)
+
+    theta_true = param_true.get_theta(use_target=use_target,
+                                      restriction=restriction)
+    theta_final = result.param_final.get_theta(use_target=use_target,
+                                               restriction=restriction)
+    norm = np.linalg.norm(theta_true - theta_final)
+
+    print('\nParameters (true and estimated):\n',
+          np.vstack([theta_true, theta_final]).T)
     print('\nEucledean norm of the difference = %.4f' % norm)
 
 
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
-    nstocks = 2
-    use_target = True
-    nobs = 2000
-    restriction = 'full'
 
-#    bekk = try_bekk(nstocks=nstocks, simulate=True, use_target=use_target,
-#                     restriction=restriction, nobs=nobs)
-
-#    try_bekk(nstocks=nstocks, simulate=False, use_target=use_target,
-#              nobs=nobs, log_file='log_real.txt')
+#    try_bekk()
 
 #    time_likelihood()
 
 #    with take_time('\nTotal simulation and estimation'):
 #        try_standard()
 
+#    with take_time('Total simulation and estimation'):
+#        try_spatial()
+
     with take_time('Total simulation and estimation'):
-        try_spatial()
+        try_spatial_combinations()
