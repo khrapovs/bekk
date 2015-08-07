@@ -11,7 +11,6 @@ import numpy.testing as npt
 import scipy.linalg as scl
 
 from bekk import ParamSpatial
-from bekk.utils import get_weight
 
 
 class ParamSpatialSpatialTestCase(ut.TestCase):
@@ -24,21 +23,21 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         """
         nstocks = 3
         groups = [(0, 1)]
-        weight = get_weight(groups=groups, nitems=nstocks)
+        weight = ParamSpatial.get_weight(groups=groups, nitems=nstocks)
         weight_exp = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
 
         npt.assert_almost_equal(weight, weight_exp)
 
         nstocks = 3
         groups = [(0, 1, 2)]
-        weight = get_weight(groups=groups, nitems=nstocks)
+        weight = ParamSpatial.get_weight(groups=groups, nitems=nstocks)
         weight_exp = np.array([[[0, .5, .5], [.5, 0, .5], [.5, .5, 0]]])
 
         npt.assert_almost_equal(weight, weight_exp)
 
         nstocks = 3
         groups = [(0, 1), (1, 2)]
-        weight = get_weight(groups=groups, nitems=nstocks)
+        weight = ParamSpatial.get_weight(groups=groups, nitems=nstocks)
         weight_exp = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]],
                                [[0, 0, 0], [0, 0, 1], [0, 1, 0]]])
 
@@ -46,7 +45,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
 
         nstocks = 4
         groups = [(0, 1), (1, 2, 3)]
-        weight = get_weight(groups=groups, nitems=nstocks)
+        weight = ParamSpatial.get_weight(groups=groups, nitems=nstocks)
         weight_exp = np.zeros((len(groups), nstocks, nstocks))
         weight_exp[0, :2, :2] = np.array([[0, 1], [1, 0]])
         weight_exp[1, 1:, 1:] = np.array([[0, .5, .5],

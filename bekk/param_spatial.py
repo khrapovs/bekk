@@ -7,6 +7,8 @@ Spatial parameter class
 """
 from __future__ import print_function, division
 
+import itertools
+
 import numpy as np
 import scipy.linalg as sl
 
@@ -30,6 +32,8 @@ class ParamSpatial(ParamGeneric):
         Initialize from theta vector
     get_theta
         Convert parameter matrices to 1-dimensional array
+    get_weight
+        Generate weighting matrices given groups
 
     """
 
@@ -309,3 +313,64 @@ class ParamSpatial(ParamGeneric):
                 raise NotImplementedError('Restriction is not implemented!')
 
         return np.concatenate(theta)
+
+    @staticmethod
+    def get_weight(groups=None, nitems=1):
+        """Generate weighting matrices given groups.
+
+        Parameters
+        ----------
+        groups : list of tuples
+            Encoded groups of items
+        nitems : int
+            Total number of items
+
+        Returns
+        -------
+        (ngroups, nitems, nitems) array
+            Spatial weights
+
+        Examples
+        --------
+        >>> print(ParamSpatial.get_weight(groups=[(0, 1)], nitems=3))
+        [[[ 0.  1.  0.]
+          [ 1.  0.  0.]
+          [ 0.  0.  0.]]]
+        >>> print(ParamSpatial.get_weight(groups=[(0, 1, 2)], nitems=3))
+        [[[ 0.   0.5  0.5]
+          [ 0.5  0.   0.5]
+          [ 0.5  0.5  0. ]]]
+        >>> print(ParamSpatial.get_weight(groups=[(0, 1), (1, 2)], nitems=3))
+        [[[ 0.  1.  0.]
+          [ 1.  0.  0.]
+          [ 0.  0.  0.]]
+         [[ 0.  0.  0.]
+          [ 0.  0.  1.]
+          [ 0.  1.  0.]]]
+        >>> groups = [(0, 1), (1, 2, 3)]
+        >>> print(ParamSpatial.get_weight(groups=groups, nitems=4))
+        [[[ 0.   1.   0.   0. ]
+          [ 1.   0.   0.   0. ]
+          [ 0.   0.   0.   0. ]
+          [ 0.   0.   0.   0. ]]
+         [[ 0.   0.   0.   0. ]
+          [ 0.   0.   0.5  0.5]
+          [ 0.   0.5  0.   0.5]
+          [ 0.   0.5  0.5  0. ]]]
+
+        """
+        if groups is None:
+            ncat = 1
+        else:
+            ncat = len(groups)
+
+        weight = np.zeros((ncat, nitems, nitems))
+        for i in range(ncat):
+            for id1, id2 in itertools.product(groups[i], groups[i]):
+                if id1 != id2:
+                    weight[i, id1, id2] = 1
+            norm = weight[i].sum(0)[:, np.newaxis]
+            norm[norm == 0] = 1
+            weight[i] /= norm
+
+        return weight

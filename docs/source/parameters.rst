@@ -14,4 +14,4 @@ Parameter classes
 .. automodule:: bekk.param_spatial
 
 .. autoclass:: bekk.param_spatial.ParamSpatial
-	:members: from_theta, get_theta
+	:members: from_theta, get_theta, get_weight

@@ -7,14 +7,13 @@ from __future__ import print_function, division
 
 import time
 import contextlib
-import itertools
 
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
 import scipy.linalg as scl
 
-__all__ = ['estimate_uvar', 'plot_data', 'get_weight',
+__all__ = ['estimate_uvar', 'plot_data',
            'filter_var_python',  'likelihood_python']
 
 
@@ -159,36 +158,3 @@ def take_time(desc):
     yield
     dt = time.time() - t0
     print('%s took %s' % (desc, format_time(dt)))
-
-
-def get_weight(groups=None, nitems=1):
-    """Generate weighting matrices given groups.
-
-    Parameters
-    ----------
-    groups : list of tuples
-        Encoded groups of items
-    nitems : int
-        Total number of items
-
-    Returns
-    -------
-    (ngroups, nitems, nitems) array
-        Spatial weights
-
-    """
-    if groups is None:
-        ncat = 1
-    else:
-        ncat = len(groups)
-
-    weight = np.zeros((ncat, nitems, nitems))
-    for i in range(ncat):
-        for id1, id2 in itertools.product(groups[i], groups[i]):
-            if id1 != id2:
-                weight[i, id1, id2] = 1
-        norm = weight[i].sum(0)[:, np.newaxis]
-        norm[norm == 0] = 1
-        weight[i] /= norm
-
-    return weight
