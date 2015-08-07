@@ -9,6 +9,16 @@ BEKK model simulation and estimation
 
 This module allows to simulate and estimate the BEKK(1,1) model proposed in [1]_.
 
+The model assumes that demeaned returns :math:`u_t` are conditionally normal:
+
+    .. math::
+        u_t = e_t H_t^{1/2},\quad e_t \sim N(0,I),
+
+with variance matrix evolving accrding to the following recursion:
+
+    .. math::
+        H_t = CC^\prime + Au_{t-1}u_{t-1}^\prime A^\prime + BH_{t-1}B^\prime.
+
 References
 ----------
 .. [1] Robert F. Engle and Kenneth F. Kroner

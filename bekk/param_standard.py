@@ -25,10 +25,6 @@ class ParamStandard(ParamGeneric):
 
     Methods
     -------
-    from_abc
-        Initialize from A, B, and C arrays
-    from_target
-        Initialize from A, B, and variance target
     from_theta
         Initialize from theta vector
     get_theta
@@ -65,20 +61,16 @@ class ParamStandard(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If target is not None:
-
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-
             If target is None:
-
                 - +(n-1)*n/2 for parameter C
 
         nstocks : int
             Number of stocks in the model
         restriction : str
             Can be
-
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
@@ -123,7 +115,6 @@ class ParamStandard(ParamGeneric):
         ----------
         restriction : str
             Can be
-
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
@@ -137,11 +128,9 @@ class ParamStandard(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If use_target is True:
-
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
-
             If use_target is False:
                 - +(n-1)*n/2 for parameter cmat
 

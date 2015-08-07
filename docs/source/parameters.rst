@@ -9,9 +9,9 @@ Parameter classes
 .. automodule:: bekk.param_standard
 
 .. autoclass:: bekk.param_standard.ParamStandard
-	:members:
+	:members: from_theta, get_theta
 
 .. automodule:: bekk.param_spatial
 
 .. autoclass:: bekk.param_spatial.ParamSpatial
-	:members:
+	:members: from_theta, get_theta

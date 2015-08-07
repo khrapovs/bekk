@@ -26,15 +26,7 @@ __all__ = ['BEKK']
 
 class BEKK(object):
 
-    r"""BEKK model.
-
-    .. math::
-        u_t = e_t H_t^{1/2},\quad e_t \sim N(0,I),
-
-    with variance matrix evolving accrding to the following recursion:
-
-    .. math::
-        H_t = CC^\prime + Au_{t-1}u_{t-1}^\prime A^\prime + BH_{t-1}B^\prime.
+    """BEKK estimation class.
 
     Attributes
     ----------
@@ -112,20 +104,16 @@ class BEKK(object):
                  method='SLSQP', cython=True, model='standard', weights=None):
         """Estimate parameters of the BEKK model.
 
-        Updates several attributes of the class.
-
         Parameters
         ----------
         param_start : BEKKParams instance
             Starting parameters
         model : str
             Specific model to estimate. Must be
-
                 - 'standard'
                 - 'spatial'
         restriction : str
             Restriction on parameters. Must be
-
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
@@ -137,6 +125,11 @@ class BEKK(object):
             Optimization method. See scipy.optimize.minimize
         cython : bool
             Whether to use Cython optimizations (True) or not (False)
+
+        Returns
+        -------
+        BEKKResults instance
+            Estimation results object
 
         """
         # Update default settings

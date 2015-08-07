@@ -21,15 +21,11 @@ class ParamSpatial(ParamGeneric):
 
     Attributes
     ----------
-    amat, bmat, cmat
+    amat, bmat, cmat, avecs, bvecs, dvecs, vvec
         Matrix representations of BEKK parameters
 
     Methods
     -------
-    from_abc
-        Initialize from A, B, and C arrays
-    from_target
-        Initialize from A, B, and variance target
     from_theta
         Initialize from theta vector
     get_theta
@@ -47,6 +43,10 @@ class ParamSpatial(ParamGeneric):
 
         """
         super(ParamSpatial, self).__init__(nstocks)
+        self.avecs = None
+        self.bvecs = None
+        self.dvecs = None
+        self.vvec = None
 
     @staticmethod
     def get_model():
@@ -192,7 +192,6 @@ class ParamSpatial(ParamGeneric):
             Variance target matrix
         restriction : str
             Can be
-
                 - 'full' = 'diagonal'
                 - 'scalar'
 
@@ -247,7 +246,6 @@ class ParamSpatial(ParamGeneric):
             Whether to estimate only a, b, and d (True) or v as well (False)
         restriction : str
             Can be
-
                 - 'full' = 'diagonal'
                 - 'scalar'
         use_target : bool
@@ -261,7 +259,6 @@ class ParamSpatial(ParamGeneric):
             If use_target is True:
                 - 'full' or 'diagonal' - 2*n*(m+1)
                 - 'scalar' - 2*(m+1)
-
             If use_target is False:
                 - 'full' or 'diagonal' - +n
                 - 'scalar' - + (m+1)

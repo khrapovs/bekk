@@ -31,6 +31,8 @@ class ParamGeneric(object):
         Initialize from A, B, and C arrays
     find_cmat
         Find C matrix given A, B, and H
+    from_target
+        Initialize from A, B, and variance target
     find_stationary_var
         Return unconditional variance given parameter matrices
     get_uvar
