@@ -153,6 +153,11 @@ class BEKK(object):
             Estimation results object
 
         """
+        # Check for incompatible inputs
+        if use_target and cfree:
+            raise ValueError('use_target and cfree are incompatible!')
+        if (weights is not None) and (model != 'spatial'):
+            raise ValueError('The model is incompatible with weights!')
         # Update default settings
         nobs, nstocks = self.innov.shape
         var_target = estimate_uvar(self.innov)
@@ -170,6 +175,7 @@ class BEKK(object):
             else:
                 raise NotImplementedError('The model is not implemented!')
 
+        # Get vector of parameters to start optimization
         theta_start = param_start.get_theta(restriction=restriction,
                                             use_target=use_target, cfree=cfree)
         if use_target:
