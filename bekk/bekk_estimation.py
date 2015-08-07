@@ -42,14 +42,8 @@ class BEKK(object):
     ----------
     innov
         Return innovations
-    log_file
-        File name to write the results of estimation
-    param_start
-        Initial values of model parameters
-    param_final
-        Final values of model parameters
-    opt_out
-        Optimization results
+    hvar
+        Condiational variance
 
     Methods
     -------
@@ -119,8 +113,8 @@ class BEKK(object):
 
         Parameters
         ----------
-        param_start : BEKKParams instance
-            Starting parameters
+        param_start : ParamStandard or ParamSpatial instance
+            Starting parameters. See Notes for more details.
         model : str
             Specific model to estimate.
 
@@ -151,6 +145,13 @@ class BEKK(object):
         -------
         BEKKResults instance
             Estimation results object
+
+        Notes
+        -----
+
+        If no param_start is given, the program will estimate parameters in
+        the order 'from simple to more complicated' (from scalar to diagonal
+        to full) while always using variance targeting.
 
         """
         # Check for incompatible inputs

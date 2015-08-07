@@ -46,13 +46,12 @@ class BEKKResults(object):
     Methods
     -------
 
-
     """
 
     def __init__(self, innov=None, hvar=None, var_target=None, model=None,
                  use_target=None, restriction=None, cfree=None,
-                 method=None, cython=None,
-                 param_start=None, param_final=None, time_delta=None,
+                 method=None, cython=None, time_delta=None,
+                 param_start=None, param_final=None,
                  opt_out=None):
         """Initialize the class.
 
@@ -69,16 +68,20 @@ class BEKKResults(object):
         param_final : BEKKParams instance
             Estimated parameters
         model : str
-            Specific model to estimate. Must be
+            Specific model to estimate.
 
+            Must be
                 - 'standard'
                 - 'spatial'
-        restriction : str
-            Restriction on parameters. Must be
 
+        restriction : str
+            Restriction on parameters.
+
+            Must be
                 - 'full'
                 - 'diagonal'
                 - 'scalar'
+
         use_target : bool
             Whether to use variance targeting (True) or not (False)
         cfree : bool
