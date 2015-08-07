@@ -13,32 +13,8 @@ import seaborn as sns
 import numpy as np
 import scipy.linalg as scl
 
-__all__ = ['_bekk_recursion', 'estimate_uvar', 'plot_data',
+__all__ = ['estimate_uvar', 'plot_data',
            'filter_var_python',  'likelihood_python']
-
-
-def _bekk_recursion(param, hzero, hone, htwo):
-    """BEKK recursion.
-
-    Parameters
-    ----------
-    param : BEKKParams instance
-        Model parameters
-    hzero : (nstocks, nstocks) array
-        Initial matrix
-    hone : (nstocks, nstocks) array
-        Squared innovations matrix
-    htwo : (nstocks, nstocks) array
-        Old matrix
-
-    Returns
-    -------
-    hnew : (nstocks, nstocks) array
-        Updated variance matrix
-
-    """
-    return hzero + param.amat.dot(hone).dot(param.amat.T) \
-        + param.bmat.dot(htwo).dot(param.bmat.T)
 
 
 def filter_var_python(hvar, innov, amat, bmat, cmat):
