@@ -10,13 +10,7 @@ notifications:
 branches:
   only:
     - master
-    - cython
 sudo: false
-addons:
-  apt:
-    packages:
-    # GSL library
-    - libgsl0-dev
 
 # Setup anaconda
 before_install:
