@@ -91,7 +91,7 @@ class ParamSpatial(ParamGeneric):
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
                                                 dvecs=dvecs, weights=weights)
         dmat_inv = scl.inv(dmat)
-        ccmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
+        ccmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv.T)
         cmat = scl.cholesky(ccmat, 1)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
@@ -201,8 +201,8 @@ class ParamSpatial(ParamGeneric):
         for i in range(ncat):
             amat += np.diag(avecs[i+1]).dot(weights[i])
             bmat += np.diag(bvecs[i+1]).dot(weights[i])
-        if dvecs is not None:
-            dmat -= np.diag(dvecs[i]).dot(weights[i])
+            if dvecs is not None:
+                dmat -= np.diag(dvecs[i]).dot(weights[i])
 
         return amat, bmat, dmat
 
@@ -355,6 +355,7 @@ class ParamSpatial(ParamGeneric):
                     for item in group:
                         dvecs[cat, item] = theta[j]
                     j += 1
+            vvec = theta[j:]
         elif restriction == 'scalar':
             dvecs_size = ncat
             dvecs = theta[:dvecs_size]

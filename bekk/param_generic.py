@@ -173,8 +173,14 @@ class ParamGeneric(object):
         (nstocks, nstocks) array
 
         """
-        return 2 * uvar - ccmat - amat.dot(uvar).dot(amat.T) \
-            - bmat.dot(uvar).dot(bmat.T)
+        nstocks = amat.shape[0]
+        idl = np.tril_indices(nstocks)
+        idu = np.triu_indices(nstocks)
+        hvar = np.zeros((nstocks, nstocks))
+        hvar[idl] = uvar
+        hvar[idu] = hvar.T[idu]
+        return (2 * hvar - ccmat - amat.dot(hvar).dot(amat.T) \
+            - bmat.dot(hvar).dot(bmat.T))[idl]
 
     @staticmethod
     def find_stationary_var(amat=None, bmat=None, cmat=None):
@@ -191,12 +197,18 @@ class ParamGeneric(object):
             Unconditional variance matrix
 
         """
-        hvar = np.eye(amat.shape[0])
+        idl = np.tril_indices(amat.shape[0])
+        idu = np.triu_indices(amat.shape[0])
+        hvar = np.eye(amat.shape[0])[idl]
         kwargs = {'amat': amat, 'bmat': bmat, 'ccmat': cmat.dot(cmat.T)}
         fun = partial(ParamGeneric.fixed_point, **kwargs)
         try:
             with np.errstate(divide='ignore', invalid='ignore'):
-                return sco.fixed_point(fun, hvar)
+                uvar = sco.fixed_point(fun, hvar)
+                hvar = np.eye(amat.shape[0])
+                hvar[idl] = uvar
+                hvar[idu] = hvar.T[idu]
+                return hvar
         except RuntimeError:
             # warnings.warn('Could not find stationary varaince!')
             return None

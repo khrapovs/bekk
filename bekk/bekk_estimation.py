@@ -134,8 +134,6 @@ class BEKK(object):
             Whether to use variance targeting (True) or not (False)
         cfree : bool
             Whether to leave C matrix free (True) or not (False)
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices for spatial only
         groups : list of lists of tuples
             Encoded groups of items
         method : str
@@ -175,7 +173,7 @@ class BEKK(object):
                 param_start = self.init_param_standard(restriction=restriction)
             elif model == 'spatial':
                 param_start = self.init_param_spatial(restriction=restriction,
-                                                      weights=weights)
+                                                      groups=groups)
             else:
                 raise NotImplementedError('The model is not implemented!')
 
@@ -265,7 +263,7 @@ class BEKK(object):
 
         return param
 
-    def init_param_spatial(self, restriction='scalar', weights=None):
+    def init_param_spatial(self, restriction='scalar', groups=None):
         """Estimate scalar BEKK with variance targeting.
 
         Parameters
@@ -276,9 +274,10 @@ class BEKK(object):
             Must be
                 - 'full'
                 - 'diagonal'
+                - 'group'
                 - 'scalar'
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices for spatial only
+        groups : list of lists of tuples
+            Encoded groups of items
 
         Returns
         -------
@@ -288,17 +287,22 @@ class BEKK(object):
         """
         param = ParamSpatial(nstocks=self.innov.shape[1])
 
-        with take_time('Estimating scalar'):
-            result = self.estimate(param_start=param, use_target=True,
-                                   weights=weights,
-                                   restriction='scalar', model='spatial')
-        param = result.param_final
+        kwargs = {'use_target': True, 'groups': groups, 'model': 'spatial'}
+        est_partial = partial(self.estimate, **kwargs)
+
+        if restriction in ('diagonal', 'full', 'group', 'scalar'):
+            with take_time('Estimating scalar'):
+                result = est_partial(param_start=param,  restriction='scalar')
+                param = result.param_final
+
+        if restriction in ('diagonal', 'full', 'group'):
+            with take_time('Estimating group'):
+                result = est_partial(param_start=param,  restriction='group')
+                param = result.param_final
 
         if restriction in ('diagonal', 'full'):
             with take_time('Estimating full/diagonal'):
-                result = self.estimate(param_start=param, use_target=True,
-                                       weights=weights,
-                                       restriction='full', model='spatial')
-            param = result.param_final
+                result = est_partial(param_start=param,  restriction='full')
+                param = result.param_final
 
         return param
