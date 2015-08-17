@@ -10,7 +10,7 @@ from __future__ import print_function, division
 import itertools
 
 import numpy as np
-import scipy.linalg as sl
+import scipy.linalg as scl
 
 from .param_generic import ParamGeneric
 
@@ -50,9 +50,9 @@ class ParamSpatial(ParamGeneric):
         self.avecs = np.vstack((np.diag(self.amat), np.zeros(nstocks)))
         self.bvecs = np.vstack((np.diag(self.bmat), np.zeros(nstocks)))
         self.dvecs = np.zeros((1, nstocks))
+        self.weights = np.zeros((1, nstocks, nstocks))
         self.vvec = self.find_vvec(avecs=self.avecs, bvecs=self.bvecs,
-                                   dvecs=self.dvecs,
-                                   weights=np.zeros((1, 3, 3)),
+                                   dvecs=self.dvecs, weights=self.weights,
                                    target=np.eye(nstocks))
 
     @staticmethod
@@ -63,8 +63,8 @@ class ParamSpatial(ParamGeneric):
         return 'spatial'
 
     @classmethod
-    def from_spatial(cls, avecs=None, bvecs=None, dvecs=None,
-                     vvec=None, cmat=None, target=None, weights=None):
+    def from_abdv(cls, avecs=None, bvecs=None, dvecs=None, vvec=None,
+                  groups=None):
         """Initialize from spatial representation.
 
         Parameters
@@ -77,12 +77,8 @@ class ParamSpatial(ParamGeneric):
             Parameter matrix
         vvec : (nstocks, ) array
             Parameter vector
-        cmat : (nstocks, nstocks) array
-            Lower triangular matrix for teh intercept CC'
-        target : (nstocks, nstocks) array
-            Variance target matrix
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices
+        groups : list of lists of tuples
+            Encoded groups of items
 
         Returns
         -------
@@ -90,29 +86,96 @@ class ParamSpatial(ParamGeneric):
             BEKK parameters
 
         """
+        weights = cls.get_weight(groups=groups)
         ncat, nstocks = weights.shape[:2]
-        amat, bmat, dmat = cls.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
-                                                   dvecs=dvecs,
-                                                   weights=weights)
-        dmat_inv = sl.inv(dmat)
-        if (target is None) and (cmat is None):
-            # avecs, bvecs, dvecs, and vvecs are only inputs
-            cmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
-        elif cmat is None:
-            # avecs, bvecs, and target are only inputs
-            cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
-
+        amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
+                                                dvecs=dvecs, weights=weights)
+        dmat_inv = scl.inv(dmat)
+        ccmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv)
+        cmat = scl.cholesky(ccmat, 1)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = dvecs
         param.vvec = vvec
         param.weights = weights
+        param.groups = groups
+
+        return param
+
+    @classmethod
+    def from_abcmat(cls, avecs=None, bvecs=None, cmat=None, groups=None):
+        """Initialize from spatial representation.
+
+        Parameters
+        ----------
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
+        cmat : (nstocks, nstocks) array
+            Lower triangular matrix for teh intercept CC'
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        weights = cls.get_weight(groups=groups)
+        ncat, nstocks = weights.shape[:2]
+        amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
+                                                   weights=weights)
+        param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+        param.avecs = avecs
+        param.bvecs = bvecs
+        param.dvecs = None
+        param.vvec = None
+        param.weights = weights
+        param.groups = groups
+
+        return param
+
+    @classmethod
+    def from_abt(cls, avecs=None, bvecs=None, target=None, groups=None):
+        """Initialize from spatial representation.
+
+        Parameters
+        ----------
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
+        target : (nstocks, nstocks) array
+            Variance target matrix
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        weights = cls.get_weight(groups=groups)
+        ncat, nstocks = weights.shape[:2]
+        amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
+                                                weights=weights)
+        cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
+        param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+        param.avecs = avecs
+        param.bvecs = bvecs
+        param.dvecs = None
+        param.vvec = None
+        param.weights = weights
+        param.groups = groups
 
         return param
 
     @staticmethod
-    def find_abdmat_spatial(avecs=None, bvecs=None, dvecs=None, weights=None):
+    def from_vecs_to_mat(avecs=None, bvecs=None, dvecs=None, weights=None):
         """Initialize amat, bmat, and dmat from spatial representation.
 
         Parameters
@@ -174,15 +237,136 @@ class ParamSpatial(ParamGeneric):
             Vector v
 
         """
-        mats = ParamSpatial.find_abdmat_spatial(avecs=avecs, bvecs=bvecs,
-                                                dvecs=dvecs, weights=weights)
+        mats = ParamSpatial.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
+                                             dvecs=dvecs, weights=weights)
         amat, bmat, dmat = mats
         ccmat = target - amat.dot(target).dot(amat.T) \
             - bmat.dot(target).dot(bmat.T)
         return np.abs(np.diag(dmat.dot(ccmat).dot(dmat.T)))**.5
 
+    @staticmethod
+    def vecs_from_theta(theta=None, groups=None):
+        """Convert theta to vecs.
+
+        """
+        weights = ParamSpatial.get_weight(groups)
+        ncat, nstocks = weights.shape[:2]
+        vecs = np.zeros((ncat+1, nstocks))
+        vecs[0, :] = theta[:nstocks]
+        j = nstocks
+        for cat in range(ncat):
+            for group in groups[cat]:
+                for item in group:
+                    vecs[cat+1, item] = theta[j]
+                j += 1
+        return vecs, theta[j:]
+
+    def theta_from_vecs(self, vecs=None):
+        """Convert theta to vecs.
+
+        """
+        ncat, nstocks = self.weights.shape[:2]
+        theta = [vecs[0, :]]
+        for cat in range(ncat):
+            for group in self.groups[cat]:
+                theta.append([vecs[cat+1, group[0]]])
+        return np.concatenate(theta)
+
+    @staticmethod
+    def ab_from_theta(theta=None, restriction='scalar', groups=None):
+        """Initialize A and B spatial from theta vector.
+
+        Parameters
+        ----------
+        theta : 1d array
+            Parameter vector
+        groups : list of lists of tuples
+            Encoded groups of items
+        restriction : str
+            Can be
+                - 'full' = 'diagonal'
+                - 'group'
+                - 'scalar'
+
+        Returns
+        -------
+        avecs : (ncat+1, nstocks) array
+            Parameter matrix
+        bvecs : (ncat+1, nstocks) array
+            Parameter matrix
+
+        """
+        weights = ParamSpatial.get_weight(groups)
+        ncat, nstocks = weights.shape[:2]
+        if restriction in ['full', 'diagonal']:
+            abvecs_size = (ncat+1)*nstocks
+            avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
+            bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
+            theta = theta[2*abvecs_size:]
+        elif restriction == 'group':
+            avecs, theta = ParamSpatial.vecs_from_theta(theta, groups)
+            bvecs, theta = ParamSpatial.vecs_from_theta(theta, groups)
+        elif restriction == 'scalar':
+            abvecs_size = ncat+1
+            avecs = np.tile(theta[:abvecs_size, np.newaxis], nstocks)
+            bvecs = np.tile(theta[abvecs_size:2*abvecs_size, np.newaxis],
+                            nstocks)
+            theta = theta[2*abvecs_size:]
+        else:
+            raise NotImplementedError('Restriction is not implemented!')
+
+        return avecs, bvecs, theta
+
+    @staticmethod
+    def dv_from_theta(theta=None, restriction='scalar', groups=None):
+        """Initialize D and V spatial from theta vector.
+
+        Parameters
+        ----------
+        theta : 1d array
+            Parameter vector
+        groups : list of lists of tuples
+            Encoded groups of items
+        restriction : str
+            Can be
+                - 'full' = 'diagonal'
+                - 'group'
+                - 'scalar'
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        weights = ParamSpatial.get_weight(groups)
+        ncat, nstocks = weights.shape[:2]
+
+        if restriction in ['full', 'diagonal']:
+            dvecs_size = ncat*nstocks
+            dvecs = theta[:dvecs_size]
+            dvecs = dvecs.reshape((ncat, nstocks))
+            vvec = theta[dvecs_size:]
+        elif restriction == 'group':
+            dvecs = np.zeros((ncat, nstocks))
+            j = 0
+            for cat in range(ncat):
+                for group in groups[cat]:
+                    for item in group:
+                        dvecs[cat, item] = theta[j]
+                    j += 1
+        elif restriction == 'scalar':
+            dvecs_size = ncat
+            dvecs = theta[:dvecs_size]
+            dvecs = np.tile(dvecs[:, np.newaxis], nstocks)
+            vvec = np.tile(theta[dvecs_size:], nstocks)
+        else:
+            raise NotImplementedError('Restriction is not implemented!')
+
+        return dvecs, vvec
+
     @classmethod
-    def from_theta(cls, theta=None, weights=None, cfree=False,
+    def from_theta(cls, theta=None, groups=None, cfree=False,
                    restriction='scalar', target=None):
         """Initialize from theta vector.
 
@@ -198,6 +382,8 @@ class ParamSpatial(ParamGeneric):
                 - +n
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
+        groups : list of lists of tuples
+            Encoded groups of items
         cfree : bool
             Whether to leave C matrix free (True) or not (False)
         target : (nstocks, nstocks) array
@@ -205,6 +391,7 @@ class ParamSpatial(ParamGeneric):
         restriction : str
             Can be
                 - 'full' = 'diagonal'
+                - 'group'
                 - 'scalar'
 
         Returns
@@ -213,49 +400,70 @@ class ParamSpatial(ParamGeneric):
             BEKK parameters
 
         """
+        weights = cls.get_weight(groups)
         ncat, nstocks = weights.shape[:2]
-        if restriction in ['full', 'diagonal']:
-            abvecs_size = (ncat+1)*nstocks
-            avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
-            bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
-
-        elif restriction == 'scalar':
-            abvecs_size = ncat+1
-            avecs = np.tile(theta[:abvecs_size, np.newaxis], nstocks)
-            bvecs = np.tile(theta[abvecs_size:2*abvecs_size, np.newaxis],
-                            nstocks)
-        else:
-            raise NotImplementedError('Restriction is not implemented!')
+        avecs, bvecs, theta = cls.ab_from_theta(theta=theta,
+                                                restriction=restriction,
+                                                groups=groups)
 
         if (target is None) and (not cfree):
             cmat = None
-            if restriction in ['full', 'diagonal']:
-                dvecs_size = ncat*nstocks
-                dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
-                dvecs = dvecs.reshape((ncat, nstocks))
-                vvec = theta[2*abvecs_size+dvecs_size:]
-            elif restriction == 'scalar':
-                dvecs_size = ncat
-                dvecs = theta[2*abvecs_size:2*abvecs_size+dvecs_size]
-                dvecs = np.tile(dvecs[:, np.newaxis], nstocks)
-                vvec = np.tile(theta[2*abvecs_size+dvecs_size:], nstocks)
-            else:
-                raise NotImplementedError('Restriction is not implemented!')
-
+            dvecs, vvec = cls.dv_from_theta(theta=theta, groups=groups,
+                                            restriction=restriction)
+            return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                 vvec=vvec, groups=groups)
         elif (target is None) and cfree:
             dvecs = None
             vvec = None
             cmat = np.zeros((nstocks, nstocks))
-            cmat[np.tril_indices(nstocks)] = theta[2*abvecs_size:]
-
+            cmat[np.tril_indices(nstocks)] = theta
+            return cls.from_abcmat(avecs=avecs, bvecs=bvecs, cmat=cmat,
+                                   groups=groups)
         else:
             dvecs = None
             vvec = None
             cmat = None
+            return cls.from_abt(avecs=avecs, bvecs=bvecs, target=target,
+                                groups=groups)
 
-        return cls.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                vvec=vvec, cmat=cmat, target=target,
-                                weights=weights)
+    def get_theta_from_ab(self, restriction='scalar'):
+        """Convert parameter matrices A and B to 1-dimensional array.
+
+        Parameters
+        ----------
+        restriction : str
+            Can be
+                - 'full' = 'diagonal'
+                - 'group'
+                - 'scalar'
+
+        Returns
+        -------
+        theta : 1d array
+            Length depends on the model restrictions and variance targeting
+
+            If use_target is True:
+                - 'full' or 'diagonal' - 2*n*(m+1)
+                - 'group' - 2*k*(m+1)
+                - 'scalar' - 2*(m+1)
+            If use_target is False and cfree is False:
+                - 'full' or 'diagonal' - +n*(m+1)
+                - 'group' - k*(m+1)
+                - 'scalar' - + (m+1)
+            If use_target is False and cfree is True:
+                - +n*(n+1)/2
+
+        """
+        if restriction in ['full', 'diagonal']:
+            theta = [self.avecs.flatten(), self.bvecs.flatten()]
+        elif restriction == 'group':
+            theta = [self.theta_from_vecs(self.avecs),
+                     self.theta_from_vecs(self.bvecs)]
+        elif restriction == 'scalar':
+            theta = [self.avecs[:, 0].flatten(), self.bvecs[:, 0].flatten()]
+        else:
+            raise NotImplementedError('Restriction is not implemented!')
+        return theta
 
     def get_theta(self, restriction='scalar', use_target=False, cfree=False):
         """Convert parameter matrices to 1-dimensional array.
@@ -280,21 +488,17 @@ class ParamSpatial(ParamGeneric):
 
             If use_target is True:
                 - 'full' or 'diagonal' - 2*n*(m+1)
+                - 'group' - 2*k*(m+1)
                 - 'scalar' - 2*(m+1)
             If use_target is False and cfree is False:
-                - 'full' or 'diagonal' - +n
+                - 'full' or 'diagonal' - +n*(m+1)
+                - 'group' - k*(m+1)
                 - 'scalar' - + (m+1)
             If use_target is False and cfree is True:
                 - +n*(n+1)/2
 
         """
-        if restriction in ['full', 'diagonal']:
-            theta = [self.avecs.flatten(), self.bvecs.flatten()]
-        elif restriction == 'scalar':
-            theta = [self.avecs[:, 0].flatten(),
-                     self.bvecs[:, 0].flatten()]
-        else:
-            raise NotImplementedError('Restriction is not implemented!')
+        theta = self.get_theta_from_ab(restriction)
 
         if cfree and (not use_target):
             theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
@@ -306,6 +510,12 @@ class ParamSpatial(ParamGeneric):
                 self.vvec = np.ones(self.avecs.shape[1])
             if restriction in ['full', 'diagonal']:
                 theta.extend([self.dvecs.flatten(), self.vvec])
+            elif restriction == 'group':
+                ncat = self.weights.shape[0]
+                for cat in range(ncat):
+                    for group in self.groups[cat]:
+                        theta.append([self.dvecs[cat, group[0]]])
+                theta.append(self.vvec)
             elif restriction == 'scalar':
                 theta.extend([self.dvecs[:, 0].flatten(),
                               np.array([self.vvec[0]])])
@@ -315,15 +525,13 @@ class ParamSpatial(ParamGeneric):
         return np.concatenate(theta)
 
     @staticmethod
-    def get_weight(groups=None, nitems=1):
+    def get_weight(groups=None):
         """Generate weighting matrices given groups.
 
         Parameters
         ----------
-        groups : list of tuples
+        groups : list of lists of tuples
             Encoded groups of items
-        nitems : int
-            Total number of items
 
         Returns
         -------
@@ -332,45 +540,40 @@ class ParamSpatial(ParamGeneric):
 
         Examples
         --------
-        >>> print(ParamSpatial.get_weight(groups=[(0, 1)], nitems=3))
-        [[[ 0.  1.  0.]
-          [ 1.  0.  0.]
-          [ 0.  0.  0.]]]
-        >>> print(ParamSpatial.get_weight(groups=[(0, 1, 2)], nitems=3))
+        >>> print(ParamSpatial.get_weight(groups=[[(0, 1)]]))
+        [[[ 0.  1.]
+          [ 1.  0.]]]
+        >>> print(ParamSpatial.get_weight(groups=[[(0, 1, 2)]]))
         [[[ 0.   0.5  0.5]
           [ 0.5  0.   0.5]
           [ 0.5  0.5  0. ]]]
-        >>> print(ParamSpatial.get_weight(groups=[(0, 1), (1, 2)], nitems=3))
-        [[[ 0.  1.  0.]
-          [ 1.  0.  0.]
-          [ 0.  0.  0.]]
-         [[ 0.  0.  0.]
-          [ 0.  0.  1.]
-          [ 0.  1.  0.]]]
-        >>> groups = [(0, 1), (1, 2, 3)]
-        >>> print(ParamSpatial.get_weight(groups=groups, nitems=4))
-        [[[ 0.   1.   0.   0. ]
-          [ 1.   0.   0.   0. ]
-          [ 0.   0.   0.   0. ]
-          [ 0.   0.   0.   0. ]]
-         [[ 0.   0.   0.   0. ]
-          [ 0.   0.   0.5  0.5]
-          [ 0.   0.5  0.   0.5]
-          [ 0.   0.5  0.5  0. ]]]
+        >>> print(ParamSpatial.get_weight(groups=[[(0, 1), (2, 3)]]))
+        [[[ 0.  1.  0.  0.]
+          [ 1.  0.  0.  0.]
+          [ 0.  0.  0.  1.]
+          [ 0.  0.  1.  0.]]]
+        >>> print(ParamSpatial.get_weight(groups=[[(0, 1), (2, 3, 4)]]))
+        [[[ 0.   1.   0.   0.   0. ]
+          [ 1.   0.   0.   0.   0. ]
+          [ 0.   0.   0.   0.5  0.5]
+          [ 0.   0.   0.5  0.   0.5]
+          [ 0.   0.   0.5  0.5  0. ]]]
 
         """
-        if groups is None:
-            ncat = 1
-        else:
-            ncat = len(groups)
-
-        weight = np.zeros((ncat, nitems, nitems))
+        ncat = len(groups)
+        nitems = 0
+        for group in groups:
+            for items in group:
+                temp = np.max(items)
+                if temp > nitems:
+                    nitems = temp
+        weight = np.zeros((ncat, nitems+1, nitems+1))
         for i in range(ncat):
-            for id1, id2 in itertools.product(groups[i], groups[i]):
-                if id1 != id2:
-                    weight[i, id1, id2] = 1
+            for group in groups[i]:
+                for id1, id2 in itertools.product(group, group):
+                    if id1 != id2:
+                        weight[i, id1, id2] = 1
             norm = weight[i].sum(0)[:, np.newaxis]
-            norm[norm == 0] = 1
             weight[i] /= norm
 
         return weight

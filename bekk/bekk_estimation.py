@@ -65,7 +65,7 @@ class BEKK(object):
         self.hvar = None
 
     def likelihood(self, theta, model='standard', target=None, cfree=False,
-                   restriction='full', weights=None, cython=True):
+                   restriction='full', groups=None, cython=True):
         """Compute the conditional log-likelihood function.
 
         Parameters
@@ -90,7 +90,7 @@ class BEKK(object):
             param = ParamSpatial.from_theta(theta=theta, target=target,
                                             cfree=cfree,
                                             restriction=restriction,
-                                            weights=weights)
+                                            groups=groups)
         else:
             raise NotImplementedError('The model is not implemented!')
 
@@ -107,7 +107,7 @@ class BEKK(object):
             return likelihood_python(self.hvar, self.innov)
 
     def estimate(self, param_start=None, restriction='scalar', cfree=False,
-                 use_target=True, model='standard', weights=None,
+                 use_target=True, model='standard', groups=None,
                  method='SLSQP', cython=True):
         """Estimate parameters of the BEKK model.
 
@@ -136,6 +136,8 @@ class BEKK(object):
             Whether to leave C matrix free (True) or not (False)
         weights : (ncat, nstocks, nstocks) array
             Weight matrices for spatial only
+        groups : list of lists of tuples
+            Encoded groups of items
         method : str
             Optimization method. See scipy.optimize.minimize
         cython : bool
@@ -154,6 +156,7 @@ class BEKK(object):
         to full) while always using variance targeting.
 
         """
+        weights = ParamSpatial.get_weight(groups)
         # Check for incompatible inputs
         if use_target and cfree:
             raise ValueError('use_target and cfree are incompatible!')
@@ -188,7 +191,7 @@ class BEKK(object):
         options = {'disp': False, 'maxiter': int(1e6)}
         # Likelihood arguments
         kwargs = {'model': model, 'target': target, 'cfree': cfree,
-                  'restriction': restriction, 'weights': weights,
+                  'restriction': restriction, 'groups': groups,
                   'cython': cython}
         # Likelihood function
         likelihood = partial(self.likelihood, **kwargs)
@@ -210,7 +213,7 @@ class BEKK(object):
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
                                                   restriction=restriction,
                                                   target=target, cfree=cfree,
-                                                  weights=weights)
+                                                  groups=groups)
         else:
             raise NotImplementedError('The model is not implemented!')
 

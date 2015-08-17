@@ -14,7 +14,7 @@ from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
-from bekk.utils import take_time, get_weight
+from bekk.utils import take_time
 
 
 def try_bekk():
@@ -157,12 +157,11 @@ def try_spatial():
     """
     use_target = False
     cfree = True
-    restriction = 'scalar'
-    nstocks = 3
+    restriction = 'group'
     nobs = 2000
-    groups = [(0, 1)]
-    weights = get_weight(groups=groups, nitems=nstocks)
-    ncat = weights.shape[0]
+    groups = [[(0, 1), (2, 3)]]
+    nstocks = np.max(groups) + 1
+    ncat = len(groups)
     alpha = np.array([.1, .01])
     beta = np.array([.5, .01])
     gamma = .0
@@ -172,9 +171,8 @@ def try_spatial():
     dvecs = np.ones((ncat, nstocks)) * gamma**.5
     vvec = np.ones(nstocks)
 
-    param_true = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs,
-                                           dvecs=dvecs, vvec=vvec,
-                                           weights=weights)
+    param_true = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                        vvec=vvec, groups=groups)
     print(param_true)
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
@@ -184,7 +182,7 @@ def try_spatial():
     bekk = BEKK(innov)
     result = bekk.estimate(param_start=param_true, use_target=use_target,
                            cfree=cfree, restriction=restriction,
-                           model='spatial', weights=weights, method='SLSQP',
+                           model='spatial', groups=groups, method='SLSQP',
                            cython=True)
 
     print(result)
@@ -212,7 +210,7 @@ def try_spatial_combinations():
     nstocks = 3
     nobs = 2000
     groups = [(0, 1)]
-    weights = get_weight(groups=groups, nitems=nstocks)
+    weights = ParamSpatial.get_weight(groups=groups, nitems=nstocks)
     ncat = weights.shape[0]
     alpha = np.array([.1, .01])
     beta = np.array([.5, .01])
@@ -341,8 +339,8 @@ if __name__ == '__main__':
 #    with take_time('\nTotal simulation and estimation'):
 #        try_standard()
 
-#    with take_time('Total simulation and estimation'):
-#        try_spatial()
+    with take_time('Total simulation and estimation'):
+        try_spatial()
 
 #    with take_time('Total simulation and estimation'):
 #        try_spatial_combinations()
@@ -350,5 +348,5 @@ if __name__ == '__main__':
 #    with take_time('Initialize parameters for standard model'):
 #        try_interative_estimation_standard()
 
-    with take_time('Initialize parameters for spatial model'):
-        try_interative_estimation_spatial()
+#    with take_time('Initialize parameters for spatial model'):
+#        try_interative_estimation_spatial()
