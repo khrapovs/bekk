@@ -40,11 +40,10 @@ class BEKKTestCase(ut.TestCase):
     def test_simulation_spatial(self):
         """Test simulation spatial."""
 
-        nstocks = 6
         nobs = 10
-        nstocks = 3
-        weights = np.array([[[0, 1, 0], [1, 0, 0], [0, 0, 0]]])
-        ncat = weights.shape[0]
+        nstocks = 4
+        groups = [[(0, 1), (2, 3)]]
+        ncat = 1
         alpha, beta, gamma = .01, .16, .09
         # A, B, C - n x n matrices
         avecs = np.ones((ncat+1, nstocks)) * alpha**.5
@@ -52,8 +51,8 @@ class BEKKTestCase(ut.TestCase):
         dvecs = np.ones((ncat, nstocks)) * gamma**.5
         vvec = np.ones(nstocks)
 
-        param = ParamSpatial.from_spatial(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, weights=weights)
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                       vvec=vvec, groups=groups)
 
         for distr in ['normal', 'student', 'skewt']:
             innov, hvar = simulate_bekk(param, nobs=nobs, distr=distr)
