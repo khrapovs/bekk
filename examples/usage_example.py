@@ -177,13 +177,8 @@ def try_standard_loss():
     kwargs = {'param_start': param_true, 'innov_all': innov,
               'window': window, 'model': model, 'use_target': use_target}
     evaluate = partial(BEKK.evaluate_forecast, **kwargs)
-    loss1 = evaluate(restriction='scalar')
-    loss2 = evaluate(restriction='diagonal')
-
-    plt.plot(loss1, label='scalar')
-    plt.plot(loss2, label='diagonal')
-    plt.legend()
-    plt.show()
+    for restr in ('scalar', 'diagonal'):
+        print('Loss in ' + restr + ': %.4f' % evaluate(restriction=restr))
 
 
 def try_spatial():

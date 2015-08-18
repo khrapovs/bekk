@@ -49,6 +49,8 @@ class BEKK(object):
     -------
     estimate
         Estimate parameters of the model
+    evaluate_forecast
+        Evaluate forecast using rolling window
 
     """
 
@@ -396,14 +398,37 @@ class BEKK(object):
 
     @staticmethod
     def evaluate_forecast(param_start=None, innov_all=None, window=1000,
-                          model='standard', use_target=True,
+                          model='standard', use_target=True, groups=None,
                           restriction='scalar'):
         """Evaluate forecast using rolling window.
 
         Parameters
         ----------
-        innov: (nobs, nstocks) array
-            inovations
+        param_start : ParamStandard or ParamSpatial instance
+            Initial parameters for estimation
+        innov_all: (nobs, nstocks) array
+            Inovations
+        window : int
+            Window length for in-sample estimation
+        model : str
+            Specific model to estimate.
+
+            Must be
+                - 'standard'
+                - 'spatial'
+
+        restriction : str
+            Restriction on parameters.
+
+            Must be
+                - 'full' =  'diagonal'
+                - 'group' (for 'spatial' model only)
+                - 'scalar'
+
+        groups : list of lists of tuples
+            Encoded groups of items
+        use_target : bool
+            Whether to use variance targeting (True) or not (False)
 
         Returns
         -------
@@ -417,9 +442,9 @@ class BEKK(object):
             last = window + first
             innov = innov_all[first:last]
             bekk = BEKK(innov)
-            result = bekk.estimate(param_start=param_start,
-                                   use_target=use_target,
-                                   restriction=restriction, model=model)
+            result = bekk.estimate(param_start=param_start, groups=groups,
+                                   use_target=use_target, model=model,
+                                   restriction=restriction)
             loss[first] = BEKK.loss(hvar=result.hvar[-1], innov=innov[-1],
                                     param=result.param_final)
-        return loss
+        return np.mean(loss)
