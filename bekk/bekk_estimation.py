@@ -178,11 +178,10 @@ class BEKK(object):
         to full) while always using variance targeting.
 
         """
-        weights = ParamSpatial.get_weight(groups)
         # Check for incompatible inputs
         if use_target and cfree:
             raise ValueError('use_target and cfree are incompatible!')
-        if (weights is not None) and (model != 'spatial'):
+        if (groups is not None) and (model != 'spatial'):
             raise ValueError('The model is incompatible with weights!')
         # Update default settings
         nobs, nstocks = self.innov.shape
@@ -394,3 +393,33 @@ class BEKK(object):
         forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
         proxy = BEKK.sqinnov(innov)
         return np.linalg.norm(forecast - proxy)
+
+    @staticmethod
+    def evaluate_forecast(param_start=None, innov_all=None, window=1000,
+                          model='standard', use_target=True,
+                          restriction='scalar'):
+        """Evaluate forecast using rolling window.
+
+        Parameters
+        ----------
+        innov: (nobs, nstocks) array
+            inovations
+
+        Returns
+        -------
+        float
+            Average loss function
+
+        """
+        nobs = innov_all.shape[0]
+        loss = np.zeros(nobs - window)
+        for first in range(nobs - window):
+            last = window + first
+            innov = innov_all[first:last]
+            bekk = BEKK(innov)
+            result = bekk.estimate(param_start=param_start,
+                                   use_target=use_target,
+                                   restriction=restriction, model=model)
+            loss[first] = BEKK.loss(hvar=result.hvar[-1], innov=innov[-1],
+                                    param=result.param_final)
+        return loss

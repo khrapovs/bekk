@@ -93,6 +93,8 @@ class BEKKResults(object):
             Optimization results from scipy.optimize.minimize
 
         """
+        self.innov = innov
+        self.hvar = hvar
         self.param_start = param_start
         self.param_final = param_final
         self.time_delta = time_delta

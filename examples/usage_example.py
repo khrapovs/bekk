@@ -8,6 +8,10 @@ from __future__ import print_function, division
 import time
 
 import numpy as np
+import matplotlib.pylab as plt
+import seaborn as sns
+
+from functools import partial
 
 from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
                   regenerate_data, plot_data)
@@ -136,7 +140,8 @@ def try_standard():
 
     bekk = BEKK(innov)
     result = bekk.estimate(param_start=param_true, use_target=use_target,
-                           method='SLSQP', restriction=restriction)
+                           model='standard', method='SLSQP',
+                           restriction=restriction)
 
     print(result)
 
@@ -149,6 +154,36 @@ def try_standard():
     print('\nParameters (true and estimated):\n',
           np.vstack([theta_true, theta_final]).T)
     print('\nEucledean norm of the difference = %.4f' % norm)
+
+
+def try_standard_loss():
+    """Try forecast evaluation of BEKK model.
+
+    """
+    model = 'standard'
+    use_target = True
+    nstocks = 2
+    nobs = 2000
+    window = 1990
+    # A, B, C - n x n matrices
+    amat = np.eye(nstocks) * .09**.5
+    bmat = np.eye(nstocks) * .9**.5
+    target = np.eye(nstocks)
+    param_true = ParamStandard.from_target(amat=amat, bmat=bmat, target=target)
+    print(param_true)
+
+    innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
+
+    kwargs = {'param_start': param_true, 'innov_all': innov,
+              'window': window, 'model': model, 'use_target': use_target}
+    evaluate = partial(BEKK.evaluate_forecast, **kwargs)
+    loss1 = evaluate(restriction='scalar')
+    loss2 = evaluate(restriction='diagonal')
+
+    plt.plot(loss1, label='scalar')
+    plt.plot(loss2, label='diagonal')
+    plt.legend()
+    plt.show()
 
 
 def try_spatial():
@@ -276,7 +311,7 @@ def try_spatial_combinations():
     print('\nEucledean norm of the difference = %.4f' % norm)
 
 
-def try_interative_estimation_standard():
+def try_iterative_estimation_standard():
     """Try estimating parameters from simple to more complicated model.
 
     """
@@ -329,6 +364,7 @@ def try_interative_estimation_spatial():
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
+    sns.set_context('notebook')
 
 #    try_bekk()
 
@@ -344,7 +380,10 @@ if __name__ == '__main__':
 #        try_spatial_combinations()
 
 #    with take_time('Initialize parameters for standard model'):
-#        try_interative_estimation_standard()
+#        try_iterative_estimation_standard()
 
-    with take_time('Initialize parameters for spatial model'):
-        try_interative_estimation_spatial()
+#    with take_time('Initialize parameters for spatial model'):
+#        try_interative_estimation_spatial()
+
+    with take_time('Compute forecast loss'):
+        try_standard_loss()
