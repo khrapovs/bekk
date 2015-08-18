@@ -31,6 +31,7 @@ def filter_var_python(hvar, innov, amat, bmat, cmat):
     -------
     hvar : (nobs, nstocks, nstocks) array
         Variances and covariances of innovations
+
     """
     nobs, nstocks = innov.shape
     innov2 = innov[:, np.newaxis, :] * innov[:, :, np.newaxis]

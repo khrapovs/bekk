@@ -151,6 +151,7 @@ class BEKK(object):
             Must be
                 - 'full'
                 - 'diagonal'
+                - 'group' (only applicable with 'spatial' model)
                 - 'scalar'
 
         use_target : bool
@@ -266,23 +267,23 @@ class BEKK(object):
         """
         param = ParamStandard(nstocks=self.innov.shape[1])
 
-        with take_time('Estimating scalar'):
-            result = self.estimate(param_start=param, use_target=True,
-                                   restriction='scalar', model='standard')
-        param = result.param_final
+        kwargs = {'use_target': True, 'model': 'standard'}
+        est_partial = partial(self.estimate, **kwargs)
+
+        if restriction in ('diagonal', 'full', 'group', 'scalar'):
+            with take_time('Estimating scalar'):
+                result = est_partial(param_start=param, restriction='scalar')
+                param = result.param_final
 
         if restriction in ('diagonal', 'full'):
             with take_time('Estimating diagonal'):
-                result = self.estimate(param_start=param, use_target=True,
-                                       restriction='diagonal',
-                                       model='standard')
-            param = result.param_final
+                result = est_partial(param_start=param, restriction='diagonal')
+                param = result.param_final
 
         if restriction == 'full':
             with take_time('Estimating full'):
-                result = self.estimate(param_start=param, use_target=True,
-                                       restriction='full', model='standard')
-            param = result.param_final
+                result = est_partial(param_start=param, restriction='full')
+                param = result.param_final
 
         return param
 
@@ -295,10 +296,10 @@ class BEKK(object):
             Restriction on parameters.
 
             Must be
-                - 'full'
-                - 'diagonal'
+                - 'full' =  'diagonal'
                 - 'group'
                 - 'scalar'
+
         groups : list of lists of tuples
             Encoded groups of items
 
@@ -315,17 +316,17 @@ class BEKK(object):
 
         if restriction in ('diagonal', 'full', 'group', 'scalar'):
             with take_time('Estimating scalar'):
-                result = est_partial(param_start=param,  restriction='scalar')
+                result = est_partial(param_start=param, restriction='scalar')
                 param = result.param_final
 
         if restriction in ('diagonal', 'full', 'group'):
             with take_time('Estimating group'):
-                result = est_partial(param_start=param,  restriction='group')
+                result = est_partial(param_start=param, restriction='group')
                 param = result.param_final
 
         if restriction in ('diagonal', 'full'):
             with take_time('Estimating full/diagonal'):
-                result = est_partial(param_start=param,  restriction='full')
+                result = est_partial(param_start=param, restriction='full')
                 param = result.param_final
 
         return param

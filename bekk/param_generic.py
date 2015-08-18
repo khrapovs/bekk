@@ -165,7 +165,9 @@ class ParamGeneric(object):
 
         Parameters
         ----------
-        uvar, amat, bmat, ccmat : (nstocks, nstocks) arrays
+        uvar : 1d array
+            Lower triangle of symmetric variance matrix
+        amat, bmat, ccmat : (nstocks, nstocks) arrays
             Parameter matrices
 
         Returns

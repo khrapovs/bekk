@@ -14,7 +14,21 @@ cdef extern from 'math.h':
 @cython.wraparound(False)
 @cython.cdivision(True)
 def likelihood_gauss(double[:, :, :] hvar, double[:, :] innov):
+    """Likelihood function.
 
+    Parameters
+    ----------
+    hvar : (nobs, nstocks, nstocks) array
+        variance/covariances
+    innov : (nobs, nstocks) array
+        inovations
+
+    Returns
+    -------
+    fvalue : float
+        log-likelihood function
+
+    """
     cdef:
         Py_ssize_t t, i
         int info = 0

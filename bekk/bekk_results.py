@@ -51,8 +51,7 @@ class BEKKResults(object):
     def __init__(self, innov=None, hvar=None, var_target=None, model=None,
                  use_target=None, restriction=None, cfree=None,
                  method=None, cython=None, time_delta=None,
-                 param_start=None, param_final=None,
-                 opt_out=None):
+                 param_start=None, param_final=None, opt_out=None):
         """Initialize the class.
 
         Parameters
@@ -86,12 +85,12 @@ class BEKKResults(object):
             Whether to use variance targeting (True) or not (False)
         cfree : bool
             Whether to leave C matrix free (True) or not (False)
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices for spatial model only
         method : str
             Optimization method. See scipy.optimize.minimize
         cython : bool
             Whether to use Cython optimizations (True) or not (False)
+        opt_out : OptimizeResult instance
+            Optimization results from scipy.optimize.minimize
 
         """
         self.param_start = param_start
@@ -123,3 +122,9 @@ class BEKKResults(object):
         show += '\nFinal log-likelihood = %.2f' % (-self.opt_out.fun) + '\n'
         show += '=' * width
         return show
+
+    def __repr__(self):
+        """String representation.
+
+        """
+        return self.__str__()

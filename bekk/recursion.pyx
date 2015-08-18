@@ -12,7 +12,23 @@ __all__ = ['filter_var']
 @cython.cdivision(True)
 def filter_var(double[:, :, :] hvar, double[:, :] innov,
                double[:, :] amat, double[:, :] bmat, double[:, :] cmat):
+    """Filter out variances and covariances of innovations.
 
+    Parameters
+    ----------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+    innov : (nobs, nstocks) array
+        Return innovations
+    amat, bmat, cmat : (nstocks, nstocks) arrays
+        Parameter matrices
+
+    Returns
+    -------
+    hvar : (nobs, nstocks, nstocks) array
+        Variances and covariances of innovations
+        
+    """
     cdef:
         int inc = 1
         int nobs = innov.shape[0]

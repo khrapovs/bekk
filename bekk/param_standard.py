@@ -70,6 +70,7 @@ class ParamStandard(ParamGeneric):
         nstocks : int
             Number of stocks in the model
         restriction : str
+
             Can be
                 - 'full'
                 - 'diagonal'
@@ -114,6 +115,7 @@ class ParamStandard(ParamGeneric):
         Parameters
         ----------
         restriction : str
+
             Can be
                 - 'full'
                 - 'diagonal'
@@ -131,6 +133,7 @@ class ParamStandard(ParamGeneric):
                 - 'full' - 2*n**2
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
+
             If use_target is False:
                 - +(n-1)*n/2 for parameter cmat
 

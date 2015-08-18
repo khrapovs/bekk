@@ -25,6 +25,10 @@ class ParamSpatial(ParamGeneric):
     ----------
     amat, bmat, cmat, avecs, bvecs, dvecs, vvec
         Matrix representations of BEKK parameters
+    groups
+        List of related items
+    weights
+        Spatial relation matrices
 
     Methods
     -------
@@ -87,7 +91,6 @@ class ParamSpatial(ParamGeneric):
 
         """
         weights = cls.get_weight(groups=groups)
-        ncat, nstocks = weights.shape[:2]
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
                                                 dvecs=dvecs, weights=weights)
         dmat_inv = scl.inv(dmat)
@@ -125,9 +128,8 @@ class ParamSpatial(ParamGeneric):
 
         """
         weights = cls.get_weight(groups=groups)
-        ncat, nstocks = weights.shape[:2]
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
-                                                   weights=weights)
+                                                weights=weights)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
@@ -160,7 +162,6 @@ class ParamSpatial(ParamGeneric):
 
         """
         weights = cls.get_weight(groups=groups)
-        ncat, nstocks = weights.shape[:2]
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
                                                 weights=weights)
         cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
@@ -248,6 +249,18 @@ class ParamSpatial(ParamGeneric):
     def vecs_from_theta(theta=None, groups=None):
         """Convert theta to vecs.
 
+        Parameters
+        ----------
+        theta : 1d array
+            Parameter vector
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        vecs : (ncat+1, nstocks) array
+            Spatial representation of parameters
+
         """
         weights = ParamSpatial.get_weight(groups)
         ncat, nstocks = weights.shape[:2]
@@ -264,12 +277,43 @@ class ParamSpatial(ParamGeneric):
     def theta_from_vecs(self, vecs=None):
         """Convert theta to vecs.
 
+        Parameters
+        ----------
+        vecs : (ncat+1, nstocks) array
+            Spatial representation of parameters
+
+        Returns
+        -------
+        theta : 1d array
+            Parameter vector
+
         """
         ncat, nstocks = self.weights.shape[:2]
         theta = [vecs[0, :]]
         for cat in range(ncat):
             for group in self.groups[cat]:
                 theta.append([vecs[cat+1, group[0]]])
+        return np.concatenate(theta)
+
+    def theta_from_dvecs(self, dvecs=None):
+        """Convert theta to vecs.
+
+        Parameters
+        ----------
+        dvecs : (ncat, nstocks) array
+            Spatial representation of parameters
+
+        Returns
+        -------
+        theta : 1d array
+            Parameter vector
+
+        """
+        ncat = self.weights.shape[0]
+        theta = []
+        for cat in range(ncat):
+            for group in self.groups[cat]:
+                theta.append([dvecs[cat, group[0]]])
         return np.concatenate(theta)
 
     @staticmethod
@@ -283,6 +327,7 @@ class ParamSpatial(ParamGeneric):
         groups : list of lists of tuples
             Encoded groups of items
         restriction : str
+
             Can be
                 - 'full' = 'diagonal'
                 - 'group'
@@ -294,6 +339,8 @@ class ParamSpatial(ParamGeneric):
             Parameter matrix
         bvecs : (ncat+1, nstocks) array
             Parameter matrix
+        theta : 1d array
+            Parameter vector. What's left after cutting off avecs and bvecs.
 
         """
         weights = ParamSpatial.get_weight(groups)
@@ -328,6 +375,7 @@ class ParamSpatial(ParamGeneric):
         groups : list of lists of tuples
             Encoded groups of items
         restriction : str
+
             Can be
                 - 'full' = 'diagonal'
                 - 'group'
@@ -335,8 +383,10 @@ class ParamSpatial(ParamGeneric):
 
         Returns
         -------
-        param : BEKKParams instance
-            BEKK parameters
+        dvecs : (ncat, nstocks) array
+            Parameter matrix
+        vvec : (nstocks, ) array
+            Parameter vector
 
         """
         weights = ParamSpatial.get_weight(groups)
@@ -375,12 +425,6 @@ class ParamSpatial(ParamGeneric):
         ----------
         theta : 1d array
             Length depends on the model restrictions and variance targeting
-
-            If target is not None:
-                - 3*n*(m+1)-n
-
-            If target not None:
-                - +n
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
         groups : list of lists of tuples
@@ -390,6 +434,7 @@ class ParamSpatial(ParamGeneric):
         target : (nstocks, nstocks) array
             Variance target matrix
         restriction : str
+
             Can be
                 - 'full' = 'diagonal'
                 - 'group'
@@ -447,10 +492,12 @@ class ParamSpatial(ParamGeneric):
                 - 'full' or 'diagonal' - 2*n*(m+1)
                 - 'group' - 2*k*(m+1)
                 - 'scalar' - 2*(m+1)
+
             If use_target is False and cfree is False:
                 - 'full' or 'diagonal' - +n*(m+1)
                 - 'group' - k*(m+1)
                 - 'scalar' - + (m+1)
+
             If use_target is False and cfree is True:
                 - +n*(n+1)/2
 
@@ -471,12 +518,13 @@ class ParamSpatial(ParamGeneric):
 
         Parameters
         ----------
-        use_target : bool
-            Whether to estimate only a, b, and d (True) or v as well (False)
         restriction : str
+
             Can be
                 - 'full' = 'diagonal'
+                - 'group'
                 - 'scalar'
+
         use_target : bool
             Whether to estimate only A and B (True) or C as well (False)
         cfree : bool
@@ -491,10 +539,12 @@ class ParamSpatial(ParamGeneric):
                 - 'full' or 'diagonal' - 2*n*(m+1)
                 - 'group' - 2*k*(m+1)
                 - 'scalar' - 2*(m+1)
+
             If use_target is False and cfree is False:
                 - 'full' or 'diagonal' - +n*(m+1)
-                - 'group' - k*(m+1)
-                - 'scalar' - + (m+1)
+                - 'group' - +k*(m+1)
+                - 'scalar' - +(m+1)
+
             If use_target is False and cfree is True:
                 - +n*(n+1)/2
 
@@ -503,19 +553,19 @@ class ParamSpatial(ParamGeneric):
 
         if cfree and (not use_target):
             theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
+
         elif (not cfree) and (not use_target):
+
             if self.dvecs is None:
                 shape = (self.avecs.shape[0]-1, self.avecs.shape[1])
                 self.dvecs = np.zeros(shape)
             if self.vvec is None:
                 self.vvec = np.ones(self.avecs.shape[1])
+
             if restriction in ['full', 'diagonal']:
                 theta.extend([self.dvecs.flatten(), self.vvec])
             elif restriction == 'group':
-                ncat = self.weights.shape[0]
-                for cat in range(ncat):
-                    for group in self.groups[cat]:
-                        theta.append([self.dvecs[cat, group[0]]])
+                theta.append(self.theta_from_dvecs(self.dvecs))
                 theta.append(self.vvec)
             elif restriction == 'scalar':
                 theta.extend([self.dvecs[:, 0].flatten(),
