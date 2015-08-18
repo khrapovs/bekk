@@ -303,7 +303,7 @@ def try_interative_estimation_spatial():
     """
     restriction = 'full'
     nobs = 2000
-    groups = [[(0, 1), (2, 3)]]
+    groups = [[(0, 2), (1, 3)]]
     nstocks = np.max(groups) + 1
     ncat = len(groups)
     alpha = np.array([.1, .01])

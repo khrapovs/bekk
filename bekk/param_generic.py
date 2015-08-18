@@ -174,13 +174,12 @@ class ParamGeneric(object):
 
         """
         nstocks = amat.shape[0]
-        idl = np.tril_indices(nstocks)
-        idu = np.triu_indices(nstocks)
         hvar = np.zeros((nstocks, nstocks))
-        hvar[idl] = uvar
-        hvar[idu] = hvar.T[idu]
-        return (2 * hvar - ccmat - amat.dot(hvar).dot(amat.T) \
-            - bmat.dot(hvar).dot(bmat.T))[idl]
+        hvar[np.tril_indices(nstocks)] = uvar
+        hvar[np.triu_indices(nstocks, 1)] = hvar[np.tril_indices(nstocks, -1)]
+        diff = 2 * hvar - ccmat - amat.dot(hvar).dot(amat.T) \
+            - bmat.dot(hvar).dot(bmat.T)
+        return diff[np.tril_indices(nstocks)]
 
     @staticmethod
     def find_stationary_var(amat=None, bmat=None, cmat=None):
@@ -197,17 +196,16 @@ class ParamGeneric(object):
             Unconditional variance matrix
 
         """
-        idl = np.tril_indices(amat.shape[0])
-        idu = np.triu_indices(amat.shape[0])
-        hvar = np.eye(amat.shape[0])[idl]
+        nstocks = amat.shape[0]
         kwargs = {'amat': amat, 'bmat': bmat, 'ccmat': cmat.dot(cmat.T)}
         fun = partial(ParamGeneric.fixed_point, **kwargs)
         try:
             with np.errstate(divide='ignore', invalid='ignore'):
-                uvar = sco.fixed_point(fun, hvar)
-                hvar = np.eye(amat.shape[0])
-                hvar[idl] = uvar
-                hvar[idu] = hvar.T[idu]
+                hvar = np.eye(nstocks)
+                sol = sco.fixed_point(fun, hvar[np.tril_indices(nstocks)])
+                hvar[np.tril_indices(nstocks)] = sol
+                hvar[np.triu_indices(nstocks, 1)] \
+                    = hvar[np.tril_indices(nstocks, -1)]
                 return hvar
         except RuntimeError:
             # warnings.warn('Could not find stationary varaince!')
@@ -222,8 +220,7 @@ class ParamGeneric(object):
             Unconditional variance amtrix
 
         """
-        return self.find_stationary_var(amat=self.amat, bmat=self.bmat,
-                                        cmat=self.cmat)
+        return self.find_stationary_var(self.amat, self.bmat, self.cmat)
 
     def constraint(self):
         """Compute the largest eigenvalue of BEKK model.

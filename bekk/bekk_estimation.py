@@ -64,14 +64,37 @@ class BEKK(object):
         self.innov = innov
         self.hvar = None
 
-    def likelihood(self, theta, model='standard', target=None, cfree=False,
-                   restriction='full', groups=None, cython=True):
+    def likelihood(self, theta, model='standard', restriction='full',
+                   target=None, cfree=False, groups=None, cython=True):
         """Compute the conditional log-likelihood function.
 
         Parameters
         ----------
         theta : 1dim array
             Dimension depends on the model restriction
+        model : str
+            Specific model to estimate.
+
+            Must be
+                - 'standard'
+                - 'spatial'
+
+        restriction : str
+            Restriction on parameters.
+
+            Must be
+                - 'full'
+                - 'diagonal'
+                - 'scalar'
+
+        target : (nstocks, nstocks) array
+            Estimate of unconditional variance matrix
+        cfree : bool
+            Whether to leave C matrix free (True) or not (False)
+        groups : list of lists of tuples
+            Encoded groups of items
+        cython : bool
+            Whether to use Cython optimizations (True) or not (False)
 
         Returns
         -------
