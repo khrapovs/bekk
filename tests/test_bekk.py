@@ -113,6 +113,27 @@ class BEKKTestCase(ut.TestCase):
 
         self.assertAlmostEqual(out1, out2)
 
+    def test_forecast(self):
+        """Test forecast."""
+
+        nstocks = 2
+        # A, B, C - n x n matrices
+        amat = np.eye(nstocks) * .09**.5
+        bmat = np.eye(nstocks) * .9**.5
+        cmat = np.eye(nstocks)
+        param = ParamStandard.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+
+        innov = np.ones(nstocks)
+        hvar = np.ones((nstocks, nstocks))
+
+        forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
+        exp = cmat.dot(cmat.T)
+        exp += amat.dot(innov * innov[:, np.newaxis]).dot(amat.T)
+        exp += bmat.dot(hvar).dot(bmat.T)
+
+        self.assertEqual(forecast.shape, (nstocks, nstocks))
+        npt.assert_array_equal(forecast, exp)
+
 
 if __name__ == '__main__':
 

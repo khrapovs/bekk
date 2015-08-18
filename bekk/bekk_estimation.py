@@ -330,3 +330,28 @@ class BEKK(object):
                 param = result.param_final
 
         return param
+
+    @staticmethod
+    def forecast(hvar=None, innov=None, param=None):
+        """One step ahead volatility forecast.
+
+        Parameters
+        ----------
+        hvar : (nstocks, nstocks) array
+            Current variance/covariances
+        innov : (nstocks, ) array
+            Current inovations
+        param : ParamStandard or ParamSpatial instance
+            Parameter object
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+            Volatility forecast
+
+        """
+        innov2 = innov * innov[:, np.newaxis]
+        forecast = param.cmat.dot(param.cmat.T)
+        forecast += param.amat.dot(innov2).dot(param.amat.T)
+        forecast += param.bmat.dot(hvar).dot(param.bmat.T)
+        return forecast
