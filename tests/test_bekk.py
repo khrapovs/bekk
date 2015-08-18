@@ -157,7 +157,9 @@ class BEKKTestCase(ut.TestCase):
         innov = np.ones(nstocks)
         hvar = np.ones((nstocks, nstocks))
 
-        loss = BEKK.loss(hvar=hvar, innov=innov, param=param)
+        forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
+        proxy = BEKK.sqinnov(innov)
+        loss = BEKK.loss(forecast=forecast, proxy=proxy)
 
         self.assertIsInstance(loss, float)
 
