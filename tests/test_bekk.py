@@ -144,6 +144,23 @@ class BEKKTestCase(ut.TestCase):
         self.assertEqual(forecast.shape, (nstocks, nstocks))
         npt.assert_array_equal(forecast, exp)
 
+    def test_loss(self):
+        """Test loss function."""
+
+        nstocks = 2
+        # A, B, C - n x n matrices
+        amat = np.eye(nstocks) * .09**.5
+        bmat = np.eye(nstocks) * .9**.5
+        cmat = np.eye(nstocks)
+        param = ParamStandard.from_abc(amat=amat, bmat=bmat, cmat=cmat)
+
+        innov = np.ones(nstocks)
+        hvar = np.ones((nstocks, nstocks))
+
+        loss = BEKK.loss(hvar=hvar, innov=innov, param=param)
+
+        self.assertIsInstance(loss, float)
+
 
 if __name__ == '__main__':
 

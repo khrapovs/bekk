@@ -371,3 +371,26 @@ class BEKK(object):
 
         """
         return innov * innov[:, np.newaxis]
+
+    @staticmethod
+    def loss(hvar=None, innov=None, param=None):
+        """One step ahead volatility forecast.
+
+        Parameters
+        ----------
+        hvar : (nstocks, nstocks) array
+            Current variance/covariances
+        innov : (nstocks, ) array
+            Current inovations
+        param : ParamStandard or ParamSpatial instance
+            Parameter object
+
+        Returns
+        -------
+        float
+            Loss function
+
+        """
+        forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
+        proxy = BEKK.sqinnov(innov)
+        return np.linalg.norm(forecast - proxy)
