@@ -350,8 +350,24 @@ class BEKK(object):
             Volatility forecast
 
         """
-        innov2 = innov * innov[:, np.newaxis]
         forecast = param.cmat.dot(param.cmat.T)
-        forecast += param.amat.dot(innov2).dot(param.amat.T)
+        forecast += param.amat.dot(BEKK.sqinnov(innov)).dot(param.amat.T)
         forecast += param.bmat.dot(hvar).dot(param.bmat.T)
         return forecast
+
+    @staticmethod
+    def sqinnov(innov):
+        """Volatility proxy. Square returns.
+
+        Parameters
+        ----------
+        innov : (nstocks, ) array
+            Current inovations
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+            Volatility proxy
+
+        """
+        return innov * innov[:, np.newaxis]

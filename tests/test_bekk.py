@@ -113,6 +113,16 @@ class BEKKTestCase(ut.TestCase):
 
         self.assertAlmostEqual(out1, out2)
 
+    def test_sqinnov(self):
+        """Test squared returns."""
+
+        nstocks = 2
+        innov = np.ones(nstocks)
+
+        innov2 = BEKK.sqinnov(innov)
+
+        npt.assert_array_equal(innov2, np.ones((nstocks, nstocks)))
+
     def test_forecast(self):
         """Test forecast."""
 
