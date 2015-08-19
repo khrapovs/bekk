@@ -374,7 +374,7 @@ class BEKK(object):
         return innov * innov[:, np.newaxis]
 
     @staticmethod
-    def loss(forecast=None, proxy=None):
+    def loss_frob(forecast=None, proxy=None):
         """One step ahead volatility forecast.
 
         Parameters
@@ -387,10 +387,10 @@ class BEKK(object):
         Returns
         -------
         float
-            Loss function
+            loss_frob function
 
         """
-        return np.linalg.norm(forecast - proxy)
+        return np.linalg.norm(forecast - proxy) / forecast.shape[0]**2
 
     @staticmethod
     def evaluate_forecast(param_start=None, innov_all=None, window=1000,
@@ -429,11 +429,11 @@ class BEKK(object):
         Returns
         -------
         float
-            Average loss function
+            Average loss_frob function
 
         """
         nobs = innov_all.shape[0]
-        loss = np.zeros(nobs - window)
+        loss_frob = np.zeros(nobs - window)
         for first in range(nobs - window):
             last = window + first
             innov = innov_all[first:last]
@@ -444,5 +444,5 @@ class BEKK(object):
             forecast = BEKK.forecast(hvar=result.hvar[-1], innov=innov[-1],
                                      param=result.param_final)
             proxy = BEKK.sqinnov(innov_all[last])
-            loss[first] = BEKK.loss(forecast=forecast, proxy=proxy)
-        return np.mean(loss)
+            loss_frob[first] = BEKK.loss_frob(forecast=forecast, proxy=proxy)
+        return np.mean(loss_frob)
