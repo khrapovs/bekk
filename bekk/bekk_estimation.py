@@ -17,6 +17,7 @@ from __future__ import print_function, division
 import time
 
 import numpy as np
+import scipy.linalg as scl
 
 from scipy.optimize import minimize
 from functools import partial
@@ -374,8 +375,8 @@ class BEKK(object):
         return innov * innov[:, np.newaxis]
 
     @staticmethod
-    def loss_frob(forecast=None, proxy=None):
-        """One step ahead volatility forecast.
+    def loss_eucl(forecast=None, proxy=None):
+        """Eucledean loss function.
 
         Parameters
         ----------
@@ -387,10 +388,49 @@ class BEKK(object):
         Returns
         -------
         float
-            loss_frob function
 
         """
-        return np.linalg.norm(forecast - proxy) / forecast.shape[0]**2
+        diff = (forecast - proxy)[np.tril_indices_from(forecast)]
+        return np.linalg.norm(diff)**2
+
+    @staticmethod
+    def loss_frob(forecast=None, proxy=None):
+        """Frobenius loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        proxy : (nstocks, nstocks) array
+            Proxy for actual volatility
+
+        Returns
+        -------
+        float
+
+        """
+        diff = forecast - proxy
+        return np.trace(diff.T.dot(diff))
+
+    @staticmethod
+    def loss_stein(forecast=None, proxy=None):
+        """Stein loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        proxy : (nstocks, nstocks) array
+            Proxy for actual volatility
+
+        Returns
+        -------
+        float
+
+        """
+        nstocks = forecast.shape[0]
+        ratio = np.linalg.solve(forecast, proxy)
+        return np.trace(ratio) - np.log(np.linalg.det(ratio)) - nstocks
 
     @staticmethod
     def evaluate_forecast(param_start=None, innov_all=None, window=1000,
@@ -433,7 +473,10 @@ class BEKK(object):
 
         """
         nobs = innov_all.shape[0]
+        loss_eucl = np.zeros(nobs - window)
         loss_frob = np.zeros(nobs - window)
+        loss_stein = np.zeros(nobs - window)
+
         for first in range(nobs - window):
             last = window + first
             innov = innov_all[first:last]
@@ -444,5 +487,9 @@ class BEKK(object):
             forecast = BEKK.forecast(hvar=result.hvar[-1], innov=innov[-1],
                                      param=result.param_final)
             proxy = BEKK.sqinnov(innov_all[last])
+
+            loss_eucl[first] = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
             loss_frob[first] = BEKK.loss_frob(forecast=forecast, proxy=proxy)
-        return np.mean(loss_frob)
+            loss_stein[first] = BEKK.loss_stein(forecast=forecast, proxy=proxy)
+
+        return np.mean(loss_eucl), np.mean(loss_frob), np.mean(loss_stein)

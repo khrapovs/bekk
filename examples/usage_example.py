@@ -178,7 +178,8 @@ def try_standard_loss():
               'window': window, 'model': model, 'use_target': use_target}
     evaluate = partial(BEKK.evaluate_forecast, **kwargs)
     for restr in ('scalar', 'diagonal'):
-        print('Loss in ' + restr + ': %.4f' % evaluate(restriction=restr))
+        for loss in evaluate(restriction=restr):
+            print('Loss in ' + restr + ': %.4f' % loss)
 
 
 def try_spatial():
