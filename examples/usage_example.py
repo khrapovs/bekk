@@ -8,6 +8,7 @@ from __future__ import print_function, division
 import time
 
 import numpy as np
+import pandas as pd
 import matplotlib.pylab as plt
 import seaborn as sns
 
@@ -163,8 +164,8 @@ def try_standard_loss():
     model = 'standard'
     use_target = True
     nstocks = 2
-    nobs = 2000
-    window = 1990
+    nobs = 1000
+    window = 990
     # A, B, C - n x n matrices
     amat = np.eye(nstocks) * .09**.5
     bmat = np.eye(nstocks) * .9**.5
@@ -176,10 +177,17 @@ def try_standard_loss():
 
     kwargs = {'param_start': param_true, 'innov_all': innov,
               'window': window, 'model': model, 'use_target': use_target}
-    evaluate = partial(BEKK.evaluate_forecast, **kwargs)
-    for restr in ('scalar', 'diagonal'):
-        for loss in evaluate(restriction=restr):
-            print('Loss in ' + restr + ': %.4f' % loss)
+    evaluate = partial(BEKK.collect_losses, **kwargs)
+    losses = dict()
+    restrcs = ['scalar', 'diagonal', 'full']
+    for restr in restrcs:
+        losses[restr] = pd.DataFrame(evaluate(restriction=restr))
+
+    losses = pd.concat(losses, keys=restrcs, names=['model', 'time'])
+    print(losses['frob'].unstack('model').mean(0))
+    mcs = BEKK.compute_mcs(losses['eucl'].unstack('model'))
+
+    print(mcs.pvalues)
 
 
 def try_spatial():

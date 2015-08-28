@@ -334,7 +334,7 @@ class BEKK(object):
         return param
 
     @staticmethod
-    def forecast(hvar=None, innov=None, param=None):
+    def forecast_one(hvar=None, innov=None, param=None):
         """One step ahead volatility forecast.
 
         Parameters
@@ -414,7 +414,7 @@ class BEKK(object):
 
     @staticmethod
     def loss_stein(forecast=None, proxy=None):
-        """Stein loss function.
+        """Stein loss function for non-degenerate proxy.
 
         Parameters
         ----------
@@ -433,10 +433,33 @@ class BEKK(object):
         return np.trace(ratio) - np.log(np.linalg.det(ratio)) - nstocks
 
     @staticmethod
-    def evaluate_forecast(param_start=None, innov_all=None, window=1000,
-                          model='standard', use_target=True, groups=None,
-                          restriction='scalar'):
-        """Evaluate forecast using rolling window.
+    def loss_stein2(forecast=None, innov=None):
+        """Stein loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        innov : (nstocks, ) array
+            Returns
+
+        Returns
+        -------
+        float
+
+        """
+        lower = True
+        forecast, lower = scl.cho_factor(forecast, lower=lower,
+                                         check_finite=False)
+        norm_innov = scl.cho_solve((forecast, lower), innov,
+                                   check_finite=False)
+        return (np.log(np.diag(forecast)**2) + norm_innov * innov).sum()
+
+    @staticmethod
+    def collect_losses(param_start=None, innov_all=None, window=1000,
+                       model='standard', use_target=True, groups=None,
+                       restriction='scalar', cfree=False):
+        """Collect forecast losses using rolling window.
 
         Parameters
         ----------
@@ -465,6 +488,8 @@ class BEKK(object):
             Encoded groups of items
         use_target : bool
             Whether to use variance targeting (True) or not (False)
+        cfree : bool
+            Whether to leave C matrix free (True) or not (False)
 
         Returns
         -------
@@ -483,13 +508,15 @@ class BEKK(object):
             bekk = BEKK(innov)
             result = bekk.estimate(param_start=param_start, groups=groups,
                                    use_target=use_target, model=model,
-                                   restriction=restriction)
-            forecast = BEKK.forecast(hvar=result.hvar[-1], innov=innov[-1],
-                                     param=result.param_final)
+                                   restriction=restriction, cfree=cfree)
+            forecast = BEKK.forecast_one(hvar=result.hvar[-1], innov=innov[-1],
+                                         param=result.param_final)
+            param_start = result.param_final
             proxy = BEKK.sqinnov(innov_all[last])
 
             loss_eucl[first] = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
             loss_frob[first] = BEKK.loss_frob(forecast=forecast, proxy=proxy)
-            loss_stein[first] = BEKK.loss_stein(forecast=forecast, proxy=proxy)
+            loss_stein[first] = BEKK.loss_stein2(forecast=forecast,
+                                                 innov=innov_all[last])
 
-        return np.mean(loss_eucl), np.mean(loss_frob), np.mean(loss_stein)
+        return {'eucl': loss_eucl, 'frob': loss_frob, 'stein': loss_stein}
