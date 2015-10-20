@@ -62,9 +62,11 @@ class ParamStandardTestCase(ut.TestCase):
 
         npt.assert_array_almost_equal(hvar, target)
 
-        hvar = ParamStandard.find_stationary_var(amat=amat, bmat=bmat, cmat=cmat)
+        hvar = ParamStandard.find_stationary_var(amat=amat, bmat=bmat,
+                                                 cmat=cmat)
 
         npt.assert_array_almost_equal(hvar, target)
+        npt.assert_array_equal(hvar, hvar.transpose())
 
     def test_from_abc(self):
         """Test init from abc."""

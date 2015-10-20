@@ -209,7 +209,7 @@ class ParamGeneric(object):
                 sol = sco.fixed_point(fun, hvar[np.tril_indices(nstocks)])
                 hvar[np.tril_indices(nstocks)] = sol
                 hvar[np.triu_indices(nstocks, 1)] \
-                    = hvar[np.tril_indices(nstocks, -1)]
+                    = hvar.T[np.triu_indices(nstocks, 1)]
                 return hvar
         except RuntimeError:
             # warnings.warn('Could not find stationary varaince!')
