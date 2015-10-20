@@ -136,7 +136,7 @@ class BEKKTestCase(ut.TestCase):
         innov = np.ones(nstocks)
         hvar = np.ones((nstocks, nstocks))
 
-        forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
+        forecast = BEKK.forecast_one(hvar=hvar, innov=innov, param=param)
         exp = cmat.dot(cmat.T)
         exp += amat.dot(innov * innov[:, np.newaxis]).dot(amat.T)
         exp += bmat.dot(hvar).dot(bmat.T)
@@ -157,11 +157,17 @@ class BEKKTestCase(ut.TestCase):
         innov = np.ones(nstocks)
         hvar = np.ones((nstocks, nstocks))
 
-        forecast = BEKK.forecast(hvar=hvar, innov=innov, param=param)
+        forecast = BEKK.forecast_one(hvar=hvar, innov=innov, param=param)
         proxy = BEKK.sqinnov(innov)
-        loss = BEKK.loss(forecast=forecast, proxy=proxy)
+        loss_eucl = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
+        loss_frob = BEKK.loss_frob(forecast=forecast, proxy=proxy)
+        loss_stein = BEKK.loss_stein(forecast=forecast, proxy=proxy)
+        loss_stein2 = BEKK.loss_stein2(forecast=forecast, innov=innov)
 
-        self.assertIsInstance(loss, float)
+        self.assertIsInstance(loss_eucl, float)
+        self.assertIsInstance(loss_frob, float)
+        self.assertIsInstance(loss_stein, float)
+        self.assertIsInstance(loss_stein2, float)
 
 
 if __name__ == '__main__':

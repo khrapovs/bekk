@@ -67,6 +67,35 @@ class ParamSpatial(ParamGeneric):
         return 'spatial'
 
     @classmethod
+    def from_groups(cls, groups=None):
+        """Initialize from groups.
+
+        Parameters
+        ----------
+        nstocks : int
+            Number os stocks in the model
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        param : BEKKParams instance
+            BEKK parameters
+
+        """
+        weights = cls.get_weight(groups=groups)
+        ncat, nstocks = weights.shape[:2]
+        avecs = np.vstack([np.ones((1, nstocks)) * .1,
+                           np.zeros((ncat, nstocks))])
+        bvecs = np.vstack([np.ones((1, nstocks)) * .5,
+                           np.zeros((ncat, nstocks))])
+        dvecs = np.zeros((ncat, nstocks))
+        vvec = np.ones(nstocks)
+
+        return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs, vvec=vvec,
+                             groups=groups)
+
+    @classmethod
     def from_abdv(cls, avecs=None, bvecs=None, dvecs=None, vvec=None,
                   groups=None):
         """Initialize from spatial representation.

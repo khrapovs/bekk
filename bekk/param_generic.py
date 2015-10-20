@@ -54,7 +54,7 @@ class ParamGeneric(object):
 
         """
         self.amat = np.eye(nstocks) * .1**.5
-        self.bmat = np.eye(nstocks) * .8**.5
+        self.bmat = np.eye(nstocks) * .85**.5
         self.cmat = self.find_cmat(amat=self.amat, bmat=self.bmat,
                                    target=np.eye(nstocks))
 
@@ -153,6 +153,8 @@ class ParamGeneric(object):
 
         # Extract C parameter
         try:
+#            alpha = - np.min([0, sl.eigvals(ccmat).min().real * 1.1])
+#            ridge = np.eye(ccmat.shape[0]) * alpha
             return sl.cholesky(ccmat, 1)
         except sl.LinAlgError:
             # warnings.warn('Matrix C is singular!')
@@ -236,3 +238,20 @@ class ParamGeneric(object):
         kron_a = np.kron(self.amat, self.amat)
         kron_b = np.kron(self.bmat, self.bmat)
         return np.abs(sl.eigvals(kron_a + kron_b)).max()
+
+    def uvar_bad(self):
+        """Check that unconditional variance is well defined.
+
+        """
+        if self.cmat is not None:
+            uvar = self.get_uvar()
+        else:
+            return True
+        if uvar is None:
+            return True
+        elif np.any(np.diag(uvar) <=0):
+            return True
+        elif np.any(np.linalg.eigvals(uvar) <= 0):
+            return True
+        else:
+            return False
