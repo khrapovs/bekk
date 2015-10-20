@@ -122,6 +122,8 @@ class BEKK(object):
 
         if param.constraint() >= 1 or param.cmat is None:
             return 1e10
+        if param.uvar_bad():
+            return 1e10
 
         args = [self.hvar, self.innov, param.amat, param.bmat, param.cmat]
 
@@ -184,8 +186,8 @@ class BEKK(object):
         # Check for incompatible inputs
         if use_target and cfree:
             raise ValueError('use_target and cfree are incompatible!')
-        if (groups is not None) and (model != 'spatial'):
-            raise ValueError('The model is incompatible with weights!')
+#        if (groups is not None) and (model != 'spatial'):
+#            raise ValueError('The model is incompatible with weights!')
         # Update default settings
         nobs, nstocks = self.innov.shape
         var_target = estimate_uvar(self.innov)
@@ -311,7 +313,8 @@ class BEKK(object):
             Parameter object
 
         """
-        param = ParamSpatial(nstocks=self.innov.shape[1])
+#        param = ParamSpatial(nstocks=self.innov.shape[1])
+        param = ParamSpatial.from_groups(groups=groups)
 
         kwargs = {'use_target': True, 'groups': groups, 'model': 'spatial'}
         est_partial = partial(self.estimate, **kwargs)
@@ -458,7 +461,7 @@ class BEKK(object):
     @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
                        model='standard', use_target=True, groups=None,
-                       restriction='scalar', cfree=False):
+                       restriction='scalar', cfree=False, method='SLSQP'):
         """Collect forecast losses using rolling window.
 
         Parameters
@@ -508,7 +511,8 @@ class BEKK(object):
             bekk = BEKK(innov)
             result = bekk.estimate(param_start=param_start, groups=groups,
                                    use_target=use_target, model=model,
-                                   restriction=restriction, cfree=cfree)
+                                   restriction=restriction, cfree=cfree,
+                                   method=method)
             forecast = BEKK.forecast_one(hvar=result.hvar[-1], innov=innov[-1],
                                          param=result.param_final)
             param_start = result.param_final
