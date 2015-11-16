@@ -44,7 +44,7 @@ class ParamGeneric(object):
 
     """
 
-    def __init__(self, nstocks=2):
+    def __init__(self, nstocks=2, abstart=(.1, .85), target=None):
         """Class constructor.
 
         Parameters
@@ -53,16 +53,19 @@ class ParamGeneric(object):
             Number os stocks in the model
 
         """
-        self.amat = np.eye(nstocks) * .1**.5
-        self.bmat = np.eye(nstocks) * .85**.5
+        self.amat = np.eye(nstocks) * abstart[0]**.5
+        self.bmat = np.eye(nstocks) * abstart[1]**.5
+        if target is None:
+            target = np.eye(nstocks)
         self.cmat = self.find_cmat(amat=self.amat, bmat=self.bmat,
-                                   target=np.eye(nstocks))
+                                   target=target)
 
     def __str__(self):
         """String representation.
 
         """
-        show = '\n\nMax eigenvalue = %.4f\n' % self.constraint()
+        show = '\n\nMax eigenvalue = %.4f' % self.constraint()
+        show += '\nPenalty = %.4f\n' % self.penalty()
 
         show += "\nA =\n" + str(self.amat)
         show += "\nB =\n" + str(self.bmat)
@@ -158,7 +161,8 @@ class ParamGeneric(object):
             return sl.cholesky(ccmat, 1)
         except sl.LinAlgError:
             # warnings.warn('Matrix C is singular!')
-            return None
+            return np.zeros_like(ccmat)
+            # return None
 
     @staticmethod
     def fixed_point(uvar, amat=None, bmat=None, ccmat=None):
@@ -249,9 +253,25 @@ class ParamGeneric(object):
             return True
         if uvar is None:
             return True
-        elif np.any(np.diag(uvar) <=0):
+        elif np.any(np.diag(uvar) <= 0):
             return True
         elif np.any(np.linalg.eigvals(uvar) <= 0):
             return True
         else:
             return False
+
+    def penalty(self):
+        """Penalty in the likelihood for bad parameter values.
+
+        """
+        nstocks = self.amat.shape[0]
+        penalty = np.maximum(np.diag(self.amat - self.bmat),
+                             np.zeros(nstocks)).max()
+        penalty += np.minimum(np.diag(self.amat), np.zeros(nstocks)).min()**2
+        penalty += np.minimum(np.diag(self.bmat), np.zeros(nstocks)).min()**2
+        penalty += np.maximum(np.diag(self.amat) - np.ones(nstocks),
+                              np.zeros(nstocks)).max()
+        penalty += np.maximum(np.diag(self.bmat) - np.ones(nstocks),
+                              np.zeros(nstocks)).max()
+        penalty += np.maximum(self.constraint() - 1, 0)
+        return 1e5 * (np.exp(penalty) - 1)

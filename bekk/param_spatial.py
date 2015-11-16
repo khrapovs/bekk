@@ -67,15 +67,15 @@ class ParamSpatial(ParamGeneric):
         return 'spatial'
 
     @classmethod
-    def from_groups(cls, groups=None):
+    def from_groups(cls, groups=None, target=None, abstart=(.1, .5)):
         """Initialize from groups.
 
         Parameters
         ----------
-        nstocks : int
-            Number os stocks in the model
         groups : list of lists of tuples
             Encoded groups of items
+        target : (nstocks, nstocks) array
+            Unconditional variance matrix
 
         Returns
         -------
@@ -85,12 +85,15 @@ class ParamSpatial(ParamGeneric):
         """
         weights = cls.get_weight(groups=groups)
         ncat, nstocks = weights.shape[:2]
-        avecs = np.vstack([np.ones((1, nstocks)) * .1,
+        avecs = np.vstack([np.ones((1, nstocks)) * abstart[0],
                            np.zeros((ncat, nstocks))])
-        bvecs = np.vstack([np.ones((1, nstocks)) * .5,
+        bvecs = np.vstack([np.ones((1, nstocks)) * abstart[1],
                            np.zeros((ncat, nstocks))])
         dvecs = np.zeros((ncat, nstocks))
-        vvec = np.ones(nstocks)
+        if target is None:
+            vvec = np.ones(nstocks)
+        else:
+            vvec = np.diag(target)
 
         return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs, vvec=vvec,
                              groups=groups)
@@ -122,9 +125,16 @@ class ParamSpatial(ParamGeneric):
         weights = cls.get_weight(groups=groups)
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
                                                 dvecs=dvecs, weights=weights)
-        dmat_inv = scl.inv(dmat)
+        try:
+            dmat_inv = scl.inv(dmat)
+        except scl.LinAlgError:
+            dmat_inv = np.eye(dmat.shape[0])
         ccmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv.T)
-        cmat = scl.cholesky(ccmat, 1)
+        try:
+            cmat = scl.cholesky(ccmat, 1)
+        except scl.LinAlgError:
+            # warnings.warn('Matrix C is singular!')
+            return np.zeros_like(ccmat)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
@@ -234,6 +244,12 @@ class ParamSpatial(ParamGeneric):
             if dvecs is not None:
                 dmat -= np.diag(dvecs[i]).dot(weights[i])
 
+        # amat[np.diag_indices(nstocks)] = np.abs(np.diag(amat))
+        # bmat[np.diag_indices(nstocks)] = np.abs(np.diag(bmat))
+        # amat[np.diag_indices(nstocks)] = np.maximum(np.diag(amat),
+        #     np.zeros(nstocks))
+        # bmat[np.diag_indices(nstocks)] = np.maximum(np.diag(bmat),
+        #     np.zeros(nstocks))
         return amat, bmat, dmat
 
     @staticmethod

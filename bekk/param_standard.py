@@ -32,7 +32,7 @@ class ParamStandard(ParamGeneric):
 
     """
 
-    def __init__(self, nstocks=2):
+    def __init__(self, nstocks=2, abstart=(.1, .6), target=None):
         """Class constructor.
 
         Parameters
@@ -41,7 +41,9 @@ class ParamStandard(ParamGeneric):
             Number os stocks in the model
 
         """
-        super(ParamStandard, self).__init__(nstocks)
+        super(ParamStandard, self).__init__(nstocks=nstocks,
+                                            abstart=abstart,
+                                            target=target)
 
     @staticmethod
     def get_model():
@@ -100,6 +102,15 @@ class ParamStandard(ParamGeneric):
             bmat = np.eye(nstocks) * theta[chunk:2*chunk]
         else:
             raise ValueError('This restriction is not supported!')
+
+#        amat[np.diag_indices(nstocks)] = np.minimum(np.diag(amat),
+#            np.ones(nstocks))
+#        bmat[np.diag_indices(nstocks)] = np.minimum(np.diag(bmat),
+#            np.ones(nstocks))
+#        amat[np.diag_indices(nstocks)] = np.maximum(np.diag(amat),
+#            np.zeros(nstocks))
+#        bmat[np.diag_indices(nstocks)] = np.maximum(np.diag(bmat),
+#            np.zeros(nstocks))
 
         if target is None:
             cmat = np.zeros((nstocks, nstocks))

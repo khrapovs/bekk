@@ -104,6 +104,7 @@ class BEKKResults(object):
         self.restriction = restriction
         self.use_target = use_target
         self.cfree = cfree
+        self.method = method
 
     def __str__(self):
         """String representation.
@@ -115,13 +116,20 @@ class BEKKResults(object):
         show += '\nRestriction: ' + self.restriction
         show += '\nUse target: ' + str(self.use_target)
         show += '\nMatrix C is free: ' + str(self.cfree)
-        show += '\nIterations = ' + str(self.opt_out.nit)
+        try:
+            show += '\nIterations = ' + str(self.opt_out.nit)
+        except:
+            show += '\nIterations = NA'
+        show += '\nOptimization method = %s' % self.method
         show += '\nOptimization time = %s' % format_time(self.time_delta)
         show += '\n\nFinal parameters:'
         show += str(self.param_final)
         show += '\nVariance target:\n'
         show += str(self.var_target) + '\n'
-        show += '\nFinal log-likelihood = %.2f' % (-self.opt_out.fun) + '\n'
+        show += '\nFinal log-likelihood (with penalty) = %.2f' \
+            % (-self.opt_out.fun) + '\n'
+        show += 'Final log-likelihood = %.2f' \
+            % (-self.opt_out.fun + self.param_final.penalty()) + '\n'
         show += '=' * width
         return show
 
