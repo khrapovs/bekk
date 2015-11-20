@@ -620,15 +620,15 @@ class BEKK(object):
         return (np.log(pvar) + pret**2 / pvar) / 2
 
     @staticmethod
-    def portf_mse(forecast=None, innov=None):
+    def portf_mse(forecast=None, proxy=None):
         """Portfolio MSE loss function.
 
         Parameters
         ----------
         forecast : (nstocks, nstocks) array
             Volatililty forecast
-        innov : (nstocks, ) array
-            Returns
+        proxy : (nstocks, nstocks) array
+            Proxy for actual volatility
 
         Returns
         -------
@@ -636,19 +636,19 @@ class BEKK(object):
 
         """
         pvar_exp = BEKK.pvar(forecast)
-        pvar_real = BEKK.pvar(BEKK.sqinnov(innov))
+        pvar_real = BEKK.pvar(proxy)
         return (pvar_exp - pvar_real) ** 2
 
     @staticmethod
-    def portf_qlike(forecast=None, innov=None):
+    def portf_qlike(forecast=None, proxy=None):
         """Portfolio QLIKE loss function.
 
         Parameters
         ----------
         forecast : (nstocks, nstocks) array
             Volatililty forecast
-        innov : (nstocks, ) array
-            Returns
+        proxy : (nstocks, nstocks) array
+            Proxy for actual volatility
 
         Returns
         -------
@@ -656,7 +656,7 @@ class BEKK(object):
 
         """
         pvar_exp = BEKK.pvar(forecast)
-        pvar_real = BEKK.pvar(BEKK.sqinnov(innov))
+        pvar_real = BEKK.pvar(proxy)
         return np.log(pvar_exp) + pvar_real**2 / pvar_exp
 
     @staticmethod
