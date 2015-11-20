@@ -714,8 +714,9 @@ class BEKK(object):
                 - 'group' (for 'spatial' model only)
                 - 'scalar'
 
-        groups : list of lists of tuples
-            Encoded groups of items
+        groups : tuple
+            First item is the string code.
+            Second is spatial groups specification.
         use_target : bool
             Whether to use variance targeting (True) or not (False)
         cfree : bool
@@ -724,6 +725,8 @@ class BEKK(object):
             Number of starting values in one dimension
         use_penalty : bool
             Whether to include penalty term in the likelihood
+        tname : str
+            Name to be used while writing data to the disk
 
         Returns
         -------
