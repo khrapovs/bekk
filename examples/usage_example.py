@@ -20,7 +20,7 @@ from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
 from bekk.utils import take_time
-
+from arch.bootstrap import MCS
 
 def try_bekk():
     """Simulate and estimate BEKK model.
@@ -184,9 +184,9 @@ def try_standard_loss():
         losses[restr] = pd.DataFrame(evaluate(restriction=restr))
 
     losses = pd.concat(losses, keys=restrcs, names=['model', 'time'])
-    print(losses['frob'].unstack('model').mean(0))
-    mcs = BEKK.compute_mcs(losses['eucl'].unstack('model'))
-
+    df = losses['stein'].unstack('model')
+    mcs = MCS(df, size=.1)
+    mcs.compute()
     print(mcs.pvalues)
 
 

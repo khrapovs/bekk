@@ -159,6 +159,12 @@ class BEKKTestCase(ut.TestCase):
 
         forecast = BEKK.forecast_one(hvar=hvar, innov=innov, param=param)
         proxy = BEKK.sqinnov(innov)
+        pret = BEKK.pret(innov)
+        pvar = BEKK.pvar(hvar)
+
+        self.assertEqual(proxy.shape, (nstocks, nstocks))
+        self.assertEqual(forecast.shape, (nstocks, nstocks))
+
         loss_eucl = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
         loss_frob = BEKK.loss_frob(forecast=forecast, proxy=proxy)
         loss_stein = BEKK.loss_stein(forecast=forecast, proxy=proxy)
@@ -168,6 +174,8 @@ class BEKKTestCase(ut.TestCase):
         self.assertIsInstance(loss_frob, float)
         self.assertIsInstance(loss_stein, float)
         self.assertIsInstance(loss_stein2, float)
+        self.assertIsInstance(pret, float)
+        self.assertIsInstance(pvar, float)
 
 
 if __name__ == '__main__':

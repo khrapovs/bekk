@@ -475,6 +475,49 @@ class BEKK(object):
         return innov * innov[:, np.newaxis]
 
     @staticmethod
+    def pret(innov, weights=None):
+        """Portfolio return.
+
+        Parameters
+        ----------
+        innov : (nstocks, ) array
+            Current inovations
+        weights : (nstocks, ) array
+            Portfolio weightings
+
+        Returns
+        -------
+        float
+            Portfolio return
+
+        """
+        if weights is None:
+            weights = np.ones(innov.shape[0])
+        return np.sum(innov * weights / np.sum(weights))
+
+    @staticmethod
+    def pvar(var, weights=None):
+        """Portfolio variance.
+
+        Parameters
+        ----------
+        innov : (nstocks, ) array
+            Current inovations
+        weights : (nstocks, ) array
+            Portfolio weightings
+
+        Returns
+        -------
+        float
+            Portfolio variance
+
+        """
+        if weights is None:
+            weights = np.ones(var.shape[0])
+        weights /= np.sum(weights)
+        return np.sum(weights * var.dot(weights))
+
+    @staticmethod
     def loss_eucl(forecast=None, proxy=None):
         """Eucledean loss function.
 
@@ -556,8 +599,31 @@ class BEKK(object):
         return (np.log(np.diag(forecast)**2) + norm_innov * innov).sum()
 
     @staticmethod
+    def portf_lscore(forecast=None, innov=None):
+        """Portfolio log-score loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        innov : (nstocks, ) array
+            Returns
+
+        Returns
+        -------
+        float
+
+        """
+        lower = True
+        forecast, lower = scl.cho_factor(forecast, lower=lower,
+                                         check_finite=False)
+        norm_innov = scl.cho_solve((forecast, lower), innov,
+                                   check_finite=False)
+        return (np.log(np.diag(forecast)**2) + norm_innov * innov).sum()
+
+    @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
-                       model='standard', use_target=False, groups=None,
+                       model='standard', use_target=False, groups=('NA', 'NA'),
                        restriction='scalar', cfree=False, method='SLSQP',
                        use_penalty=False, ngrid=5, tname=None):
         """Collect forecast losses using rolling window.
@@ -614,8 +680,9 @@ class BEKK(object):
                   'model': model, 'restriction': restriction, 'cfree': cfree,
                   'use_penalty': use_penalty}
 
-        loc_name = tname + '_' + model +'_' + restriction + '_' + groups[0]
-        fname = '../data/losses/' + loc_name + '.h5'
+        if tname is not None:
+            loc_name = tname + '_' + model +'_' + restriction + '_' + groups[0]
+            fname = '../data/losses/' + loc_name + '.h5'
 
         for first in range(nobs - window):
             last = window + first
@@ -629,14 +696,6 @@ class BEKK(object):
                 result = bekk.estimate(param_start=param_start,
                                        method=method, **common)
 
-#            if first == 0:
-#                result = bekk.estimate_loop(ngrid=ngrid, **common)
-#                result = bekk.estimate(param_start=result.param_final,
-#                                       method='basin', **common)
-#            else:
-#                result = bekk.estimate(param_start=param_start, method=method,
-#                                       **common)
-#
             if result.opt_out.fun == 1e10:
                 loop[first] = 1
                 result = bekk.estimate(param_start=param_start,
@@ -669,9 +728,10 @@ class BEKK(object):
             index = pd.MultiIndex.from_arrays(ids, names=names)
             losses = pd.DataFrame(data, index=index)
 
-            append = False if first == 0 else True
-            losses.to_hdf(fname, tname, format='t', append=append,
-                          min_itemsize=10)
+            if tname is not None:
+                append = False if first == 0 else True
+                losses.to_hdf(fname, tname, format='t', append=append,
+                              min_itemsize=10)
 
         return {'logl': logl, 'eucl': loss_eucl,
                 'frob': loss_frob, 'stein': loss_stein,
