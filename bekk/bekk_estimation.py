@@ -614,12 +614,50 @@ class BEKK(object):
         float
 
         """
-        lower = True
-        forecast, lower = scl.cho_factor(forecast, lower=lower,
-                                         check_finite=False)
-        norm_innov = scl.cho_solve((forecast, lower), innov,
-                                   check_finite=False)
-        return (np.log(np.diag(forecast)**2) + norm_innov * innov).sum()
+        # TODO : demeaned returns are implicitely assumed
+        pret = BEKK.pret(innov)
+        pvar = BEKK.pvar(forecast)
+        return (np.log(pvar) + pret**2 / pvar) / 2
+
+    @staticmethod
+    def portf_mse(forecast=None, innov=None):
+        """Portfolio MSE loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        innov : (nstocks, ) array
+            Returns
+
+        Returns
+        -------
+        float
+
+        """
+        pvar_exp = BEKK.pvar(forecast)
+        pvar_real = BEKK.pvar(BEKK.sqinnov(innov))
+        return (pvar_exp - pvar_real) ** 2
+
+    @staticmethod
+    def portf_qlike(forecast=None, innov=None):
+        """Portfolio QLIKE loss function.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        innov : (nstocks, ) array
+            Returns
+
+        Returns
+        -------
+        float
+
+        """
+        pvar_exp = BEKK.pvar(forecast)
+        pvar_real = BEKK.pvar(BEKK.sqinnov(innov))
+        return np.log(pvar_exp) + pvar_real**2 / pvar_exp
 
     @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,

@@ -187,6 +187,17 @@ class BEKKTestCase(ut.TestCase):
         self.assertIsInstance(loss_stein, float)
         self.assertIsInstance(loss_stein2, float)
 
+        portf_lscore = BEKK.portf_lscore(forecast=hvar, innov=innov)
+        portf_mse = BEKK.portf_mse(forecast=hvar, innov=innov)
+        portf_qlike = BEKK.portf_qlike(forecast=hvar, innov=innov)
+
+        self.assertIsInstance(portf_lscore, float)
+        self.assertIsInstance(portf_mse, float)
+        self.assertIsInstance(portf_qlike, float)
+        self.assertEqual(portf_lscore, .5)
+        self.assertEqual(portf_mse, 0)
+        self.assertEqual(portf_qlike, 1)
+
 
 if __name__ == '__main__':
 
