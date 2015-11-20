@@ -660,10 +660,35 @@ class BEKK(object):
         return np.log(pvar_exp) + pvar_real**2 / pvar_exp
 
     @staticmethod
+    def all_losses(forecast=None, proxy=None, innov=None):
+        """Collect all loss functions.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        proxy : (nstocks, nstocks) array
+            Proxy for actual volatility
+        innov : (nstocks, ) array
+            Returns
+
+        Returns
+        -------
+        dict
+
+        """
+        return {'eucl': BEKK.loss_eucl(forecast=forecast, proxy=proxy),
+                'frob': BEKK.loss_frob(forecast=forecast, proxy=proxy),
+                'stein': BEKK.loss_stein2(forecast=forecast, innov=innov),
+                'lsqore': BEKK.portf_lscore(forecast=forecast, innov=innov),
+                'mse': BEKK.portf_mse(forecast=forecast, proxy=proxy),
+                'qlike': BEKK.portf_qlike(forecast=forecast, proxy=proxy)}
+
+    @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
                        model='standard', use_target=False, groups=('NA', 'NA'),
                        restriction='scalar', cfree=False, method='SLSQP',
-                       use_penalty=False, ngrid=5, tname=None):
+                       use_penalty=False, ngrid=5, tname='losses'):
         """Collect forecast losses using rolling window.
 
         Parameters
@@ -707,22 +732,16 @@ class BEKK(object):
 
         """
         nobs = innov_all.shape[0]
-        logl = np.zeros(nobs - window)
-        loss_eucl = np.zeros(nobs - window)
-        loss_frob = np.zeros(nobs - window)
-        loss_stein = np.zeros(nobs - window)
-        time_delta = np.zeros(nobs - window)
-        loop = np.zeros(nobs - window)
 
         common = {'groups': groups[1], 'use_target': use_target,
                   'model': model, 'restriction': restriction, 'cfree': cfree,
                   'use_penalty': use_penalty}
 
-        if tname is not None:
-            loc_name = tname + '_' + model +'_' + restriction + '_' + groups[0]
-            fname = '../data/losses/' + loc_name + '.h5'
+        loc_name = tname + '_' + model +'_' + restriction + '_' + groups[0]
+        fname = '../data/losses/' + loc_name + '.h5'
 
         for first in range(nobs - window):
+            loop = 0
             last = window + first
             innov = innov_all[first:last]
             bekk = BEKK(innov)
@@ -735,15 +754,15 @@ class BEKK(object):
                                        method=method, **common)
 
             if result.opt_out.fun == 1e10:
-                loop[first] = 1
+                loop = 1
                 result = bekk.estimate(param_start=param_start,
                                        method='basin', **common)
             if result.opt_out.fun == 1e10:
-                loop[first] = 2
+                loop = 2
                 result = bekk.estimate_loop(ngrid=ngrid, method=method,
                                             **common)
 
-            time_delta[first] = time.time() - time_start
+            time_delta = time.time() - time_start
 
             param_start = result.param_final
 
@@ -751,26 +770,19 @@ class BEKK(object):
                                          param=result.param_final)
             proxy = BEKK.sqinnov(innov_all[last])
 
-            logl[first] = result.opt_out.fun
-            loss_eucl[first] = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
-            loss_frob[first] = BEKK.loss_frob(forecast=forecast, proxy=proxy)
-            loss_stein[first] = BEKK.loss_stein2(forecast=forecast,
-                                                 innov=innov_all[last])
-
-            data = {'eucl': loss_eucl[first], 'frob': loss_frob[first],
-                    'stein': loss_stein[first], 'logl': logl[first],
-                    'time_delta': time_delta[first], 'loop': loop[first]}
+            data = BEKK.all_losses(forecast=forecast, proxy=proxy,
+                                   innov=innov_all[last])
+            data['logl'] = result.opt_out.fun
+            data['time_delta'] = time_delta
+            data['loop'] = loop
 
             ids = [model, restriction, groups[0], first]
             names = ['model', 'restriction', 'group', 'first']
             index = pd.MultiIndex.from_arrays(ids, names=names)
             losses = pd.DataFrame(data, index=index)
 
-            if tname is not None:
-                append = False if first == 0 else True
-                losses.to_hdf(fname, tname, format='t', append=append,
-                              min_itemsize=10)
+            append = False if first == 0 else True
+            losses.to_hdf(fname, tname, format='t', append=append,
+                          min_itemsize=10)
 
-        return {'logl': logl, 'eucl': loss_eucl,
-                'frob': loss_frob, 'stein': loss_stein,
-                'time_delta': time_delta, 'loop': loop}
+        return pd.read_hdf(fname, tname)

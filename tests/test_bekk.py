@@ -198,6 +198,11 @@ class BEKKTestCase(ut.TestCase):
         self.assertEqual(portf_mse, 0)
         self.assertEqual(portf_qlike, 1)
 
+        all_losses = BEKK.all_losses(forecast=forecast, proxy=proxy,
+                                     innov=innov)
+
+        self.assertIsInstance(all_losses, dict)
+
 
 if __name__ == '__main__':
 

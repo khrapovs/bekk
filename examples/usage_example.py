@@ -178,13 +178,13 @@ def try_standard_loss():
     kwargs = {'param_start': param_true, 'innov_all': innov,
               'window': window, 'model': model, 'use_target': use_target}
     evaluate = partial(BEKK.collect_losses, **kwargs)
-    losses = dict()
+    losses = []
     restrcs = ['scalar', 'diagonal', 'full']
     for restr in restrcs:
-        losses[restr] = pd.DataFrame(evaluate(restriction=restr))
+        losses.append(evaluate(restriction=restr))
 
-    losses = pd.concat(losses, keys=restrcs, names=['model', 'time'])
-    df = losses['stein'].unstack('model')
+    losses = pd.concat(losses)
+    df = losses['qlike'].unstack('restriction')
     mcs = MCS(df, size=.1)
     mcs.compute()
     print(mcs.pvalues)
