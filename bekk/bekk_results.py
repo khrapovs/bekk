@@ -8,6 +8,7 @@ BEKK results
 from __future__ import print_function, division
 
 import numpy as np
+import scipy.linalg as scl
 
 from .utils import format_time
 
@@ -142,5 +143,25 @@ class BEKKResults(object):
     def weights_equal(self):
         """Equal weights.
 
+        Returns
+        -------
+        (nobs, nstocks) array
+
         """
         return np.ones_like(self.innov) / self.innov.shape[1]
+
+    def weights_minvar(self):
+        """Minimum variance weights.
+
+        Returns
+        -------
+        (nobs, nstocks) array
+
+        """
+        nstocks = self.innov.shape[1]
+        out = []
+        lower = True
+        for hvari in self.hvar:
+            inv_hvar = np.linalg.solve(hvari, np.ones(nstocks))
+            out.append(inv_hvar / inv_hvar.sum())
+        return np.array(out)
