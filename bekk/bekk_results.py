@@ -160,8 +160,89 @@ class BEKKResults(object):
         """
         nstocks = self.innov.shape[1]
         out = []
-        lower = True
         for hvari in self.hvar:
             inv_hvar = np.linalg.solve(hvari, np.ones(nstocks))
             out.append(inv_hvar / inv_hvar.sum())
         return np.array(out)
+
+    def weights(self, kind='equal'):
+        """Portfolio weights.
+
+        Parameters
+        ----------
+        weight : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        (nobs, nstocks) array
+
+        """
+        if kind == 'equal':
+            return self.weights_equal()
+        elif kind == 'minvar':
+            return self.weights_minvar()
+        else:
+            raise ValueError('Weight choice is not supported!')
+
+    def portf_rvar(self, kind='equal'):
+        """Portfolio predicted variance.
+
+        Parameters
+        ----------
+        kind : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        (nobs, ) array
+
+        """
+        weights = self.weights(kind=kind)
+        return (self.innov * weights).sum(1)
+
+    def portf_evar(self, kind='equal'):
+        """Portfolio predicted variance.
+
+        Parameters
+        ----------
+        kind : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        (nobs, ) array
+
+        """
+        weights = self.weights(kind=kind)
+        return ((self.hvar.T * weights.T).sum(0) * weights.T).sum(0)
+
+    def portf_mvar(self, kind='equal'):
+        """Portfolio mean variance.
+
+        Parameters
+        ----------
+        kind : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        float
+
+        """
+        return self.portf_evar(kind=kind).mean()
+
+    def loss_var_ratio(self, kind='equal'):
+        """Ratio of realized and predicted variance.
+
+        Parameters
+        ----------
+        kind : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        (nobs, ) array
+
+        """
+        return self.portf_rvar(kind=kind) / self.portf_evar(kind=kind) - 1
