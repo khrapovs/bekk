@@ -20,6 +20,7 @@ import itertools
 import pandas as pd
 import numpy as np
 import scipy.linalg as scl
+import scipy.stats as scs
 
 from scipy.optimize import minimize, basinhopping
 from functools import partial
@@ -475,6 +476,58 @@ class BEKK(object):
         return innov * innov[:, np.newaxis]
 
     @staticmethod
+    def weights_equal(nstocks):
+        """Equal weights.
+
+        Parameters
+        ----------
+        nstocks : int
+            Number of stocks
+
+        Returns
+        -------
+        (nstocks, ) array
+
+        """
+        return np.ones(nstocks) / nstocks
+
+    @staticmethod
+    def weights_minvar(hvar):
+        """Minimum variance weights.
+
+        Returns
+        -------
+        (nobs, nstocks) array
+
+        """
+        nstocks = hvar.shape[0]
+        inv_hvar = np.linalg.solve(hvar, np.ones(nstocks))
+        return inv_hvar / inv_hvar.sum()
+
+    @staticmethod
+    def weights(nstocks=None, hvar=None, kind='equal'):
+        """Portfolio weights.
+
+        Parameters
+        ----------
+        nstocks : int
+            Number of stocks
+        weight : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        (nobs, nstocks) array
+
+        """
+        if kind == 'equal':
+            return BEKK.weights_equal(nstocks)
+        elif kind == 'minvar':
+            return BEKK.weights_minvar(hvar)
+        else:
+            raise ValueError('Weight choice is not supported!')
+
+    @staticmethod
     def pret(innov, weights=None):
         """Portfolio return.
 
@@ -492,7 +545,8 @@ class BEKK(object):
 
         """
         if weights is None:
-            weights = np.ones(innov.shape[0])
+            nstocks = innov.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
         return np.sum(innov * weights / np.sum(weights))
 
     @staticmethod
@@ -501,8 +555,8 @@ class BEKK(object):
 
         Parameters
         ----------
-        innov : (nstocks, ) array
-            Current inovations
+        var : (nstocks, nstocks) array
+            Variance matrix of returns
         weights : (nstocks, ) array
             Portfolio weightings
 
@@ -513,8 +567,10 @@ class BEKK(object):
 
         """
         if weights is None:
-            weights = np.ones(var.shape[0])
-        weights /= np.sum(weights)
+            nstocks = var.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
         return np.sum(weights * var.dot(weights))
 
     @staticmethod
@@ -658,6 +714,27 @@ class BEKK(object):
         pvar_exp = BEKK.pvar(forecast)
         pvar_real = BEKK.pvar(proxy)
         return np.log(pvar_exp) + pvar_real**2 / pvar_exp
+
+    @staticmethod
+    def portf_var(forecast=None, alpha=.05, kind='equal'):
+        """Portfolio Value-at-Risk.
+
+        Parameters
+        ----------
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        alpha : float
+            Risk level. Usually 1% or 5%.
+
+        Returns
+        -------
+        float
+
+        """
+        nstocks = forecast.shape[0]
+        weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
+        pvar = BEKK.pvar(forecast, weights=weights)
+        return 100 * scs.norm.ppf(alpha) * pvar**.5
 
     @staticmethod
     def all_losses(forecast=None, proxy=None, innov=None):

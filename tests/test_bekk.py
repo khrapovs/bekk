@@ -177,6 +177,10 @@ class BEKKTestCase(ut.TestCase):
         self.assertEqual(proxy.shape, (nstocks, nstocks))
         self.assertEqual(forecast.shape, (nstocks, nstocks))
 
+        for kind in ['equal', 'minvar']:
+            var = BEKK.portf_var(forecast=forecast, alpha=.05, kind=kind)
+            self.assertIsInstance(var, float)
+
         loss_eucl = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
         loss_frob = BEKK.loss_frob(forecast=forecast, proxy=proxy)
         loss_stein = BEKK.loss_stein(forecast=forecast, proxy=proxy)
