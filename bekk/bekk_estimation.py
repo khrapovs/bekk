@@ -725,6 +725,8 @@ class BEKK(object):
             Volatililty forecast
         alpha : float
             Risk level. Usually 1% or 5%.
+        weight : str
+            Either 'equal' or 'minvar' (minimum variance).
 
         Returns
         -------
@@ -735,6 +737,36 @@ class BEKK(object):
         weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
         pvar = BEKK.pvar(forecast, weights=weights)
         return 100 * scs.norm.ppf(alpha) * pvar**.5
+
+    @staticmethod
+    def loss_var(innov=None, forecast=None, alpha=.05, kind='equal'):
+        """Loss asociated with portfolio Value-at-Risk.
+
+        Parameters
+        ----------
+        innov : (nstocks, ) array
+            Returns
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        alpha : float
+            Risk level. Usually 1% or 5%.
+        weight : str
+            Either 'equal' or 'minvar' (minimum variance).
+
+        Returns
+        -------
+        float
+
+        """
+        nstocks = forecast.shape[0]
+        weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
+        var = BEKK.portf_var(forecast=forecast, alpha=alpha, kind=kind)
+        pret = BEKK.pret(innov, weights=weights)
+        diff = pret - var
+        if diff < 0:
+            return 1 + diff ** 2
+        else:
+            return 0.
 
     @staticmethod
     def all_losses(forecast=None, proxy=None, innov=None):

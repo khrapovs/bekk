@@ -181,6 +181,10 @@ class BEKKTestCase(ut.TestCase):
             var = BEKK.portf_var(forecast=forecast, alpha=.05, kind=kind)
             self.assertIsInstance(var, float)
 
+            loss_var = BEKK.loss_var(innov=innov[-1], forecast=forecast,
+                                     alpha=.05, kind='equal')
+            self.assertIsInstance(loss_var, float)
+
         loss_eucl = BEKK.loss_eucl(forecast=forecast, proxy=proxy)
         loss_frob = BEKK.loss_frob(forecast=forecast, proxy=proxy)
         loss_stein = BEKK.loss_stein(forecast=forecast, proxy=proxy)
