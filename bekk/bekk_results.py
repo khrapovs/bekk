@@ -138,3 +138,9 @@ class BEKKResults(object):
 
         """
         return self.__str__()
+
+    def weights_equal(self):
+        """Equal weights.
+
+        """
+        return np.ones_like(self.innov) / self.innov.shape[1]
