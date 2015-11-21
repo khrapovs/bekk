@@ -184,6 +184,9 @@ def try_standard_loss():
         losses.append(evaluate(restriction=restr))
 
     losses = pd.concat(losses)
+
+    print(losses)
+
     df = losses['qlike'].unstack('restriction')
     mcs = MCS(df, size=.1)
     mcs.compute()

@@ -736,7 +736,7 @@ class BEKK(object):
         nstocks = forecast.shape[0]
         weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
         pvar = BEKK.pvar(forecast, weights=weights)
-        return 100 * scs.norm.ppf(alpha) * pvar**.5
+        return scs.norm.ppf(alpha) * pvar**.5
 
     @staticmethod
     def loss_var(innov=None, forecast=None, alpha=.05, kind='equal'):
@@ -791,7 +791,8 @@ class BEKK(object):
                 'stein': BEKK.loss_stein2(forecast=forecast, innov=innov),
                 'lsqore': BEKK.portf_lscore(forecast=forecast, innov=innov),
                 'mse': BEKK.portf_mse(forecast=forecast, proxy=proxy),
-                'qlike': BEKK.portf_qlike(forecast=forecast, proxy=proxy)}
+                'qlike': BEKK.portf_qlike(forecast=forecast, proxy=proxy),
+                'var': BEKK.loss_var(innov=innov, forecast=forecast)}
 
     @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
