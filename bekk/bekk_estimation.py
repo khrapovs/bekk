@@ -830,7 +830,7 @@ class BEKK(object):
 
     @staticmethod
     def all_losses(forecast=None, proxy=None, innov=None,
-                   alpha=.25, kind='equal'):
+                   alpha=.05, kind='equal'):
         """Collect all loss functions.
 
         Parameters
@@ -873,7 +873,8 @@ class BEKK(object):
     def collect_losses(param_start=None, innov_all=None, window=1000,
                        model='standard', use_target=False, groups=('NA', 'NA'),
                        restriction='scalar', cfree=False, method='SLSQP',
-                       use_penalty=False, ngrid=5, tname='losses'):
+                       use_penalty=False, ngrid=5, alpha=.05, kind='equal',
+                       tname='losses'):
         """Collect forecast losses using rolling window.
 
         Parameters
@@ -910,6 +911,11 @@ class BEKK(object):
             Number of starting values in one dimension
         use_penalty : bool
             Whether to include penalty term in the likelihood
+        alpha : float
+            Risk level. Usually 1% or 5%.
+        kind : str
+            Portfolio weighting scheme.
+            Either 'equal' or 'minvar' (minimum variance).
         tname : str
             Name to be used while writing data to the disk
 
@@ -959,7 +965,8 @@ class BEKK(object):
             proxy = BEKK.sqinnov(innov_all[last])
 
             data = BEKK.all_losses(forecast=forecast, proxy=proxy,
-                                   innov=innov_all[last])
+                                   innov=innov_all[last],
+                                   alpha=alpha, kind=kind)
             data['logl'] = result.opt_out.fun
             data['time_delta'] = time_delta
             data['loop'] = loop

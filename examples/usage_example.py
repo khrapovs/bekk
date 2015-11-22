@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 import seaborn as sns
+import scipy.stats as scs
 
 from functools import partial
 
@@ -176,7 +177,8 @@ def try_standard_loss():
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
 
     kwargs = {'param_start': param_true, 'innov_all': innov,
-              'window': window, 'model': model, 'use_target': use_target}
+              'window': window, 'model': model, 'use_target': use_target,
+              'alpha': .25, 'kind': 'equal'}
     evaluate = partial(BEKK.collect_losses, **kwargs)
     losses = []
     restrcs = ['scalar', 'diagonal', 'full']
@@ -191,6 +193,8 @@ def try_standard_loss():
     mcs = MCS(df, size=.1)
     mcs.compute()
     print(mcs.pvalues)
+
+    return losses
 
 
 def try_spatial():
@@ -393,4 +397,39 @@ if __name__ == '__main__':
 #        try_interative_estimation_spatial()
 
     with take_time('Compute forecast loss'):
-        try_standard_loss()
+        losses = try_standard_loss()
+
+    # Test for unconditional coverage
+    # H0: alpha = alpha_hat
+    grouped = losses.groupby(level=losses.index.names[:-1])['var_exception']
+    num_all = grouped.count()
+    num_exc = grouped.sum()
+    alpha_hat = grouped.mean()
+    alpha = .25
+    lruc = 2 * np.log((alpha_hat / alpha)**num_exc
+        * ((1 - alpha_hat) / (1 - alpha))**(num_all - num_exc))
+
+    lruc = pd.DataFrame({'LRuc': lruc})
+    lruc['pvalue'] = 1 - scs.chi2.cdf(lruc['LRuc'], df=1)
+
+    # Test for conditional coverage
+    # H0: serial independence
+    def lrind_test(df):
+
+        t01 = ((df == 1) & (df.shift() == 0)).sum()
+        t10 = ((df == 0) & (df.shift() == 1)).sum()
+        t11 = ((df == 1) & (df.shift() == 1)).sum()
+        t00 = ((df == 0) & (df.shift() == 0)).sum()
+
+        p01 = t01 / (t00 + t01)
+        p11 = t11 / (t10 + t11)
+        p = (t01 + t11) / (t01 + t10 + t00 + t11)
+
+        la = (1 - p01)**t00 * p01**t01 * (1 - p11)**t10 * p11**t11
+        l0 = (1 - p)**(t00 + t01) * p**(t01 + t11)
+
+        return 2 * (la - l0)
+
+    lrind = grouped.apply(lrind_test)
+    lrind = pd.DataFrame({'LRind': lrind})
+    lrind['pvalue'] = 1 - scs.chi2.cdf(lrind['LRind'], df=1)
