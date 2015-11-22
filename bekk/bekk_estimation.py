@@ -547,7 +547,9 @@ class BEKK(object):
         if weights is None:
             nstocks = innov.shape[0]
             weights = BEKK.weights(nstocks=nstocks)
-        return np.sum(innov * weights / np.sum(weights))
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        return np.sum(innov * weights)
 
     @staticmethod
     def pvar(var, weights=None):
@@ -655,7 +657,7 @@ class BEKK(object):
         return (np.log(np.diag(forecast)**2) + norm_innov * innov).sum()
 
     @staticmethod
-    def portf_lscore(forecast=None, innov=None):
+    def portf_lscore(forecast=None, innov=None, weights=None):
         """Portfolio log-score loss function.
 
         Parameters
@@ -664,19 +666,25 @@ class BEKK(object):
             Volatililty forecast
         innov : (nstocks, ) array
             Returns
+        weights : (nstocks, ) array
+            Portfolio weights
 
         Returns
         -------
         float
 
         """
-        # TODO : demeaned returns are implicitely assumed
-        pret = BEKK.pret(innov)
-        pvar = BEKK.pvar(forecast)
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        pret = BEKK.pret(innov, weights=weights)
+        pvar = BEKK.pvar(forecast, weights=weights)
         return (np.log(pvar) + pret**2 / pvar) / 2
 
     @staticmethod
-    def portf_mse(forecast=None, proxy=None):
+    def portf_mse(forecast=None, proxy=None, weights=None):
         """Portfolio MSE loss function.
 
         Parameters
@@ -685,18 +693,25 @@ class BEKK(object):
             Volatililty forecast
         proxy : (nstocks, nstocks) array
             Proxy for actual volatility
+        weights : (nstocks, ) array
+            Portfolio weights
 
         Returns
         -------
         float
 
         """
-        pvar_exp = BEKK.pvar(forecast)
-        pvar_real = BEKK.pvar(proxy)
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        pvar_exp = BEKK.pvar(forecast, weights=weights)
+        pvar_real = BEKK.pvar(proxy, weights=weights)
         return (pvar_exp - pvar_real) ** 2
 
     @staticmethod
-    def portf_qlike(forecast=None, proxy=None):
+    def portf_qlike(forecast=None, proxy=None, weights=None):
         """Portfolio QLIKE loss function.
 
         Parameters
@@ -705,18 +720,25 @@ class BEKK(object):
             Volatililty forecast
         proxy : (nstocks, nstocks) array
             Proxy for actual volatility
+        weights : (nstocks, ) array
+            Portfolio weights
 
         Returns
         -------
         float
 
         """
-        pvar_exp = BEKK.pvar(forecast)
-        pvar_real = BEKK.pvar(proxy)
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        pvar_exp = BEKK.pvar(forecast, weights=weights)
+        pvar_real = BEKK.pvar(proxy, weights=weights)
         return np.log(pvar_exp) + pvar_real**2 / pvar_exp
 
     @staticmethod
-    def portf_var(forecast=None, alpha=.05, kind='equal'):
+    def portf_var(forecast=None, alpha=.05, weights=None):
         """Portfolio Value-at-Risk.
 
         Parameters
@@ -725,22 +747,24 @@ class BEKK(object):
             Volatililty forecast
         alpha : float
             Risk level. Usually 1% or 5%.
-        weight : str
-            Either 'equal' or 'minvar' (minimum variance).
+        weights : (nstocks, ) array
+            Portfolio weights
 
         Returns
         -------
         float
 
         """
-        nstocks = forecast.shape[0]
-        weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
-        pvar = BEKK.pvar(forecast, weights=weights)
-        return scs.norm.ppf(alpha) * pvar**.5
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        return scs.norm.ppf(alpha) * BEKK.pvar(forecast, weights=weights)**.5
 
     @staticmethod
-    def loss_var(innov=None, forecast=None, alpha=.05, kind='equal'):
-        """Loss asociated with portfolio Value-at-Risk.
+    def var_exception(innov=None, forecast=None, alpha=.05, weights=None):
+        """Exception associated with portfolio Value-at-Risk.
 
         Parameters
         ----------
@@ -750,17 +774,53 @@ class BEKK(object):
             Volatililty forecast
         alpha : float
             Risk level. Usually 1% or 5%.
-        weight : str
-            Either 'equal' or 'minvar' (minimum variance).
+        weights : (nstocks, ) array
+            Portfolio weights
 
         Returns
         -------
         float
 
         """
-        nstocks = forecast.shape[0]
-        weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
-        var = BEKK.portf_var(forecast=forecast, alpha=alpha, kind=kind)
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        var = BEKK.portf_var(forecast=forecast, alpha=alpha, weights=weights)
+        pret = BEKK.pret(innov, weights=weights)
+        diff = pret - var
+        if diff < 0:
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def loss_var(innov=None, forecast=None, alpha=.05, weights=None):
+        """Loss associated with portfolio Value-at-Risk.
+
+        Parameters
+        ----------
+        innov : (nstocks, ) array
+            Returns
+        forecast : (nstocks, nstocks) array
+            Volatililty forecast
+        alpha : float
+            Risk level. Usually 1% or 5%.
+        weights : (nstocks, ) array
+            Portfolio weights
+
+        Returns
+        -------
+        float
+
+        """
+        if weights is None:
+            nstocks = forecast.shape[0]
+            weights = BEKK.weights(nstocks=nstocks)
+        else:
+            weights = np.array(weights) / np.sum(weights)
+        var = BEKK.portf_var(forecast=forecast, alpha=alpha, weights=weights)
         pret = BEKK.pret(innov, weights=weights)
         diff = pret - var
         if diff < 0:
@@ -769,7 +829,8 @@ class BEKK(object):
             return 0.
 
     @staticmethod
-    def all_losses(forecast=None, proxy=None, innov=None):
+    def all_losses(forecast=None, proxy=None, innov=None,
+                   alpha=.25, kind='equal'):
         """Collect all loss functions.
 
         Parameters
@@ -780,19 +841,33 @@ class BEKK(object):
             Proxy for actual volatility
         innov : (nstocks, ) array
             Returns
+        alpha : float
+            Risk level. Usually 1% or 5%.
+        kind : str
+            Either 'equal' or 'minvar' (minimum variance).
 
         Returns
         -------
         dict
 
         """
+        nstocks = forecast.shape[0]
+        weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
         return {'eucl': BEKK.loss_eucl(forecast=forecast, proxy=proxy),
                 'frob': BEKK.loss_frob(forecast=forecast, proxy=proxy),
                 'stein': BEKK.loss_stein2(forecast=forecast, innov=innov),
                 'lsqore': BEKK.portf_lscore(forecast=forecast, innov=innov),
                 'mse': BEKK.portf_mse(forecast=forecast, proxy=proxy),
                 'qlike': BEKK.portf_qlike(forecast=forecast, proxy=proxy),
-                'var': BEKK.loss_var(innov=innov, forecast=forecast)}
+                'pret': BEKK.pret(innov, weights=weights),
+                'var': BEKK.portf_var(forecast=forecast, alpha=alpha,
+                                      weights=weights),
+                'var_exception': BEKK.var_exception(innov=innov,
+                                                    forecast=forecast,
+                                                    alpha=alpha,
+                                                    weights=weights),
+                'var_loss': BEKK.loss_var(innov=innov, forecast=forecast,
+                                          alpha=alpha, weights=weights)}
 
     @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
