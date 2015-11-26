@@ -380,7 +380,7 @@ class ParamSpatial(ParamGeneric):
             dvecs = theta[:dvecs_size]
             dvecs = dvecs.reshape((ncat+1, nstocks))
         elif restriction == 'ghomo':
-            dvecs = ParamSpatial.vecs_from_theta(theta, groups)
+            dvecs = ParamSpatial.vecs_from_theta(theta, groups)[0]
         elif restriction in ('homo', 'shomo'):
             dvecs = np.zeros((ncat+1, nstocks))
             dvecs[0] = theta[:nstocks]
