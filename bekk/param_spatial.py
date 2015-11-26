@@ -541,7 +541,7 @@ class ParamSpatial(ParamGeneric):
             If use_target is False and cfree is False:
                 - 'full' or 'diagonal' - +n*(m+1)
                 - 'group' - k*(m+1)
-                - 'scalar' - + (m+1)
+                - 'scalar' - +(m+1)
 
             If use_target is False and cfree is True:
                 - +n*(n+1)/2

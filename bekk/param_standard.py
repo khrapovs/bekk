@@ -67,7 +67,7 @@ class ParamStandard(ParamGeneric):
                 - 'diagonal' - 2*n
                 - 'scalar' - 2
             If target is None:
-                - +(n-1)*n/2 for parameter C
+                - +(n+1)*n/2 for parameter C
 
         nstocks : int
             Number of stocks in the model
@@ -146,7 +146,7 @@ class ParamStandard(ParamGeneric):
                 - 'scalar' - 2
 
             If use_target is False:
-                - +(n-1)*n/2 for parameter cmat
+                - +(n+1)*n/2 for parameter cmat
 
         """
         if restriction == 'full':

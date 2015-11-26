@@ -856,7 +856,7 @@ class BEKK(object):
         return {'eucl': BEKK.loss_eucl(forecast=forecast, proxy=proxy),
                 'frob': BEKK.loss_frob(forecast=forecast, proxy=proxy),
                 'stein': BEKK.loss_stein2(forecast=forecast, innov=innov),
-                'lsqore': BEKK.portf_lscore(forecast=forecast, innov=innov),
+                'lscore': BEKK.portf_lscore(forecast=forecast, innov=innov),
                 'mse': BEKK.portf_mse(forecast=forecast, proxy=proxy),
                 'qlike': BEKK.portf_qlike(forecast=forecast, proxy=proxy),
                 'pret': BEKK.pret(innov, weights=weights),
@@ -941,6 +941,7 @@ class BEKK(object):
             bekk = BEKK(innov)
 
             time_start = time.time()
+
             if first == 0:
                 result = bekk.estimate(method=method, **common)
             else:
@@ -951,6 +952,7 @@ class BEKK(object):
                 loop = 1
                 result = bekk.estimate(param_start=param_start,
                                        method='basin', **common)
+
             if result.opt_out.fun == 1e10:
                 loop = 2
                 result = bekk.estimate_loop(ngrid=ngrid, method=method,
@@ -980,4 +982,4 @@ class BEKK(object):
             losses.to_hdf(fname, tname, format='t', append=append,
                           min_itemsize=10)
 
-        return pd.read_hdf(fname, tname)
+        return losses
