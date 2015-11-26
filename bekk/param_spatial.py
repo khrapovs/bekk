@@ -23,7 +23,7 @@ class ParamSpatial(ParamGeneric):
 
     Attributes
     ----------
-    amat, bmat, cmat, avecs, bvecs, dvecs, vvec
+    amat, bmat, cmat, avecs, bvecs, dvecs
         Matrix representations of BEKK parameters
     groups
         List of related items
@@ -53,11 +53,8 @@ class ParamSpatial(ParamGeneric):
         super(ParamSpatial, self).__init__(nstocks)
         self.avecs = np.vstack((np.diag(self.amat), np.zeros(nstocks)))
         self.bvecs = np.vstack((np.diag(self.bmat), np.zeros(nstocks)))
-        self.dvecs = np.zeros((1, nstocks))
+        self.dvecs = np.vstack((np.diag(self.cmat), np.zeros(nstocks)))
         self.weights = np.zeros((1, nstocks, nstocks))
-        self.vvec = self.find_vvec(avecs=self.avecs, bvecs=self.bvecs,
-                                   dvecs=self.dvecs, weights=self.weights,
-                                   target=np.eye(nstocks))
 
     @staticmethod
     def get_model():
@@ -89,17 +86,17 @@ class ParamSpatial(ParamGeneric):
                            np.zeros((ncat, nstocks))])
         bvecs = np.vstack([np.ones((1, nstocks)) * abstart[1],
                            np.zeros((ncat, nstocks))])
-        dvecs = np.zeros((ncat, nstocks))
+        dvecs = np.zeros((1 + ncat, nstocks))
         if target is None:
-            vvec = np.ones(nstocks)
+            dvecs[0] = np.ones(nstocks)
         else:
-            vvec = np.diag(target)
+            dvecs[0] = np.diag(target)
 
-        return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs, vvec=vvec,
+        return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
                              groups=groups)
 
     @classmethod
-    def from_abdv(cls, avecs=None, bvecs=None, dvecs=None, vvec=None,
+    def from_abdv(cls, avecs=None, bvecs=None, dvecs=None,
                   groups=None):
         """Initialize from spatial representation.
 
@@ -109,10 +106,8 @@ class ParamSpatial(ParamGeneric):
             Parameter matrix
         bvecs : (ncat+1, nstocks) array
             Parameter matrix
-        dvecs : (ncat, nstocks) array
+        dvecs : (ncat+1, nstocks) array
             Parameter matrix
-        vvec : (nstocks, ) array
-            Parameter vector
         groups : list of lists of tuples
             Encoded groups of items
 
@@ -129,17 +124,16 @@ class ParamSpatial(ParamGeneric):
             dmat_inv = scl.inv(dmat)
         except scl.LinAlgError:
             dmat_inv = np.eye(dmat.shape[0])
-        ccmat = dmat_inv.dot(np.diag(vvec**2)).dot(dmat_inv.T)
+        ccmat = dmat_inv.dot(np.diag(dvecs[0]**2)).dot(dmat_inv.T)
         try:
             cmat = scl.cholesky(ccmat, 1)
         except scl.LinAlgError:
             # warnings.warn('Matrix C is singular!')
-            return np.zeros_like(ccmat)
+            cmat = np.diag(np.diag(ccmat)**.5)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = dvecs
-        param.vvec = vvec
         param.weights = weights
         param.groups = groups
 
@@ -173,7 +167,6 @@ class ParamSpatial(ParamGeneric):
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = None
-        param.vvec = None
         param.weights = weights
         param.groups = groups
 
@@ -208,7 +201,6 @@ class ParamSpatial(ParamGeneric):
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = None
-        param.vvec = None
         param.weights = weights
         param.groups = groups
 
@@ -224,7 +216,7 @@ class ParamSpatial(ParamGeneric):
             Parameter matrix
         bvecs : (ncat+1, nstocks) array
             Parameter matrix
-        dvecs : (ncat, nstocks) array
+        dvecs : (ncat+1, nstocks) array
             Parameter matrix
         weights : (ncat, nstocks, nstocks) array
             Weight matrices
@@ -242,53 +234,9 @@ class ParamSpatial(ParamGeneric):
             amat += np.diag(avecs[i+1]).dot(weights[i])
             bmat += np.diag(bvecs[i+1]).dot(weights[i])
             if dvecs is not None:
-                dmat -= np.diag(dvecs[i]).dot(weights[i])
+                dmat -= np.diag(dvecs[i+1]).dot(weights[i])
 
-        # amat[np.diag_indices(nstocks)] = np.abs(np.diag(amat))
-        # bmat[np.diag_indices(nstocks)] = np.abs(np.diag(bmat))
-        # amat[np.diag_indices(nstocks)] = np.maximum(np.diag(amat),
-        #     np.zeros(nstocks))
-        # bmat[np.diag_indices(nstocks)] = np.maximum(np.diag(bmat),
-        #     np.zeros(nstocks))
         return amat, bmat, dmat
-
-    @staticmethod
-    def find_vvec(avecs=None, bvecs=None, dvecs=None,
-                  weights=None, target=None):
-        r"""Find v vector given a, b, d, H, and weights.
-        Solve for diagonal of
-
-        .. math::
-            D_{W}\left(H-A_{W}^{0}HA_{W}^{0\prime}
-            -B_{W}^{0}HB_{W}^{0\prime}\right)D_{W}^{\prime}
-
-        Parameters
-        ----------
-        avecs : (ncat+1, nstocks) array
-            Parameter matrix
-        bvecs : (ncat+1, nstocks) array
-            Parameter matrix
-        dvecs : (ncat, nstocks) array
-            Parameter matrix
-        vvec : (nstocks, ) array
-            Parameter vector
-        weights : (ncat, nstocks, nstocks) array
-            Weight matrices
-        target : (nstocks, nstocks) array
-            Unconditional variance matrix
-
-        Returns
-        -------
-        (nstocks, ) array
-            Vector v
-
-        """
-        mats = ParamSpatial.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
-                                             dvecs=dvecs, weights=weights)
-        amat, bmat, dmat = mats
-        ccmat = target - amat.dot(target).dot(amat.T) \
-            - bmat.dot(target).dot(bmat.T)
-        return np.abs(np.diag(dmat.dot(ccmat).dot(dmat.T)))**.5
 
     @staticmethod
     def vecs_from_theta(theta=None, groups=None):
@@ -340,29 +288,8 @@ class ParamSpatial(ParamGeneric):
                 theta.append([vecs[cat+1, group[0]]])
         return np.concatenate(theta)
 
-    def theta_from_dvecs(self, dvecs=None):
-        """Convert theta to vecs.
-
-        Parameters
-        ----------
-        dvecs : (ncat, nstocks) array
-            Spatial representation of parameters
-
-        Returns
-        -------
-        theta : 1d array
-            Parameter vector
-
-        """
-        ncat = self.weights.shape[0]
-        theta = []
-        for cat in range(ncat):
-            for group in self.groups[cat]:
-                theta.append([dvecs[cat, group[0]]])
-        return np.concatenate(theta)
-
     @staticmethod
-    def ab_from_theta(theta=None, restriction='scalar', groups=None):
+    def ab_from_theta(theta=None, restriction='shomo', groups=None):
         """Initialize A and B spatial from theta vector.
 
         Parameters
@@ -374,9 +301,10 @@ class ParamSpatial(ParamGeneric):
         restriction : str
 
             Can be
-                - 'full' = 'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         Returns
         -------
@@ -390,27 +318,38 @@ class ParamSpatial(ParamGeneric):
         """
         weights = ParamSpatial.get_weight(groups)
         ncat, nstocks = weights.shape[:2]
-        if restriction in ['full', 'diagonal']:
+        if restriction == 'hetero':
             abvecs_size = (ncat+1)*nstocks
             avecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
-            bvecs = theta[abvecs_size:2*abvecs_size].reshape((ncat+1, nstocks))
-            theta = theta[2*abvecs_size:]
-        elif restriction == 'group':
+            theta = theta[abvecs_size:]
+            bvecs = theta[:abvecs_size].reshape((ncat+1, nstocks))
+            theta = theta[abvecs_size:]
+        elif restriction == 'ghomo':
             avecs, theta = ParamSpatial.vecs_from_theta(theta, groups)
             bvecs, theta = ParamSpatial.vecs_from_theta(theta, groups)
-        elif restriction == 'scalar':
-            abvecs_size = ncat+1
-            avecs = np.tile(theta[:abvecs_size, np.newaxis], nstocks)
-            bvecs = np.tile(theta[abvecs_size:2*abvecs_size, np.newaxis],
-                            nstocks)
-            theta = theta[2*abvecs_size:]
+        elif restriction == 'homo':
+            avecs = np.zeros((ncat+1, nstocks))
+            bvecs = np.zeros((ncat+1, nstocks))
+            avecs[0] = theta[:nstocks]
+            theta = theta[nstocks:]
+            avecs[1:] = np.tile(theta[:ncat, np.newaxis], nstocks)
+            theta = theta[ncat:]
+            bvecs[0] = theta[:nstocks]
+            theta = theta[nstocks:]
+            bvecs[1:] = np.tile(theta[:ncat, np.newaxis], nstocks)
+            theta = theta[ncat:]
+        elif restriction == 'shomo':
+            avecs = np.tile(theta[:ncat+1, np.newaxis], nstocks)
+            theta = theta[ncat+1:]
+            bvecs = np.tile(theta[:ncat+1, np.newaxis], nstocks)
+            theta = theta[ncat+1:]
         else:
             raise NotImplementedError('Restriction is not implemented!')
 
         return avecs, bvecs, theta
 
     @staticmethod
-    def dv_from_theta(theta=None, restriction='scalar', groups=None):
+    def d_from_theta(theta=None, restriction='shomo', groups=None):
         """Initialize D and V spatial from theta vector.
 
         Parameters
@@ -422,48 +361,39 @@ class ParamSpatial(ParamGeneric):
         restriction : str
 
             Can be
-                - 'full' = 'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         Returns
         -------
-        dvecs : (ncat, nstocks) array
+        dvecs : (ncat+1, nstocks) array
             Parameter matrix
-        vvec : (nstocks, ) array
-            Parameter vector
 
         """
         weights = ParamSpatial.get_weight(groups)
         ncat, nstocks = weights.shape[:2]
 
-        if restriction in ['full', 'diagonal']:
-            dvecs_size = ncat*nstocks
+        if restriction == 'hetero':
+            dvecs_size = (ncat+1)*nstocks
             dvecs = theta[:dvecs_size]
-            dvecs = dvecs.reshape((ncat, nstocks))
-            vvec = theta[dvecs_size:]
-        elif restriction == 'group':
-            dvecs = np.zeros((ncat, nstocks))
-            j = 0
-            for cat in range(ncat):
-                for group in groups[cat]:
-                    for item in group:
-                        dvecs[cat, item] = theta[j]
-                    j += 1
-            vvec = theta[j:]
-        elif restriction == 'scalar':
-            dvecs_size = ncat
-            dvecs = theta[:dvecs_size]
-            dvecs = np.tile(dvecs[:, np.newaxis], nstocks)
-            vvec = np.tile(theta[dvecs_size:], nstocks)
+            dvecs = dvecs.reshape((ncat+1, nstocks))
+        elif restriction == 'ghomo':
+            dvecs = ParamSpatial.vecs_from_theta(theta, groups)
+        elif restriction in ('homo', 'shomo'):
+            dvecs = np.zeros((ncat+1, nstocks))
+            dvecs[0] = theta[:nstocks]
+            theta = theta[nstocks:]
+            dvecs[1:] = np.tile(theta[:ncat, np.newaxis], nstocks)
         else:
             raise NotImplementedError('Restriction is not implemented!')
 
-        return dvecs, vvec
+        return dvecs
 
     @classmethod
     def from_theta(cls, theta=None, groups=None, cfree=False,
-                   restriction='scalar', target=None):
+                   restriction='shomo', target=None):
         """Initialize from theta vector.
 
         Parameters
@@ -481,9 +411,10 @@ class ParamSpatial(ParamGeneric):
         restriction : str
 
             Can be
-                - 'full' = 'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         Returns
         -------
@@ -499,34 +430,33 @@ class ParamSpatial(ParamGeneric):
 
         if (target is None) and (not cfree):
             cmat = None
-            dvecs, vvec = cls.dv_from_theta(theta=theta, groups=groups,
-                                            restriction=restriction)
+            dvecs = cls.d_from_theta(theta=theta, groups=groups,
+                                     restriction=restriction)
             return cls.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                 vvec=vvec, groups=groups)
+                                 groups=groups)
         elif (target is None) and cfree:
             dvecs = None
-            vvec = None
             cmat = np.zeros((nstocks, nstocks))
             cmat[np.tril_indices(nstocks)] = theta
             return cls.from_abcmat(avecs=avecs, bvecs=bvecs, cmat=cmat,
                                    groups=groups)
         else:
             dvecs = None
-            vvec = None
             cmat = None
             return cls.from_abt(avecs=avecs, bvecs=bvecs, target=target,
                                 groups=groups)
 
-    def get_theta_from_ab(self, restriction='scalar'):
+    def get_theta_from_ab(self, restriction='shomo'):
         """Convert parameter matrices A and B to 1-dimensional array.
 
         Parameters
         ----------
         restriction : str
             Can be
-                - 'full' = 'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         Returns
         -------
@@ -534,31 +464,36 @@ class ParamSpatial(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If use_target is True:
-                - 'full' or 'diagonal' - 2*n*(m+1)
-                - 'group' - 2*k*(m+1)
-                - 'scalar' - 2*(m+1)
+                - 'hetero' - 2*n*(m+1)
+                - 'ghomo' - 2*(n+m*k)
+                - 'homo' - 2*(n+m)
+                - 'shomo' - 2*(m+1)
 
             If use_target is False and cfree is False:
-                - 'full' or 'diagonal' - +n*(m+1)
-                - 'group' - k*(m+1)
-                - 'scalar' - +(m+1)
+                - 'hetero' - +n*(m+1)
+                - 'ghomo' - +(n+m*k)
+                - 'homo' - +(n+m)
+                - 'shomo' - +(n+m)
 
             If use_target is False and cfree is True:
                 - +n*(n+1)/2
 
         """
-        if restriction in ['full', 'diagonal']:
+        if restriction == 'hetero':
             theta = [self.avecs.flatten(), self.bvecs.flatten()]
-        elif restriction == 'group':
+        elif restriction == 'ghomo':
             theta = [self.theta_from_vecs(self.avecs),
                      self.theta_from_vecs(self.bvecs)]
-        elif restriction == 'scalar':
+        elif restriction == 'homo':
+            theta = [self.avecs[0], self.avecs[1:, 0],
+                     self.bvecs[0], self.bvecs[1:, 0]]
+        elif restriction == 'shomo':
             theta = [self.avecs[:, 0].flatten(), self.bvecs[:, 0].flatten()]
         else:
             raise NotImplementedError('Restriction is not implemented!')
-        return theta
+        return np.concatenate(theta)
 
-    def get_theta(self, restriction='scalar', use_target=False, cfree=False):
+    def get_theta(self, restriction='shomo', use_target=False, cfree=False):
         """Convert parameter matrices to 1-dimensional array.
 
         Parameters
@@ -566,9 +501,10 @@ class ParamSpatial(ParamGeneric):
         restriction : str
 
             Can be
-                - 'full' = 'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         use_target : bool
             Whether to estimate only A and B (True) or C as well (False)
@@ -581,14 +517,16 @@ class ParamSpatial(ParamGeneric):
             Length depends on the model restrictions and variance targeting
 
             If use_target is True:
-                - 'full' or 'diagonal' - 2*n*(m+1)
-                - 'group' - 2*k*(m+1)
-                - 'scalar' - 2*(m+1)
+                - 'hetero' - 2*n*(m+1)
+                - 'ghomo' - 2*(n+m*k)
+                - 'homo' - 2*(n+m)
+                - 'shomo' - 2*(m+1)
 
             If use_target is False and cfree is False:
-                - 'full' or 'diagonal' - +n*(m+1)
-                - 'group' - +k*(m+1)
-                - 'scalar' - +(m+1)
+                - 'hetero' - +n*(m+1)
+                - 'ghomo' - +(n+m*k)
+                - 'homo' - +(n+m)
+                - 'shomo' - +(n+m)
 
             If use_target is False and cfree is True:
                 - +n*(n+1)/2
@@ -597,28 +535,27 @@ class ParamSpatial(ParamGeneric):
         theta = self.get_theta_from_ab(restriction)
 
         if cfree and (not use_target):
-            theta.append(self.cmat[np.tril_indices(self.cmat.shape[0])])
+            index = np.tril_indices(self.cmat.shape[0])
+            theta = np.concatenate([theta, self.cmat[index]])
 
         elif (not cfree) and (not use_target):
 
             if self.dvecs is None:
-                shape = (self.avecs.shape[0]-1, self.avecs.shape[1])
-                self.dvecs = np.zeros(shape)
-            if self.vvec is None:
-                self.vvec = np.ones(self.avecs.shape[1])
+                self.dvecs = np.vstack((np.diag(self.cmat),
+                                        np.zeros(self.cmat.shape[0])))
 
-            if restriction in ['full', 'diagonal']:
-                theta.extend([self.dvecs.flatten(), self.vvec])
-            elif restriction == 'group':
-                theta.append(self.theta_from_dvecs(self.dvecs))
-                theta.append(self.vvec)
-            elif restriction == 'scalar':
-                theta.extend([self.dvecs[:, 0].flatten(),
-                              np.array([self.vvec[0]])])
+            if restriction == 'hetero':
+                theta = np.concatenate([theta, self.dvecs.flatten()])
+            elif restriction == 'ghomo':
+                theta = np.concatenate([theta,
+                                        self.theta_from_vecs(self.dvecs)])
+            elif restriction in ('homo', 'shomo'):
+                theta = np.concatenate([theta,
+                                        self.dvecs[0], self.dvecs[1:, 0]])
             else:
                 raise NotImplementedError('Restriction is not implemented!')
 
-        return np.concatenate(theta)
+        return theta
 
     @staticmethod
     def get_weight(groups=None):

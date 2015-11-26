@@ -48,11 +48,11 @@ class BEKKTestCase(ut.TestCase):
         # A, B, C - n x n matrices
         avecs = np.ones((ncat+1, nstocks)) * alpha**.5
         bvecs = np.ones((ncat+1, nstocks)) * beta**.5
-        dvecs = np.ones((ncat, nstocks)) * gamma**.5
-        vvec = np.ones(nstocks)
+        dvecs = np.vstack([np.ones((1, nstocks)),
+                           np.ones((ncat, nstocks)) * gamma**.5])
 
         param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                       vvec=vvec, groups=groups)
+                                       groups=groups)
 
         for distr in ['normal', 'student', 'skewt']:
             innov, hvar = simulate_bekk(param, nobs=nobs, distr=distr)
