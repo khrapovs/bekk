@@ -76,7 +76,6 @@ class ParamGeneric(object):
             show += '\na =\n' + str(self.avecs)
             show += '\nb =\n' + str(self.bvecs)
             show += '\nd =\n' + str(self.dvecs)
-            show += '\nv =\n' + str(self.vvec)
 
         uvar = self.get_uvar()
         if uvar is not None:

@@ -310,17 +310,17 @@ class BEKK(object):
                   'use_target': False, 'method': method}
         est_partial = partial(self.estimate, **kwargs)
 
-        if restriction in ('diagonal', 'full', 'group', 'scalar'):
+        if restriction in ('diagonal', 'full'):
             result = est_partial(param_start=param, restriction='scalar')
             param = result.param_final
 
-        if restriction in ('diagonal', 'full'):
+        if restriction in ('full'):
             result = est_partial(param_start=param, restriction='diagonal')
             param = result.param_final
 
         return param
 
-    def init_param_spatial(self, restriction='scalar', groups=None,
+    def init_param_spatial(self, restriction='shomo', groups=None,
                            method='SLSQP', cfree=False, use_penalty=False):
         """Estimate scalar BEKK with variance targeting.
 
@@ -330,9 +330,10 @@ class BEKK(object):
             Restriction on parameters.
 
             Must be
-                - 'full' =  'diagonal'
-                - 'group'
-                - 'scalar'
+                - 'hetero' (heterogeneous)
+                - 'ghomo' (group homogeneous)
+                - 'homo' (homogeneous)
+                - 'shomo' (scalar homogeneous)
 
         cfree : bool
             Whether to leave C matrix free (True) or not (False)
@@ -351,7 +352,7 @@ class BEKK(object):
                                          target=estimate_uvar(self.innov),
                                          abstart=(.2, .7))
 
-        if restriction == 'scalar':
+        if restriction == 'shomo':
             return param
 
         kwargs = {'use_target': False, 'groups': groups,
@@ -359,12 +360,16 @@ class BEKK(object):
                   'cfree': cfree, 'method': method}
         est_partial = partial(self.estimate, **kwargs)
 
-        if restriction in ('diagonal', 'full', 'group', 'scalar'):
-            result = est_partial(param_start=param, restriction='scalar')
+        if restriction in ('homo', 'ghomo', 'hetero'):
+            result = est_partial(param_start=param, restriction='shomo')
             param = result.param_final
 
-        if restriction in ('diagonal', 'full', 'group'):
-            result = est_partial(param_start=param, restriction='group')
+        if restriction in ('ghomo', 'hetero'):
+            result = est_partial(param_start=param, restriction='homo')
+            param = result.param_final
+
+        if restriction in ('hetero'):
+            result = est_partial(param_start=param, restriction='ghomo')
             param = result.param_final
 
         return param
