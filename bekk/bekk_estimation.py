@@ -936,7 +936,7 @@ class BEKK(object):
                   'model': model, 'restriction': restriction, 'cfree': cfree,
                   'use_penalty': use_penalty}
 
-        loc_name = tname + '_' + model +'_' + restriction + '_' + groups[0]
+        loc_name = tname + '_' + model + '_' + restriction + '_' + groups[0]
         fname = '../data/losses/' + loc_name + '.h5'
 
         for first in range(nobs - window):

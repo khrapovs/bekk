@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-BEKK results
-============
 
 """
 from __future__ import print_function, division
