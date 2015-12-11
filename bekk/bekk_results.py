@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+BEKK results
+============
 
 """
 from __future__ import print_function, division
@@ -35,8 +37,6 @@ class BEKKResults(object):
         Restriction on parameters
     use_target
         Variance targeting flag
-    weights
-        Weight matrices for spatial model only
     method
         Optimization method. See scipy.optimize.minimize
     cython

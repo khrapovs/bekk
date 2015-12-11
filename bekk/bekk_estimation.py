@@ -17,8 +17,8 @@ from __future__ import print_function, division
 import time
 import itertools
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import scipy.linalg as scl
 import scipy.stats as scs
 
@@ -53,8 +53,8 @@ class BEKK(object):
     -------
     estimate
         Estimate parameters of the model
-    evaluate_forecast
-        Evaluate forecast using rolling window
+    collect_losses
+        Collect forecast losses using rolling window
 
     """
 

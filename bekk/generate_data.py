@@ -8,10 +8,12 @@ Data generation
 
 import numpy as np
 import scipy.linalg as sl
+import pandas as pd
 
+from pandas_datareader import data
 from skewstudent import SkewStudent
 
-__all__ = ['simulate_bekk', 'regenerate_data']
+__all__ = ['simulate_bekk', 'download_data']
 
 
 def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
@@ -73,7 +75,7 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     return innov, hvar
 
 
-def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
+def download_data(tname='innovations', tickers=None, nobs=None):
     """Download stock market data and save it to disk.
 
     Parameters
@@ -85,28 +87,25 @@ def regenerate_data(innov_file='innovations.npy', nstocks=2, nobs=None):
     nobs : int
         Number of observations in the time series
 
-    """
-    import Quandl
-    import pandas as pd
+    Returns
+    -------
+    ret : DataFrame
+        Demeaned returns
 
-    token = open('../data/Quandl.token', 'r').read()
-    tickers = ["GOOG/NASDAQ_MSFT", "GOOG/NASDAQ_AAPL",
-               "GOOG/NYSE_XOM", "GOOG/NYSE_OXY",
-               "GOOG/NYSE_TGT", "GOOG/NYSE_WMT"]
+    """
     prices = []
-    for tic in tickers[:nstocks]:
-        df = Quandl.get(tic, authtoken=token,
-                        trim_start="2001-01-01",
-                        trim_end="2012-12-31")[['Close']]
-        df.rename(columns={'Close': tic}, inplace=True)
-        prices.append(df)
-    prices = pd.concat(prices, axis=1)
+    start, end = '2002-01-01', '2015-12-31'
+    colname = 'Adj Close'
+    for tic in tickers:
+        stock = data.DataReader(tic, 'yahoo', start, end)[colname]
+        stock.name = tic
+        prices.append(stock)
+
+    prices = pd.concat(prices, axis=1, join='inner')
 
     ret = (np.log(prices) - np.log(prices.shift(1))) * 100
     ret.dropna(inplace=True)
-    ret = ret.apply(lambda x: x - x.mean()).iloc[:nobs]
+    ret = ret.apply(lambda x: x - x.mean())
+    ret = ret.iloc[-nobs:] if nobs is not None else ret
 
-    # Create array of innovations
-    innov = np.array(ret)
-    np.save(innov_file, innov)
-    np.savetxt(innov_file[:-4] + '.csv', innov, delimiter=",")
+    return ret
