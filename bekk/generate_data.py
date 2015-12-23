@@ -75,15 +75,13 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     return innov, hvar
 
 
-def download_data(tname='innovations', tickers=None, nobs=None):
+def download_data(tickers=None, nobs=None):
     """Download stock market data and save it to disk.
 
     Parameters
     ----------
-    innov_file : str
-        Name of the file to save to
-    nstocks : int
-        Number of stocks to analyze
+    tickers : list of str
+        Tickers to download
     nobs : int
         Number of observations in the time series
 

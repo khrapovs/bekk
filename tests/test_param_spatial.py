@@ -246,6 +246,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         use_target = False
@@ -256,6 +257,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         cfree = True
@@ -266,6 +268,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
     def test_get_theta_ghomo(self):
@@ -298,9 +301,12 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         theta = [avecs[0], [avecs[1, 0]], [avecs[1, 2]],
                  bvecs[0], [bvecs[1, 0]], [bvecs[1, 2]]]
         theta = np.concatenate(theta)
+        nparams = 2 * (nstocks + 2 * ncat)
         theta_exp = param.get_theta(restriction=restriction,
                                     use_target=use_target)
 
+        self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         use_target = False
@@ -308,9 +314,12 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                  bvecs[0], [bvecs[1, 0]], [bvecs[1, 2]],
                  dvecs[0], [dvecs[1, 0]], [dvecs[1, 2]]]
         theta = np.concatenate(theta)
+        nparams = 3 * (nstocks + 2 * ncat)
         theta_exp = param.get_theta(restriction=restriction,
                                     use_target=use_target)
 
+        self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         cfree = True
@@ -318,8 +327,11 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                  bvecs[0], [bvecs[1, 0]], [bvecs[1, 2]],
                  param.cmat[np.tril_indices(param.cmat.shape[0])]]
         theta = np.concatenate(theta)
+        nparams = 2 * (nstocks + 2 * ncat) + nstocks * (nstocks + 1) // 2
         theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
 
+        self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
     def test_get_theta_homo(self):
@@ -347,6 +359,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         use_target = False
@@ -358,6 +371,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         cfree = True
@@ -368,6 +382,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
     def test_get_theta_shomo(self):
@@ -395,6 +410,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         use_target = False
@@ -405,6 +421,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                     use_target=use_target)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
         cfree = True
@@ -415,6 +432,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         theta_exp = param.get_theta(restriction=restriction, cfree=cfree)
 
         self.assertEqual(nparams, theta_exp.size)
+        self.assertEqual(nparams, theta.size)
         npt.assert_array_equal(theta, theta_exp)
 
     def test_from_theta_hetero(self):
@@ -522,6 +540,95 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
         npt.assert_array_equal(None, param_new.dvecs)
 
+    def test_from_theta_ghomo(self):
+        """Test group init from theta for spatial specification."""
+
+        nstocks = 4
+        groups = [[(0, 1), (2, 3)]]
+        ncat = len(groups)
+        alpha = [.01, .02, .03, .04, .05, .06]
+        beta = [.07, .08, .09, .1, .11, .12]
+        delta = [.13, .14, .15, .16, .17, .18]
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks))
+        bvecs = np.ones((ncat+1, nstocks))
+        dvecs = np.ones((ncat+1, nstocks))
+        avecs[0] = alpha[:4]
+        avecs[1, :2] *= alpha[-2]
+        avecs[1, 2:] *= alpha[-1]
+        bvecs[0] = beta[:4]
+        bvecs[1, :2] *= beta[-2]
+        bvecs[1, 2:] *= beta[-1]
+        dvecs[0] = delta[:4]
+        dvecs[1, :2] *= delta[-2]
+        dvecs[1, 2:] *= delta[-1]
+
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                       groups=groups)
+
+        restriction = 'ghomo'
+        target = param.get_uvar()
+        theta = np.concatenate([alpha, beta])
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        uvar = param.find_stationary_var(amat=param.amat, bmat=param.bmat,
+                                         cmat=cmat)
+        npt.assert_array_almost_equal(target, uvar)
+
+        param_new = ParamSpatial.from_theta(theta=theta, groups=groups,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_almost_equal(cmat, param.cmat)
+
+    def test_from_theta_homo(self):
+        """Test group init from theta for spatial specification."""
+
+        nstocks = 4
+        groups = [[(0, 1), (2, 3)]]
+        ncat = len(groups)
+        alpha = [.01, .02, .03, .04, .05]
+        beta = [.07, .08, .09, .1, .11]
+        delta = [.13, .14, .15, .16, .17]
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks))
+        bvecs = np.ones((ncat+1, nstocks))
+        dvecs = np.ones((ncat+1, nstocks))
+        avecs[0] = alpha[:4]
+        avecs[1] *= alpha[-1]
+        bvecs[0] = beta[:4]
+        bvecs[1] *= beta[-1]
+        dvecs[0] = delta[:4]
+        dvecs[1] *= delta[-1]
+
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                       groups=groups)
+
+        restriction = 'homo'
+        target = param.get_uvar()
+        theta = np.concatenate([alpha, beta])
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        uvar = param.find_stationary_var(amat=param.amat, bmat=param.bmat,
+                                         cmat=cmat)
+        npt.assert_array_almost_equal(target, uvar)
+
+        param_new = ParamSpatial.from_theta(theta=theta, groups=groups,
+                                            restriction=restriction,
+                                            target=target)
+
+        npt.assert_array_equal(param.avecs, param_new.avecs)
+        npt.assert_array_equal(param.bvecs, param_new.bvecs)
+        npt.assert_array_equal(None, param_new.dvecs)
+        npt.assert_array_equal(param.amat, param_new.amat)
+        npt.assert_array_equal(param.bmat, param_new.bmat)
+        npt.assert_array_equal(cmat, param_new.cmat)
+        npt.assert_array_almost_equal(cmat, param.cmat)
+
     def test_from_theta_shomo(self):
         """Test init from theta for spatial specification."""
 
@@ -582,53 +689,6 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
         npt.assert_array_equal(None, param_new.dvecs)
-
-    def test_from_theta_group(self):
-        """Test group init from theta for spatial specification."""
-
-        nstocks = 4
-        groups = [[(0, 1), (2, 3)]]
-        ncat = len(groups)
-        alpha = [.01, .02, .03]
-        beta = [.04, .05, .06]
-        delta = [.07, .08]
-        # A, B, C - n x n matrices
-        avecs = np.ones((ncat+1, nstocks))
-        bvecs = np.ones((ncat+1, nstocks))
-        dvecs = np.ones((ncat+1, nstocks))
-        avecs[0, :] *= alpha[0]
-        avecs[1, :2] *= alpha[1]
-        avecs[1, 2:] *= alpha[2]
-        bvecs[0, :] *= beta[0]
-        bvecs[1, :2] *= beta[1]
-        bvecs[1, 2:] *= beta[2]
-        dvecs[1, :2] *= delta[0]
-        dvecs[1, 2:] *= delta[1]
-
-        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                       groups=groups)
-
-        restriction = 'ghomo'
-        target = param.get_uvar()
-        theta = [np.ones(nstocks) * alpha[0], alpha[1:],
-                 np.ones(nstocks) * beta[0],  beta[1:]]
-        theta = np.concatenate(theta)
-        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
-        uvar = param.find_stationary_var(amat=param.amat, bmat=param.bmat,
-                                         cmat=cmat)
-        npt.assert_array_almost_equal(target, uvar)
-
-        param_new = ParamSpatial.from_theta(theta=theta, groups=groups,
-                                            restriction=restriction,
-                                            target=target)
-
-        npt.assert_array_equal(param.avecs, param_new.avecs)
-        npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
-        npt.assert_array_equal(param.amat, param_new.amat)
-        npt.assert_array_equal(param.bmat, param_new.bmat)
-        npt.assert_array_equal(cmat, param_new.cmat)
-        npt.assert_array_almost_equal(cmat, param.cmat)
 
 
 if __name__ == '__main__':

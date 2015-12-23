@@ -931,13 +931,14 @@ class BEKK(object):
 
         """
         nobs = innov_all.shape[0]
+        nstocks = innov_all.shape[1]
 
         common = {'groups': groups[1], 'use_target': use_target,
                   'model': model, 'restriction': restriction, 'cfree': cfree,
                   'use_penalty': use_penalty}
 
         loc_name = tname + '_' + model + '_' + restriction + '_' + groups[0]
-        fname = '../data/losses/' + loc_name + '.h5'
+        fname = '../data/losses' + str(nstocks) + '/' + loc_name + '.h5'
 
         for first in range(nobs - window):
             loop = 0
