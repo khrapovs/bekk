@@ -586,6 +586,59 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(cmat, param_new.cmat)
         npt.assert_array_almost_equal(cmat, param.cmat)
 
+    def test_from_theta_ghomo_special(self):
+        """Test group init from theta for spatial specification."""
+
+        nstocks = 4
+        groups = [[(0, 1, 2, 3)]]
+        ncat = len(groups)
+        alpha = [.01, .02, .03, .04, .05]
+        beta = [.07, .08, .09, .1, .11]
+        delta = [.13, .14, .15, .16, .17]
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks))
+        bvecs = np.ones((ncat+1, nstocks))
+        dvecs = np.ones((ncat+1, nstocks))
+        avecs[0] = alpha[:4]
+        avecs[1] *= alpha[-1]
+        bvecs[0] = beta[:4]
+        bvecs[1] *= beta[-1]
+        dvecs[0] = delta[:4]
+        dvecs[1] *= delta[-1]
+
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                       groups=groups)
+
+        target = param.get_uvar()
+        theta = np.concatenate([alpha, beta])
+        cmat = param.find_cmat(amat=param.amat, bmat=param.bmat, target=target)
+        uvar = param.find_stationary_var(amat=param.amat, bmat=param.bmat,
+                                         cmat=cmat)
+        npt.assert_array_almost_equal(target, uvar)
+
+        restriction = 'homo'
+        param_homo = ParamSpatial.from_theta(theta=theta, groups=groups,
+                                             restriction=restriction,
+                                             target=target)
+        theta_homo = param_homo.get_theta(restriction=restriction,
+                                          use_target=False)
+
+        restriction = 'ghomo'
+        param_ghomo = ParamSpatial.from_theta(theta=theta, groups=groups,
+                                              restriction=restriction,
+                                              target=target)
+        theta_ghomo = param_ghomo.get_theta(restriction=restriction,
+                                            use_target=False)
+
+        npt.assert_array_almost_equal(cmat, param.cmat)
+        npt.assert_array_almost_equal(theta_ghomo, theta_homo)
+        for param_check in [param_homo, param_ghomo]:
+            npt.assert_array_equal(param.avecs, param_check.avecs)
+            npt.assert_array_equal(param.bvecs, param_check.bvecs)
+            npt.assert_array_equal(param.amat, param_check.amat)
+            npt.assert_array_equal(param.bmat, param_check.bmat)
+            npt.assert_array_equal(cmat, param_check.cmat)
+
     def test_from_theta_homo(self):
         """Test group init from theta for spatial specification."""
 
