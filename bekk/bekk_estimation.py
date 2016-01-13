@@ -879,7 +879,7 @@ class BEKK(object):
                        model='standard', use_target=False, groups=('NA', 'NA'),
                        restriction='scalar', cfree=False, method='SLSQP',
                        use_penalty=False, ngrid=5, alpha=.05, kind='equal',
-                       tname='losses'):
+                       tname='losses', path=None):
         """Collect forecast losses using rolling window.
 
         Parameters
@@ -938,7 +938,7 @@ class BEKK(object):
                   'use_penalty': use_penalty}
 
         loc_name = tname + '_' + model + '_' + restriction + '_' + groups[0]
-        fname = '../data/losses' + str(nstocks) + '/' + loc_name + '.h5'
+        fname = path + '/' + loc_name + '.h5'
 
         for first in range(nobs - window):
             loop = 0
