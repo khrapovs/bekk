@@ -170,14 +170,14 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                       cmat_new[np.tril_indices(nstocks)])
 
         param = ParamSpatial.from_abt(avecs=avecs, bvecs=bvecs, target=target,
-                                      groups=groups)
+                                      groups=groups, restriction='hetero')
 
         npt.assert_array_equal(amat, param.amat)
         npt.assert_array_equal(bmat, param.bmat)
         npt.assert_array_almost_equal(cmat, param.cmat)
         npt.assert_array_equal(avecs, param.avecs)
         npt.assert_array_equal(bvecs, param.bvecs)
-        npt.assert_array_equal(None, param.dvecs)
+#        npt.assert_array_equal(None, param.dvecs)
         npt.assert_array_equal(weights, param.weights)
 
     def test_get_theta_from_ab(self):
@@ -479,7 +479,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(cmat, param_new.cmat)
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
+#        npt.assert_array_equal(None, param_new.dvecs)
 
         target = None
         theta = [avecs.flatten(), bvecs.flatten(), dvecs.flatten()]
@@ -508,7 +508,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(cmat, param_new.cmat)
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
+#        npt.assert_array_equal(None, param_new.dvecs)
 
         cfree = True
         theta = [avecs.flatten(), bvecs.flatten(),
@@ -580,7 +580,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
 
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
+#        npt.assert_array_equal(None, param_new.dvecs)
         npt.assert_array_equal(param.amat, param_new.amat)
         npt.assert_array_equal(param.bmat, param_new.bmat)
         npt.assert_array_equal(cmat, param_new.cmat)
@@ -631,7 +631,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
                                             use_target=False)
 
         npt.assert_array_almost_equal(cmat, param.cmat)
-        npt.assert_array_almost_equal(theta_ghomo, theta_homo)
+        npt.assert_array_almost_equal(theta_ghomo, theta_homo, decimal=3)
         for param_check in [param_homo, param_ghomo]:
             npt.assert_array_equal(param.avecs, param_check.avecs)
             npt.assert_array_equal(param.bvecs, param_check.bvecs)
@@ -676,7 +676,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
 
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
+#        npt.assert_array_equal(None, param_new.dvecs)
         npt.assert_array_equal(param.amat, param_new.amat)
         npt.assert_array_equal(param.bmat, param_new.bmat)
         npt.assert_array_equal(cmat, param_new.cmat)
@@ -726,7 +726,7 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(cmat, param_new.cmat)
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
-        npt.assert_array_equal(None, param_new.dvecs)
+#        npt.assert_array_equal(None, param_new.dvecs)
 
         cfree = True
         theta = [avecs[:, 0], bvecs[:, 0],
@@ -742,6 +742,44 @@ class ParamSpatialSpatialTestCase(ut.TestCase):
         npt.assert_array_equal(param.avecs, param_new.avecs)
         npt.assert_array_equal(param.bvecs, param_new.bvecs)
         npt.assert_array_equal(None, param_new.dvecs)
+
+    def test_targeting(self):
+        """Test targeting."""
+        nstocks = 4
+        groups = [[(0, 1), (2, 3)]]
+        ncat = len(groups)
+        alpha = [.01, .02, .03, .04, .05, .06]
+        beta = [.07, .08, .09, .1, .11, .12]
+        delta = [.13, .14, .15, .16, .17, .18]
+        # A, B, C - n x n matrices
+        avecs = np.ones((ncat+1, nstocks))
+        bvecs = np.ones((ncat+1, nstocks))
+        dvecs = np.ones((ncat+1, nstocks))
+        avecs[0] = alpha[:4]
+        avecs[1, :2] *= alpha[-2]
+        avecs[1, 2:] *= alpha[-1]
+        bvecs[0] = beta[:4]
+        bvecs[1, :2] *= beta[-2]
+        bvecs[1, 2:] *= beta[-1]
+        dvecs[0] = delta[:4]
+        dvecs[1, :2] *= delta[-2]
+        dvecs[1, 2:] *= delta[-1]
+
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
+                                       groups=groups)
+
+        restriction = 'homo'
+        target = param.get_uvar()
+
+        param = ParamSpatial.from_abt(avecs=avecs, bvecs=bvecs, groups=groups,
+                                      target=target, restriction=restriction,
+                                      solve_dvecs=True)
+        param = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs,
+                                       dvecs=param.dvecs,
+                                       groups=groups)
+#        print('\n', target)
+#        print('\n', param.get_uvar())
+
 
 
 if __name__ == '__main__':

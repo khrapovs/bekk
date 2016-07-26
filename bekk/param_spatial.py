@@ -11,6 +11,7 @@ import itertools
 
 import numpy as np
 import scipy.linalg as scl
+from scipy.optimize import minimize
 
 from .param_generic import ParamGeneric
 
@@ -173,7 +174,8 @@ class ParamSpatial(ParamGeneric):
         return param
 
     @classmethod
-    def from_abt(cls, avecs=None, bvecs=None, target=None, groups=None):
+    def from_abt(cls, avecs=None, bvecs=None, target=None, groups=None,
+                 restriction=None, solve_dvecs=False):
         """Initialize from spatial representation.
 
         Parameters
@@ -196,15 +198,85 @@ class ParamSpatial(ParamGeneric):
         weights = cls.get_weight(groups=groups)
         amat, bmat, dmat = cls.from_vecs_to_mat(avecs=avecs, bvecs=bvecs,
                                                 weights=weights)
-        cmat = cls.find_cmat(amat=amat, bmat=bmat, target=target)
+        ccmat = cls.find_ccmat(amat=amat, bmat=bmat, target=target)
+        cmat = cls.find_cmat(amat=amat, bmat=bmat, ccmat=ccmat)
         param = cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
         param.avecs = avecs
         param.bvecs = bvecs
         param.dvecs = None
+        if solve_dvecs:
+            param.dvecs = ParamSpatial.find_approx_target(weights, groups,
+                                                          ccmat, restriction)
         param.weights = weights
         param.groups = groups
 
         return param
+
+    @staticmethod
+    def cmat_approx(theta, weights, groups):
+        """Approximation of CC' using spatial representation.
+
+        Parameters
+        ----------
+        theta : array
+            Parameters stacked together
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+
+        """
+        ncat, nstocks = weights.shape[:2]
+        dvecs = ParamSpatial.vecs_from_theta(theta, groups)[0]
+        dmat = np.eye(nstocks)
+        for i in range(ncat):
+            dmat -= np.diag(dvecs[i + 1]).dot(weights[i])
+        return scl.solve(dmat, np.diag(np.abs(dvecs[0])**.5))
+
+    @staticmethod
+    def target_deviation(theta, weights, groups, target):
+        """Deviation from target matrix.
+
+        Parameters
+        ----------
+        theta : array
+            Parameters stacked together
+        weights : (ncat, nstocks, nstocks) array
+            Weight matrices
+        groups : list of lists of tuples
+            Encoded groups of items
+
+        Returns
+        -------
+        float
+
+        """
+        out = ParamSpatial.cmat_approx(theta, weights, groups)
+        return scl.norm(target - out.dot(out.T))
+
+    @staticmethod
+    def find_approx_target(weights, groups, target, restriction):
+        """Find target approximation.
+
+        """
+        ncat, nstocks = weights.shape[:2]
+        args = (weights, groups, target)
+
+        if restriction == 'hetero':
+            theta = np.arange((ncat + 1) * nstocks)
+        elif restriction == 'ghomo':
+            theta = np.arange(nstocks + sum([len(group) for group in groups]))
+        elif restriction in ('homo', 'shomo'):
+            theta = np.arange(ncat + nstocks + 1)
+        else:
+            raise NotImplementedError('Restriction is not implemented!')
+
+        out = minimize(ParamSpatial.target_deviation, theta, args=args)
+        return ParamSpatial.vecs_from_theta(out.x, groups)[0]
 
     @staticmethod
     def from_vecs_to_mat(avecs=None, bvecs=None, dvecs=None, weights=None):
@@ -268,7 +340,7 @@ class ParamSpatial(ParamGeneric):
         return vecs, theta[j:]
 
     def theta_from_vecs(self, vecs=None):
-        """Convert theta to vecs.
+        """Convert vecs to theta.
 
         Parameters
         ----------
@@ -393,7 +465,7 @@ class ParamSpatial(ParamGeneric):
 
     @classmethod
     def from_theta(cls, theta=None, groups=None, cfree=False,
-                   restriction='shomo', target=None):
+                   restriction='shomo', target=None, solve_dvecs=False):
         """Initialize from theta vector.
 
         Parameters
@@ -441,10 +513,9 @@ class ParamSpatial(ParamGeneric):
             return cls.from_abcmat(avecs=avecs, bvecs=bvecs, cmat=cmat,
                                    groups=groups)
         else:
-            dvecs = None
-            cmat = None
             return cls.from_abt(avecs=avecs, bvecs=bvecs, target=target,
-                                groups=groups)
+                                groups=groups, restriction=restriction,
+                                solve_dvecs=solve_dvecs)
 
     def get_theta_from_ab(self, restriction='shomo'):
         """Convert parameter matrices A and B to 1-dimensional array.

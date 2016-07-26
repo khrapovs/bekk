@@ -16,7 +16,7 @@ import scipy.stats as scs
 from functools import partial
 
 from bekk import (BEKK, ParamStandard, ParamSpatial, simulate_bekk,
-                  regenerate_data, plot_data)
+                  download_data, plot_data)
 from bekk import filter_var_python, likelihood_python
 from bekk.recursion import filter_var
 from bekk.likelihood import likelihood_gauss
@@ -53,7 +53,7 @@ def try_bekk():
 
     else:
         # Regenerate real data
-        regenerate_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
+        download_data(innov_file=innov_file, nstocks=nstocks, nobs=nobs)
         # Load data from the drive
         innov = np.load(innov_file)
 
@@ -201,24 +201,23 @@ def try_spatial():
     """Try simulating and estimating spatial BEKK.
 
     """
-    use_target = False
     cfree = False
-    restriction = 'full'
+    restriction = 'homo'
     nobs = 2000
     groups = [[(0, 1), (2, 3)]]
     nstocks = np.max(groups) + 1
     ncat = len(groups)
     alpha = np.array([.1, .01])
     beta = np.array([.5, .01])
-    gamma = .0
+    gamma = .09
     # A, B, C - n x n matrices
     avecs = np.ones((ncat+1, nstocks)) * alpha[:, np.newaxis]**.5
     bvecs = np.ones((ncat+1, nstocks)) * beta[:, np.newaxis]**.5
-    dvecs = np.ones((ncat, nstocks)) * gamma**.5
-    vvec = np.ones(nstocks)
+    dvecs = np.vstack([np.ones((1, nstocks)),
+                       np.ones((ncat, nstocks)) * gamma**.5])
 
     param_true = ParamSpatial.from_abdv(avecs=avecs, bvecs=bvecs, dvecs=dvecs,
-                                        vvec=vvec, groups=groups)
+                                        groups=groups)
     print(param_true)
 
     innov, hvar_true = simulate_bekk(param_true, nobs=nobs, distr='normal')
@@ -226,23 +225,26 @@ def try_spatial():
 #    plot_data(innov, hvar_true)
 
     bekk = BEKK(innov)
-    result = bekk.estimate(param_start=param_true, use_target=use_target,
-                           cfree=cfree, restriction=restriction,
-                           model='spatial', groups=groups, method='SLSQP',
-                           cython=True)
 
-    print(result)
+    for use_target in [True, False]:
 
-    theta_true = param_true.get_theta(use_target=use_target, cfree=cfree,
-                                      restriction=restriction)
-    theta_final = result.param_final.get_theta(use_target=use_target,
-                                               cfree=cfree,
-                                               restriction=restriction)
-    norm = np.linalg.norm(theta_true - theta_final)
+        result = bekk.estimate(param_start=param_true, use_target=use_target,
+                               cfree=cfree, restriction=restriction,
+                               groups=groups, model='spatial', method='SLSQP',
+                               cython=True)
 
-    print('\nParameters (true and estimated):')
-    print(np.vstack([theta_true, theta_final]).T)
-    print('\nEucledean norm of the difference = %.4f' % norm)
+        print(result)
+
+        theta_true = param_true.get_theta(use_target=use_target, cfree=cfree,
+                                          restriction=restriction)
+        theta_final = result.param_final.get_theta(use_target=use_target,
+                                                   cfree=cfree,
+                                                   restriction=restriction)
+        norm = np.linalg.norm(theta_true - theta_final)
+
+        print('\nParameters (true and estimated):')
+        print(np.vstack([theta_true, theta_final]).T)
+        print('\nEucledean norm of the difference = %.4f' % norm)
 
 
 def try_spatial_combinations():
@@ -384,8 +386,8 @@ if __name__ == '__main__':
 #    with take_time('\nTotal simulation and estimation'):
 #        try_standard()
 
-#    with take_time('Total simulation and estimation'):
-#        try_spatial()
+    with take_time('Total simulation and estimation'):
+        try_spatial()
 
 #    with take_time('Total simulation and estimation'):
 #        try_spatial_combinations()
@@ -396,40 +398,6 @@ if __name__ == '__main__':
 #    with take_time('Initialize parameters for spatial model'):
 #        try_interative_estimation_spatial()
 
-    with take_time('Compute forecast loss'):
-        losses = try_standard_loss()
+#    with take_time('Compute forecast loss'):
+#        losses = try_standard_loss()
 
-    # Test for unconditional coverage
-    # H0: alpha = alpha_hat
-    grouped = losses.groupby(level=losses.index.names[:-1])['var_exception']
-    num_all = grouped.count()
-    num_exc = grouped.sum()
-    alpha_hat = grouped.mean()
-    alpha = .25
-    lruc = 2 * np.log((alpha_hat / alpha)**num_exc
-        * ((1 - alpha_hat) / (1 - alpha))**(num_all - num_exc))
-
-    lruc = pd.DataFrame({'LRuc': lruc})
-    lruc['pvalue'] = 1 - scs.chi2.cdf(lruc['LRuc'], df=1)
-
-    # Test for conditional coverage
-    # H0: serial independence
-    def lrind_test(df):
-
-        t01 = ((df == 1) & (df.shift() == 0)).sum()
-        t10 = ((df == 0) & (df.shift() == 1)).sum()
-        t11 = ((df == 1) & (df.shift() == 1)).sum()
-        t00 = ((df == 0) & (df.shift() == 0)).sum()
-
-        p01 = t01 / (t00 + t01)
-        p11 = t11 / (t10 + t11)
-        p = (t01 + t11) / (t01 + t10 + t00 + t11)
-
-        la = (1 - p01)**t00 * p01**t01 * (1 - p11)**t10 * p11**t11
-        l0 = (1 - p)**(t00 + t01) * p**(t01 + t11)
-
-        return 2 * (la - l0)
-
-    lrind = grouped.apply(lrind_test)
-    lrind = pd.DataFrame({'LRind': lrind})
-    lrind['pvalue'] = 1 - scs.chi2.cdf(lrind['LRind'], df=1)

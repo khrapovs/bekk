@@ -234,7 +234,7 @@ class BEKK(object):
             target = None
 
         # Optimization options
-        options = {'disp': False, 'maxiter': int(1e6)}
+        options = {'disp': True, 'maxiter': int(1e6)}
         if method == 'Nelder-Mead':
             options['maxfev'] = 3000
         # Likelihood arguments
@@ -265,7 +265,8 @@ class BEKK(object):
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
                                                   restriction=restriction,
                                                   target=target, cfree=cfree,
-                                                  groups=groups)
+                                                  groups=groups,
+                                                  solve_dvecs=True)
         else:
             raise NotImplementedError('The model is not implemented!')
 

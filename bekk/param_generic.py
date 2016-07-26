@@ -135,7 +135,25 @@ class ParamGeneric(object):
         return cls.from_abc(amat=amat, bmat=bmat, cmat=cmat)
 
     @staticmethod
-    def find_cmat(amat=None, bmat=None, target=None):
+    def find_ccmat(amat=None, bmat=None, target=None):
+        """Find CC' matrix given A, B, and H
+        in H = CC' + AHA' + BHB' given A, B, H.
+
+        Parameters
+        ----------
+        amat, bmat, target : (nstocks, nstocks) arrays
+            Parameter matrices
+
+        Returns
+        -------
+        (nstocks, nstocks) array
+
+        """
+        return target - amat.dot(target).dot(amat.T) \
+            - bmat.dot(target).dot(bmat.T)
+
+    @staticmethod
+    def find_cmat(amat=None, bmat=None, ccmat=None, target=None):
         """Find C matrix given A, B, and H.
         Solve for C in H = CC' + AHA' + BHB' given A, B, H.
 
@@ -150,8 +168,9 @@ class ParamGeneric(object):
             Cholesky decomposition of CC'
 
         """
-        ccmat = target - amat.dot(target).dot(amat.T) \
-            - bmat.dot(target).dot(bmat.T)
+        if ccmat is None:
+        	ccmat = ParamGeneric.find_ccmat(amat=amat, bmat=bmat,
+        									target=target)
 
         # Extract C parameter
         try:
