@@ -216,7 +216,7 @@ class BEKK(object):
         # Otherwise, initialize.
         if param_start is None:
             common = {'restriction': restriction, 'method': method,
-                      'use_penalty': use_penalty}
+                      'use_penalty': use_penalty, 'use_target': use_target}
             if model == 'standard':
                 param_start = self.init_param_standard(**common)
             elif model == 'spatial':
@@ -234,7 +234,7 @@ class BEKK(object):
             target = None
 
         # Optimization options
-        options = {'disp': True, 'maxiter': int(1e6)}
+        options = {'disp': False, 'maxiter': int(1e6)}
         if method == 'Nelder-Mead':
             options['maxfev'] = 3000
         # Likelihood arguments
@@ -265,8 +265,7 @@ class BEKK(object):
             param_final = ParamSpatial.from_theta(theta=opt_out.x,
                                                   restriction=restriction,
                                                   target=target, cfree=cfree,
-                                                  groups=groups,
-                                                  solve_dvecs=True)
+                                                  groups=groups)
         else:
             raise NotImplementedError('The model is not implemented!')
 
@@ -277,7 +276,7 @@ class BEKK(object):
                            param_start=param_start, param_final=param_final,
                            time_delta=time_delta, opt_out=opt_out)
 
-    def init_param_standard(self, restriction='scalar',
+    def init_param_standard(self, restriction='scalar', use_target=False,
                             method='SLSQP', use_penalty=False):
         """Estimate scalar BEKK with variance targeting.
 
@@ -308,7 +307,7 @@ class BEKK(object):
             return param
 
         kwargs = {'model': 'standard', 'use_penalty': use_penalty,
-                  'use_target': False, 'method': method}
+                  'use_target': use_target, 'method': method}
         est_partial = partial(self.estimate, **kwargs)
 
         if restriction in ('diagonal', 'full'):
@@ -322,7 +321,8 @@ class BEKK(object):
         return param
 
     def init_param_spatial(self, restriction='shomo', groups=None,
-                           method='SLSQP', cfree=False, use_penalty=False):
+                           use_target=False, method='SLSQP', cfree=False,
+                           use_penalty=False):
         """Estimate scalar BEKK with variance targeting.
 
         Parameters
@@ -357,6 +357,7 @@ class BEKK(object):
             return param
 
         kwargs = {'use_target': False, 'groups': groups,
+                  'use_target': use_target,
                   'use_penalty': use_penalty, 'model': 'spatial',
                   'cfree': cfree, 'method': method}
         est_partial = partial(self.estimate, **kwargs)
@@ -769,8 +770,8 @@ class BEKK(object):
         return scs.norm.ppf(alpha) * BEKK.pvar(forecast, weights=weights)**.5
 
     @staticmethod
-    def var_exception(innov=None, forecast=None, alpha=.05, weights=None):
-        """Exception associated with portfolio Value-at-Risk.
+    def var_error(innov=None, forecast=None, alpha=.05, weights=None):
+        """Portfolio Value-at-Risk error.
 
         Parameters
         ----------
@@ -795,44 +796,63 @@ class BEKK(object):
             weights = np.array(weights) / np.sum(weights)
         var = BEKK.portf_var(forecast=forecast, alpha=alpha, weights=weights)
         pret = BEKK.pret(innov, weights=weights)
-        diff = pret - var
-        if diff < 0:
+        return pret - var
+
+    @staticmethod
+    def var_exception(error=None):
+        """Exception associated with portfolio Value-at-Risk.
+
+        Parameters
+        ----------
+        error : float
+            VaR error
+
+        Returns
+        -------
+        float
+
+        """
+        if error < 0:
             return 1
         else:
             return 0
 
     @staticmethod
-    def loss_var(innov=None, forecast=None, alpha=.05, weights=None):
+    def loss_var(error=None):
         """Loss associated with portfolio Value-at-Risk.
 
         Parameters
         ----------
-        innov : (nstocks, ) array
-            Returns
-        forecast : (nstocks, nstocks) array
-            Volatililty forecast
-        alpha : float
-            Risk level. Usually 1% or 5%.
-        weights : (nstocks, ) array
-            Portfolio weights
+        error : float
+            VaR error
 
         Returns
         -------
         float
 
         """
-        if weights is None:
-            nstocks = forecast.shape[0]
-            weights = BEKK.weights(nstocks=nstocks)
-        else:
-            weights = np.array(weights) / np.sum(weights)
-        var = BEKK.portf_var(forecast=forecast, alpha=alpha, weights=weights)
-        pret = BEKK.pret(innov, weights=weights)
-        diff = pret - var
-        if diff < 0:
-            return 1 + diff ** 2
+        if error < 0:
+            return 1 + error ** 2
         else:
             return 0.
+
+    @staticmethod
+    def loss_qntl(error=None, alpha=.05):
+        """Loss associated with portfolio Value-at-Risk as a quantile function.
+
+        Parameters
+        ----------
+        error : float
+            VaR error
+        alpha : float
+            Risk level. Usually 1% or 5%.
+
+        Returns
+        -------
+        float
+
+        """
+        return (alpha - float(error < 0)) * error
 
     @staticmethod
     def all_losses(forecast=None, proxy=None, innov=None,
@@ -859,6 +879,8 @@ class BEKK(object):
         """
         nstocks = forecast.shape[0]
         weights = BEKK.weights(nstocks=nstocks, hvar=forecast, kind=kind)
+        var_error = BEKK.var_error(innov=innov, forecast=forecast, alpha=alpha,
+                                   weights=weights)
         return {'eucl': BEKK.loss_eucl(forecast=forecast, proxy=proxy),
                 'frob': BEKK.loss_frob(forecast=forecast, proxy=proxy),
                 'stein': BEKK.loss_stein2(forecast=forecast, innov=innov),
@@ -868,12 +890,9 @@ class BEKK(object):
                 'pret': BEKK.pret(innov, weights=weights),
                 'var': BEKK.portf_var(forecast=forecast, alpha=alpha,
                                       weights=weights),
-                'var_exception': BEKK.var_exception(innov=innov,
-                                                    forecast=forecast,
-                                                    alpha=alpha,
-                                                    weights=weights),
-                'var_loss': BEKK.loss_var(innov=innov, forecast=forecast,
-                                          alpha=alpha, weights=weights)}
+                'var_exception': BEKK.var_exception(error=var_error),
+                'var_loss': BEKK.loss_var(error=var_error),
+                'qntl_loss': BEKK.loss_qntl(error=var_error, alpha=alpha)}
 
     @staticmethod
     def collect_losses(param_start=None, innov_all=None, window=1000,
@@ -950,7 +969,7 @@ class BEKK(object):
             time_start = time.time()
 
             if first == 0:
-                result = bekk.estimate(method=method, **common)
+                result = bekk.estimate(method='basin', **common)
             else:
                 result = bekk.estimate(param_start=param_start,
                                        method=method, **common)

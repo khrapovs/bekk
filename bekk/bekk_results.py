@@ -115,6 +115,7 @@ class BEKKResults(object):
         show += '\nRestriction: ' + self.restriction
         show += '\nUse target: ' + str(self.use_target)
         show += '\nMatrix C is free: ' + str(self.cfree)
+        show += '\nNumber of parameters: ' + str(len(self.opt_out.x))
         try:
             show += '\nIterations = ' + str(self.opt_out.nit)
         except:
