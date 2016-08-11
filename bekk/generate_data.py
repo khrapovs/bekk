@@ -75,7 +75,8 @@ def simulate_bekk(param, nobs=1000, distr='normal', degf=10, lam=0):
     return innov, hvar
 
 
-def download_data(tickers=None, nobs=None):
+def download_data(tickers=None, nobs=None,
+                  start='2002-01-01', end='2015-12-31'):
     """Download stock market data and save it to disk.
 
     Parameters
@@ -84,6 +85,10 @@ def download_data(tickers=None, nobs=None):
         Tickers to download
     nobs : int
         Number of observations in the time series
+    start : str
+        First observation date
+    end : str
+        Last observation date
 
     Returns
     -------
@@ -92,7 +97,6 @@ def download_data(tickers=None, nobs=None):
 
     """
     prices = []
-    start, end = '2002-01-01', '2015-12-31'
     colname = 'Adj Close'
     for tic in tickers:
         stock = data.DataReader(tic, 'yahoo', start, end)[colname]
