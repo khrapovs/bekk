@@ -140,6 +140,10 @@ class BEKK(object):
 
             if cython:
                 filter_var(*args)
+                nstocks = self.innov.shape[1]
+                idxl = np.tril_indices(nstocks)
+                idxu = np.triu_indices(nstocks)
+                self.hvar[:, idxu[0], idxu[1]] = self.hvar[:, idxl[0], idxl[1]]
                 return likelihood_gauss(self.hvar, self.innov) + penalty
             else:
                 filter_var_python(*args)

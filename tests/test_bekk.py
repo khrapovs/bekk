@@ -87,7 +87,14 @@ class BEKKTestCase(ut.TestCase):
         idxl = np.tril_indices(nstocks)
         idxu = np.triu_indices(nstocks)
 
+        npt.assert_array_almost_equal(hvar_true,
+                                      np.transpose(hvar_true, axes=(0, 2, 1)))
+
+        # npt.assert_array_almost_equal(out2, np.transpose(out2, axes=(0, 2, 1)))
         out2[:, idxu[0], idxu[1]] = out2[:, idxl[0], idxl[1]]
+
+        npt.assert_array_almost_equal(out1, np.transpose(out1, axes=(0, 2, 1)))
+        npt.assert_array_almost_equal(out2, np.transpose(out2, axes=(0, 2, 1)))
 
         npt.assert_array_almost_equal(hvar_true, out1)
         npt.assert_array_almost_equal(hvar_true, out2)
