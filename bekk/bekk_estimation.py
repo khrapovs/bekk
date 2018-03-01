@@ -999,7 +999,7 @@ class BEKK(object):
             data['time_delta'] = time_delta
             data['loop'] = loop
 
-            ids = [model, restriction, groups[0], first]
+            ids = [[model], [restriction], [groups[0]], [first]]
             names = ['model', 'restriction', 'group', 'first']
             index = pd.MultiIndex.from_arrays(ids, names=names)
             losses = pd.DataFrame(data, index=index)
